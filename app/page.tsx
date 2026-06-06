@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   IoSearchOutline,
   IoMenuOutline,
@@ -16,11 +15,10 @@ import {
   IoPersonOutline,
 } from "react-icons/io5";
 import { GiTrophy, GiRollingDices } from "react-icons/gi";
-import { FcGoogle } from "react-icons/fc";
 import { PromoCarousel, CategoryTabs, BottomNav, GameGrid, GradientCard, WinsTicker, AppHeader } from "@/components/game";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV_ITEMS } from "@/lib/config";
+import { useAuth } from "@/hooks/use-auth";
 
 const GAME_CATEGORIES = [
   { id: "casino", label: "Casino", icon: GiRollingDices },
@@ -93,6 +91,7 @@ const BOTTOM_NAV_ITEMS_WITH_ICONS = BOTTOM_NAV_ITEMS.map((item) => ({
 
 export default function CasinoHomePage() {
   const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState("casino");
   const [mobileNav, setMobileNav] = useState("home");
 
@@ -118,8 +117,9 @@ export default function CasinoHomePage() {
 
       {/* HEADER */}
       <AppHeader
-        isAuthenticated={false}
-        notificationCount={0}
+        isAuthenticated={isAuthenticated}
+        user={user || undefined}
+        notificationCount={isAuthenticated ? 2 : 0}
       />
 
       {/* PROMO BANNER CAROUSEL */}
@@ -129,17 +129,6 @@ export default function CasinoHomePage() {
           autoRotateInterval={4000}
           className="rounded-xl"
         />
-      </div>
-
-      {/* REGISTER WITH */}
-      <div className={cn("px-3 py-2.5")}>
-        <div className={cn("text-center text-muted-foreground text-xs mb-2")}>
-          Or Register With
-        </div>
-        <Button variant="outline" className={cn("w-full")} size="default">
-          <FcGoogle size={18} />
-          Google
-        </Button>
       </div>
 
       {/* RECENT BIG WINS TICKER */}
