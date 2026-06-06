@@ -1,65 +1,225 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  IoSearchOutline,
+  IoMenuOutline,
+  IoGameControllerOutline,
+  IoFlashOutline,
+  IoPeopleOutline,
+  IoFlameOutline,
+  IoHomeOutline,
+  IoArrowDownCircleOutline,
+  IoArrowUpCircleOutline,
+  IoPersonOutline,
+} from "react-icons/io5";
+import { GiTrophy, GiRollingDices } from "react-icons/gi";
+import { FcGoogle } from "react-icons/fc";
+import { PromoCarousel, CategoryTabs, BottomNav, GameGrid, GradientCard, WinsTicker, AppHeader } from "@/components/game";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { BOTTOM_NAV_ITEMS } from "@/lib/config";
+
+const GAME_CATEGORIES = [
+  { id: "casino", label: "Casino", icon: GiRollingDices },
+  { id: "sports", label: "Sports", icon: GiTrophy },
+  { id: "slots", label: "Slots", icon: IoGameControllerOutline },
+  { id: "live", label: "Live", icon: IoFlashOutline },
+];
+
+const PROMO_BANNERS = [
+  {
+    title: "FIFA World Cup 2026 Hub",
+    subtitle: "$2M+ IN PRIZES",
+    cta: "Join Now",
+    bg: "linear-gradient(135deg, #1a3a8f 0%, #0d1f5c 50%, #1a3a8f 100%)",
+    accent: "#00C851",
+    emoji: "⚽",
+  },
+  {
+    title: "Weekly Cashback",
+    subtitle: "UP TO 25% BACK",
+    cta: "Claim Now",
+    bg: "linear-gradient(135deg, #8f1a3a 0%, #5c0d1f 50%, #8f1a3a 100%)",
+    accent: "#FFB800",
+    emoji: "💰",
+  },
+  {
+    title: "VIP Rakeback",
+    subtitle: "INSTANT REWARDS",
+    cta: "Go VIP",
+    bg: "linear-gradient(135deg, #3a1a8f 0%, #1f0d5c 50%, #3a1a8f 100%)",
+    accent: "#9945FF",
+    emoji: "👑",
+  },
+];
+
+const BIG_WINS = [
+  { user: "ncpbnu***", game: "Blackjack Luxury", amount: "1.361 BTC", color: "#F7931A", emoji: "₿" },
+  { user: "CocoK***", game: "Big Bass", amount: "1,183 SOL", color: "#9945FF", emoji: "◎" },
+  { user: "inspect***", game: "BC Outsourced", amount: "80.11K USDT", color: "#26A17B", emoji: "$" },
+  { user: "Kontrol***", game: "Gator Hunters", amount: "79.75K USDT", color: "#26A17B", emoji: "$" },
+  { user: "Btuxwe***", game: "Candy Bonanza", amount: "65.92K XRP", color: "#00AAE4", emoji: "✕" },
+  { user: "CocoK***", game: "Crazy Time", amount: "1,082 SOL", color: "#9945FF", emoji: "◎" },
+  { user: "Plex***", game: "Gold Olympics", amount: "5,953 USDT", color: "#26A17B", emoji: "$" },
+];
+
+const FEATURED_GAMES = [
+  { name: "Aviator", provider: "Spribe", tag: "HOT", tagColor: "#FF4444", players: "12.4K", emoji: "🛩️", background: "#1a0a2e" },
+  { name: "Limbo", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "8.2K", emoji: "🎯", background: "#0a1a2e" },
+  { name: "Crash", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "15.1K", emoji: "📈", background: "#1a2e0a" },
+  { name: "Plinko", provider: "BC.Game", tag: "NEW", tagColor: "#FFB800", players: "6.8K", emoji: "🎪", background: "#2e1a0a" },
+  { name: "Mines", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "9.3K", emoji: "💣", background: "#1a0a0a" },
+  { name: "Hash Dice", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "4.1K", emoji: "🎲", background: "#0a2e1a" },
+];
+
+// Map icon names to actual icon components for bottom nav
+const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  home: IoHomeOutline,
+  deposit: IoArrowDownCircleOutline,
+  withdraw: IoArrowUpCircleOutline,
+  profile: IoPersonOutline,
+  menu: IoMenuOutline,
+};
+
+// Bottom navigation items with icons
+const BOTTOM_NAV_ITEMS_WITH_ICONS = BOTTOM_NAV_ITEMS.map((item) => ({
+  id: item.id,
+  icon: NAV_ICONS[item.id],
+  label: item.label,
+}));
+
+export default function CasinoHomePage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("casino");
+  const [mobileNav, setMobileNav] = useState("home");
+
+  // Handle bottom navigation
+  const handleNavigate = (itemId: string) => {
+    const navItem = BOTTOM_NAV_ITEMS.find((item) => item.id === itemId);
+    if (navItem) {
+      router.push(navItem.route);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div
+      className={cn(
+        "min-h-screen relative overflow-hidden",
+        "bg-background",
+        "text-foreground",
+        "max-w-md mx-auto",
+        "pb-safe-nav"
+      )}
+    >
+     
+
+      {/* HEADER */}
+      <AppHeader
+        isAuthenticated={false}
+        notificationCount={0}
+      />
+
+      {/* PROMO BANNER CAROUSEL */}
+      <div className={cn("px-3 pt-3")}>
+        <PromoCarousel
+          banners={PROMO_BANNERS}
+          autoRotateInterval={4000}
+          className="rounded-xl"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </div>
+
+      {/* REGISTER WITH */}
+      <div className={cn("px-3 py-2.5")}>
+        <div className={cn("text-center text-muted-foreground text-xs mb-2")}>
+          Or Register With
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <Button variant="outline" className={cn("w-full")} size="default">
+          <FcGoogle size={18} />
+          Google
+        </Button>
+      </div>
+
+      {/* RECENT BIG WINS TICKER */}
+      <div className={cn("py-1 pb-2")}>
+        <div className={cn("flex items-center gap-2 px-3 mb-2")}>
+          <div
+            className={cn(
+              "w-2 h-2 rounded-full",
+              "bg-primary",
+              "shadow-lg shadow-primary/50"
+            )}
+          />
+          <span className={cn("font-bold text-sm tracking-wider")}>
+            Recent Big Wins
+          </span>
         </div>
-      </main>
+
+        <WinsTicker
+          wins={BIG_WINS}
+          speed={-0.5}
+          pauseOnHover
+          className="px-3"
+        />
+      </div>
+
+      {/* CATEGORY TABS */}
+      <CategoryTabs
+        categories={GAME_CATEGORIES}
+        active={activeTab}
+        onChange={setActiveTab}
+        className="px-3 mb-3"
+      />
+
+      {/* CASINO / SPORTS CARDS */}
+      <div className={cn("px-3 mb-4")}>
+        <div className={cn("grid grid-cols-2 gap-2.5")}>
+          <GradientCard
+            label="CASINO"
+            icon={GiRollingDices}
+            gradient="linear-gradient(135deg, #0d2818 0%, #0a1f14 100%)"
+            glow="#00C851"
+            emoji="🎰"
+          />
+          <GradientCard
+            label="SPORTS"
+            icon={GiTrophy}
+            gradient="linear-gradient(135deg, #1a1a0d 0%, #141400 100%)"
+            glow="#FFB800"
+            emoji="⚽"
+          />
+        </div>
+      </div>
+
+      {/* FEATURED GAMES */}
+      <div className={cn("px-3 mb-4")}>
+        <div className={cn("flex justify-between items-center mb-2.5")}>
+          <div className={cn("flex items-center gap-1.5")}>
+            <IoFlameOutline size={16} className="text-orange-500" />
+            <span className={cn("font-bold text-sm tracking-wider")}>
+              Popular Games
+            </span>
+          </div>
+          <span className={cn("text-primary text-xs font-semibold cursor-pointer")}>
+            See All
+          </span>
+        </div>
+
+        <GameGrid
+          games={FEATURED_GAMES}
+          columns={{ mobile: 3, tablet: 3, desktop: 3 }}
+          gap={2}
+        />
+      </div>
+
+      {/* BOTTOM NAV */}
+      <BottomNav
+        items={BOTTOM_NAV_ITEMS_WITH_ICONS}
+        active={mobileNav}
+        onChange={handleNavigate}
+      />
     </div>
   );
 }
