@@ -65,9 +65,9 @@
     "semantic_hash": "74a6dfc0063ce6dfcf6f0cd4f1ed196f"
   },
   "/home/neo/clausbet/app/profile/page.tsx": {
-    "mtime": 1780910786.9226968,
-    "ast_hash": "5a7424938d7dafe1070a38ec3ee76005",
-    "semantic_hash": "5a7424938d7dafe1070a38ec3ee76005"
+    "mtime": 1780917578.7400265,
+    "ast_hash": "867d64343bf2797b76c0ab8c1a3f0666",
+    "semantic_hash": "867d64343bf2797b76c0ab8c1a3f0666"
   },
   "/home/neo/clausbet/app/signin/page.tsx": {
     "mtime": 1780913751.339091,
@@ -75,9 +75,9 @@
     "semantic_hash": "ebc9adfc784fcb58f71ca1dec0196de1"
   },
   "/home/neo/clausbet/app/signup/page.tsx": {
-    "mtime": 1780910784.8896253,
-    "ast_hash": "a188707bb881992b10f0b5bf1452601d",
-    "semantic_hash": "a188707bb881992b10f0b5bf1452601d"
+    "mtime": 1780917941.007152,
+    "ast_hash": "eb55d6df0418b058073f6969dd650506",
+    "semantic_hash": "eb55d6df0418b058073f6969dd650506"
   },
   "/home/neo/clausbet/app/withdraw/page.tsx": {
     "mtime": 1780910789.331273,
@@ -550,9 +550,9 @@
     "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
   },
   "/home/neo/clausbet/hooks/use-auth.ts": {
-    "mtime": 1780915013.822976,
-    "ast_hash": "81a60049620d8cbb9547f29cb23f0c28",
-    "semantic_hash": "81a60049620d8cbb9547f29cb23f0c28"
+    "mtime": 1780919174.8666666,
+    "ast_hash": "9853fd14f7539d526c234d6b10e8e122",
+    "semantic_hash": "9853fd14f7539d526c234d6b10e8e122"
   },
   "/home/neo/clausbet/hooks/use-auto-scroll.ts": {
     "mtime": 1780624218.8921552,
@@ -570,14 +570,14 @@
     "semantic_hash": "12ff9f1df76e29cf6ac15fa10ce30e86"
   },
   "/home/neo/clausbet/lib/auth-client.ts": {
-    "mtime": 1780914935.1851325,
-    "ast_hash": "ab1ca92b7542e728516ed4ae3b83a507",
-    "semantic_hash": "ab1ca92b7542e728516ed4ae3b83a507"
+    "mtime": 1780917258.1972272,
+    "ast_hash": "58050b4e7db60120110b503900a09f67",
+    "semantic_hash": "58050b4e7db60120110b503900a09f67"
   },
   "/home/neo/clausbet/lib/auth.ts": {
-    "mtime": 1780906933.294,
-    "ast_hash": "b94d35571034d1a4b0dd895ba881bf99",
-    "semantic_hash": "b94d35571034d1a4b0dd895ba881bf99"
+    "mtime": 1780918840.5547714,
+    "ast_hash": "aa7588f8dc450b7dc0cac17a984c9e79",
+    "semantic_hash": "aa7588f8dc450b7dc0cac17a984c9e79"
   },
   "/home/neo/clausbet/lib/config.ts": {
     "mtime": 1780625067.7243435,
@@ -590,9 +590,9 @@
     "semantic_hash": "fb74320e1331dfc9230e2046d7c7885c"
   },
   "/home/neo/clausbet/lib/trpc/client.ts": {
-    "mtime": 1780914950.332607,
-    "ast_hash": "6c5a65b9e4697d73fe65f4458f1a1794",
-    "semantic_hash": "6c5a65b9e4697d73fe65f4458f1a1794"
+    "mtime": 1780916498.2604022,
+    "ast_hash": "8a0bf8d31340a64f82d6b0249644040f",
+    "semantic_hash": "8a0bf8d31340a64f82d6b0249644040f"
   },
   "/home/neo/clausbet/lib/trpc/hooks.ts": {
     "mtime": 1780908252.556722,
@@ -655,9 +655,9 @@
     "semantic_hash": "80c9dc89c5f5c938921499e39cf11137"
   },
   "/home/neo/clausbet/server/routers/auth.ts": {
-    "mtime": 1780909951.5321114,
-    "ast_hash": "e38c5277d7dbbe0cb94f704c07b6f41d",
-    "semantic_hash": "e38c5277d7dbbe0cb94f704c07b6f41d"
+    "mtime": 1780918828.8905108,
+    "ast_hash": "5761f239450a6b6a294a974422e100ab",
+    "semantic_hash": "5761f239450a6b6a294a974422e100ab"
   },
   "/home/neo/clausbet/server/routers/index.ts": {
     "mtime": 1780902994.5561957,
