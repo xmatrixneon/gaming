@@ -1,7 +1,10 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { AppHeader } from "@/components/game";
 import { AuthHeader } from "@/components/game";
 import { AuthButton } from "@/components/game/auth";
@@ -27,23 +30,6 @@ import {
   IoTrophyOutline,
 } from "react-icons/io5";
 import { cn } from "@/lib/utils";
-
-// User profile data (mock)
-const USER_PROFILE = {
-  username: "Player_12345",
-  email: "player@example.com",
-  avatar: "🎮",
-  memberSince: "January 2024",
-  vipLevel: "Gold",
-  kycStatus: "verified" as "verified" | "pending" | "unverified",
-  kycBadge: "Verified",
-};
-
-// User balances (raw amounts for dynamic formatting)
-const USER_BALANCES = [
-  { currency: "USD", balance: 12458.50, icon: "$", subtitle: "Total Balance" },
-  { currency: "Bonus", balance: 250.00, icon: "🎁", subtitle: "Available Bonus" },
-];
 
 // Quick action items
 const QUICK_ACTIONS = [
@@ -81,39 +67,45 @@ const QUICK_ACTIONS = [
   },
 ];
 
-// Account menu items
-const ACCOUNT_MENU = [
-  {
-    id: "settings",
-    label: "Account Settings",
-    icon: <IoSettingsOutline size={18} />,
-    description: "Personal info, security, preferences",
-  },
-  {
-    id: "kyc",
-    label: "Verification",
-    icon: <IoShieldCheckmarkOutline size={18} />,
-    description: "KYC status and documents",
-    badge: USER_PROFILE.kycBadge,
-    badgeColor: USER_PROFILE.kycStatus === "verified" ? "#22c55e" : "#eab308",
-  },
-  {
-    id: "payment-methods",
-    label: "Payment Methods",
-    icon: <IoCardOutline size={18} />,
-    description: "Manage your payment options",
-  },
-  {
-    id: "support",
-    label: "Help & Support",
-    icon: <IoHeadsetOutline size={18} />,
-    description: "FAQ, live chat, contact us",
-  },
-];
-
 export default function ProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user: authUser, logout } = useAuth();
+  const { isAuthenticated, user: authUser, isLoading: authLoading, signOut } = useAuth();
+
+  // Redirect to signin if not authenticated (useEffect to avoid setState during render)
+  useEffect(() => {
+    if (!authLoading && (!isAuthenticated || !authUser)) {
+      router.push("/signin");
+    }
+  }, [isAuthenticated, authUser, authLoading, router]);
+
+  // Handle loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground max-w-md mx-auto flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything while redirecting
+  if (!isAuthenticated || !authUser) {
+    return null;
+  }
+
+  // Format user data from Better Auth session
+  const userProfile = {
+    username: authUser.username || authUser.email?.split('@')[0] || "Player",
+    email: authUser.email || "",
+    avatar: authUser.image || "🎮",
+    memberSince: authUser.createdAt ? new Date(authUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Recent",
+    vipLevel: authUser.vipLevel || "Bronze",
+    phoneNumber: authUser.phoneNumber,
+    phoneNumberVerified: authUser.phoneNumberVerified || false,
+    balance: authUser.balance || "0",
+  };
 
   // Map icon names to actual icon components for bottom nav
   const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -179,11 +171,47 @@ export default function ProfilePage() {
     }
   };
 
+  // Account menu items with real user data
+  const ACCOUNT_MENU = [
+    {
+      id: "settings",
+      label: "Account Settings",
+      icon: <IoSettingsOutline size={18} />,
+      description: "Personal info, security, preferences",
+    },
+    {
+      id: "kyc",
+      label: "Verification",
+      icon: <IoShieldCheckmarkOutline size={18} />,
+      description: userProfile.phoneNumberVerified ? "Phone verified" : "Verify your phone",
+      badge: userProfile.phoneNumberVerified ? "Verified" : "Pending",
+      badgeColor: userProfile.phoneNumberVerified ? "#22c55e" : "#eab308",
+    },
+    {
+      id: "payment-methods",
+      label: "Payment Methods",
+      icon: <IoCardOutline size={18} />,
+      description: "Manage your payment options",
+    },
+    {
+      id: "support",
+      label: "Help & Support",
+      icon: <IoHeadsetOutline size={18} />,
+      description: "FAQ, live chat, contact us",
+    },
+  ];
+
   // Handle logout
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm("Are you sure you want to log out?")) {
-      logout();
-      router.push("/signin");
+      try {
+        await signOut();
+        router.push("/signin");
+      } catch (error) {
+        console.error("Logout failed:", error);
+        // Still redirect even if logout fails
+        router.push("/signin");
+      }
     }
   };
 
@@ -199,7 +227,12 @@ export default function ProfilePage() {
     >
       <AppHeader
         isAuthenticated={isAuthenticated}
-        user={authUser || undefined}
+        user={authUser ? {
+          username: authUser.username || authUser.email?.split('@')[0] || "Player",
+          avatar: authUser.image || userProfile.avatar,
+          balance: parseFloat(authUser.balance || "0"),
+          vipLevel: authUser.vipLevel || "Bronze",
+        } : undefined}
         notificationCount={5}
         title="Profile"
       />
@@ -210,31 +243,47 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4 mb-4">
             {/* Avatar */}
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-3xl shadow-lg">
-              {USER_PROFILE.avatar}
+              {userProfile.avatar}
             </div>
 
             {/* User Info */}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-xl font-bold">{USER_PROFILE.username}</h1>
+                <h1 className="text-xl font-bold">{userProfile.username}</h1>
                 {/* VIP Badge */}
-                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-semibold rounded-full border border-yellow-500/30">
-                  {USER_PROFILE.vipLevel}
+                <span className={cn(
+                  "px-2 py-0.5 text-xs font-semibold rounded-full border",
+                  userProfile.vipLevel === "Gold" && "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
+                  userProfile.vipLevel === "Silver" && "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30",
+                  userProfile.vipLevel === "Bronze" && "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30",
+                  userProfile.vipLevel === "Platinum" && "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                )}>
+                  {userProfile.vipLevel}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">{USER_PROFILE.email}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Member since {USER_PROFILE.memberSince}
-              </p>
+              <p className="text-sm text-muted-foreground">{userProfile.email}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-muted-foreground">
+                  Member since {userProfile.memberSince}
+                </p>
+                {userProfile.phoneNumber && (
+                  <>
+                    <span className="text-muted-foreground">•</span>
+                    <p className="text-xs text-muted-foreground">
+                      {userProfile.phoneNumber} {userProfile.phoneNumberVerified && "✓"}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Verification Status */}
-          {USER_PROFILE.kycStatus === "verified" && (
+          {userProfile.phoneNumberVerified && (
             <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
               <IoShieldCheckmarkOutline className="text-green-500" size={16} />
               <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                Verified Account
+                Verified Phone Number
               </span>
             </div>
           )}
@@ -246,15 +295,18 @@ export default function ProfilePage() {
             Your Balances
           </h2>
           <div className="space-y-2.5">
-            {USER_BALANCES.map((balance) => (
-              <BalanceCard
-                key={balance.currency}
-                currency={balance.currency}
-                balance={formatUserCurrency(balance.balance)}
-                icon={balance.icon}
-                subtitle={balance.subtitle}
-              />
-            ))}
+            <BalanceCard
+              currency="USD"
+              balance={formatUserCurrency(parseFloat(userProfile.balance || "0"))}
+              icon="$"
+              subtitle="Total Balance"
+            />
+            <BalanceCard
+              currency="Bonus"
+              balance={formatUserCurrency(0)}
+              icon="🎁"
+              subtitle="Available Bonus"
+            />
           </div>
         </section>
 

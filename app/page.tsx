@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -118,7 +120,12 @@ export default function CasinoHomePage() {
       {/* HEADER */}
       <AppHeader
         isAuthenticated={isAuthenticated}
-        user={user || undefined}
+        user={user ? {
+          username: user.username,
+          avatar: user.image,
+          balance: user.balance ? parseFloat(user.balance) : 0,
+          vipLevel: user.vipLevel,
+        } : undefined}
         notificationCount={isAuthenticated ? 2 : 0}
       />
 

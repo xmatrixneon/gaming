@@ -7,6 +7,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { TRPCProvider } from "@/lib/trpc/provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -93,15 +94,17 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider delayDuration={200}>
-            {children}
+          <TRPCProvider>
+            <TooltipProvider delayDuration={200}>
+              {children}
 
-            <Toaster
-              position="top-right"
-              richColors
-              closeButton
-            />
-          </TooltipProvider>
+              <Toaster
+                position="top-right"
+                richColors
+                closeButton
+              />
+            </TooltipProvider>
+          </TRPCProvider>
         </ThemeProvider>
       </body>
     </html>

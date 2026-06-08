@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/game";
@@ -94,7 +96,12 @@ export default function DepositPage() {
     >
       <AppHeader
         isAuthenticated={isAuthenticated}
-        user={user || undefined}
+        user={user ? {
+          username: user.username,
+          avatar: user.image,
+          balance: user.balance ? parseFloat(user.balance) : 0,
+          vipLevel: user.vipLevel,
+        } : undefined}
         notificationCount={2}
         title="Deposit"
       />

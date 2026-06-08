@@ -1,324 +1,441 @@
-# Graph Report - .  (2026-06-06)
+# Graph Report - .  (2026-06-08)
 
 ## Corpus Check
-- Corpus is ~37,646 words - fits in a single context window. You may not need a graph.
+- Corpus is ~47,772 words - fits in a single context window. You may not need a graph.
 
 ## Summary
-- 735 nodes · 1374 edges · 80 communities (46 shown, 34 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.87)
-- Token cost: 0 input · 0 output
+- 1143 nodes · 1928 edges · 92 communities (75 shown, 17 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.85)
+- Token cost: 5,324 input · 9,824 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Auth Login Components|Auth Login Components]]
-- [[_COMMUNITY_Home Page|Home Page]]
-- [[_COMMUNITY_Combobox Components|Combobox Components]]
+- [[_COMMUNITY_Auth UI Components|Auth UI Components]]
+- [[_COMMUNITY_Database & Drizzle ORM|Database & Drizzle ORM]]
 - [[_COMMUNITY_Package Dependencies|Package Dependencies]]
-- [[_COMMUNITY_Command Menu|Command Menu]]
-- [[_COMMUNITY_Responsive Layout|Responsive Layout]]
-- [[_COMMUNITY_Project Configuration|Project Configuration]]
-- [[_COMMUNITY_User Preferences|User Preferences]]
-- [[_COMMUNITY_TypeScript Config|TypeScript Config]]
-- [[_COMMUNITY_Button Group|Button Group]]
-- [[_COMMUNITY_Menu Bar|Menu Bar]]
-- [[_COMMUNITY_Context Menu|Context Menu]]
-- [[_COMMUNITY_Dropdown Menu|Dropdown Menu]]
-- [[_COMMUNITY_App Layout|App Layout]]
-- [[_COMMUNITY_Auth Buttons|Auth Buttons]]
-- [[_COMMUNITY_Carousel|Carousel]]
-- [[_COMMUNITY_Auth Checkbox|Auth Checkbox]]
-- [[_COMMUNITY_App Manifest|App Manifest]]
-- [[_COMMUNITY_Alert Dialog|Alert Dialog]]
-- [[_COMMUNITY_Chart Components|Chart Components]]
-- [[_COMMUNITY_Item Components|Item Components]]
-- [[_COMMUNITY_Drawer|Drawer]]
-- [[_COMMUNITY_Select Components|Select Components]]
-- [[_COMMUNITY_Sheet|Sheet]]
-- [[_COMMUNITY_Auth Tabs|Auth Tabs]]
-- [[_COMMUNITY_Dev Dependencies|Dev Dependencies]]
-- [[_COMMUNITY_Navigation Menu|Navigation Menu]]
-- [[_COMMUNITY_Auth Tabs Props|Auth Tabs Props]]
-- [[_COMMUNITY_Package Config|Package Config]]
-- [[_COMMUNITY_Pagination|Pagination]]
-- [[_COMMUNITY_OTP Input|OTP Input]]
-- [[_COMMUNITY_Breadcrumb|Breadcrumb]]
-- [[_COMMUNITY_Empty States|Empty States]]
-- [[_COMMUNITY_Popover|Popover]]
-- [[_COMMUNITY_Avatar|Avatar]]
-- [[_COMMUNITY_Toggle|Toggle]]
-- [[_COMMUNITY_Alert|Alert]]
-- [[_COMMUNITY_Sidebar Menu|Sidebar Menu]]
-- [[_COMMUNITY_Accordion|Accordion]]
-- [[_COMMUNITY_Native Select|Native Select]]
-- [[_COMMUNITY_Agile Workflow Docs|Agile Workflow Docs]]
-- [[_COMMUNITY_Design System Docs|Design System Docs]]
-- [[_COMMUNITY_Hover Card|Hover Card]]
-- [[_COMMUNITY_Resizable|Resizable]]
-- [[_COMMUNITY_Framework Docs|Framework Docs]]
-- [[_COMMUNITY_Development Docs|Development Docs]]
-- [[_COMMUNITY_Badge|Badge]]
-- [[_COMMUNITY_Getting Started Docs|Getting Started Docs]]
-- [[_COMMUNITY_ESLint Config|ESLint Config]]
-- [[_COMMUNITY_CICD Docs|CI/CD Docs]]
-- [[_COMMUNITY_Sprint Docs|Sprint Docs]]
-- [[_COMMUNITY_Accessibility Docs|Accessibility Docs]]
-- [[_COMMUNITY_Component Patterns|Component Patterns]]
-- [[_COMMUNITY_Performance Docs|Performance Docs]]
-- [[_COMMUNITY_Next.js Config|Next.js Config]]
-- [[_COMMUNITY_PostCSS Config|PostCSS Config]]
-- [[_COMMUNITY_App Icons|App Icons]]
-- [[_COMMUNITY_Framework Logos|Framework Logos]]
-- [[_COMMUNITY_Font Config Docs|Font Config Docs]]
-- [[_COMMUNITY_Path Aliases Docs|Path Aliases Docs]]
-- [[_COMMUNITY_State Management Docs|State Management Docs]]
-- [[_COMMUNITY_tRPC Integration Docs|tRPC Integration Docs]]
-- [[_COMMUNITY_Scrum Rules Docs|Scrum Rules Docs]]
-- [[_COMMUNITY_Incident Response Docs|Incident Response Docs]]
-- [[_COMMUNITY_Prioritization Docs|Prioritization Docs]]
-- [[_COMMUNITY_RICE Scoring Docs|RICE Scoring Docs]]
-- [[_COMMUNITY_File Naming Docs|File Naming Docs]]
-- [[_COMMUNITY_Security Docs|Security Docs]]
-- [[_COMMUNITY_State Strategy Docs|State Strategy Docs]]
-- [[_COMMUNITY_Testing Docs|Testing Docs]]
-- [[_COMMUNITY_TypeScript Docs|TypeScript Docs]]
-- [[_COMMUNITY_Border Radius Docs|Border Radius Docs]]
-- [[_COMMUNITY_Component States Docs|Component States Docs]]
-- [[_COMMUNITY_Responsive Design Docs|Responsive Design Docs]]
-- [[_COMMUNITY_Spacing System Docs|Spacing System Docs]]
-- [[_COMMUNITY_Typography Docs|Typography Docs]]
-- [[_COMMUNITY_File Icon|File Icon]]
-- [[_COMMUNITY_Deployment Docs|Deployment Docs]]
+- [[_COMMUNITY_App Layout & Auth Client|App Layout & Auth Client]]
+- [[_COMMUNITY_Database Schema Types|Database Schema Types]]
+- [[_COMMUNITY_Combobox Component|Combobox Component]]
+- [[_COMMUNITY_Accordion & Avatar UI|Accordion & Avatar UI]]
+- [[_COMMUNITY_Mobile Hooks & Sheets|Mobile Hooks & Sheets]]
+- [[_COMMUNITY_Home Page Components|Home Page Components]]
+- [[_COMMUNITY_Shared UI Components|Shared UI Components]]
+- [[_COMMUNITY_Table Column Utilities|Table Column Utilities]]
+- [[_COMMUNITY_Error & Loading States|Error & Loading States]]
+- [[_COMMUNITY_Documentation & Architecture|Documentation & Architecture]]
+- [[_COMMUNITY_Path Aliases & Config|Path Aliases & Config]]
+- [[_COMMUNITY_User Preferences & Currency|User Preferences & Currency]]
+- [[_COMMUNITY_Button & Input Components|Button & Input Components]]
+- [[_COMMUNITY_Dialog & Card Components|Dialog & Card Components]]
+- [[_COMMUNITY_Form Field Components|Form Field Components]]
+- [[_COMMUNITY_Navigation & Menu Components|Navigation & Menu Components]]
+- [[_COMMUNITY_Carousel & Slider Components|Carousel & Slider Components]]
+- [[_COMMUNITY_Community 20|Community 20]]
+- [[_COMMUNITY_Community 21|Community 21]]
+- [[_COMMUNITY_Community 22|Community 22]]
+- [[_COMMUNITY_Community 23|Community 23]]
+- [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
+- [[_COMMUNITY_Community 26|Community 26]]
+- [[_COMMUNITY_Community 27|Community 27]]
+- [[_COMMUNITY_Community 28|Community 28]]
+- [[_COMMUNITY_Community 29|Community 29]]
+- [[_COMMUNITY_Community 30|Community 30]]
+- [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
+- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Community 36|Community 36]]
+- [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
+- [[_COMMUNITY_Community 39|Community 39]]
+- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
+- [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
+- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 51|Community 51]]
+- [[_COMMUNITY_Community 52|Community 52]]
+- [[_COMMUNITY_Community 53|Community 53]]
+- [[_COMMUNITY_Community 54|Community 54]]
+- [[_COMMUNITY_Community 55|Community 55]]
+- [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 57|Community 57]]
+- [[_COMMUNITY_Community 58|Community 58]]
+- [[_COMMUNITY_Community 59|Community 59]]
+- [[_COMMUNITY_Community 60|Community 60]]
+- [[_COMMUNITY_Community 61|Community 61]]
+- [[_COMMUNITY_Community 62|Community 62]]
+- [[_COMMUNITY_Community 63|Community 63]]
+- [[_COMMUNITY_Community 64|Community 64]]
+- [[_COMMUNITY_Community 65|Community 65]]
+- [[_COMMUNITY_Community 66|Community 66]]
+- [[_COMMUNITY_Community 67|Community 67]]
+- [[_COMMUNITY_Community 68|Community 68]]
+- [[_COMMUNITY_Community 69|Community 69]]
+- [[_COMMUNITY_Community 70|Community 70]]
+- [[_COMMUNITY_Community 71|Community 71]]
+- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 73|Community 73]]
+- [[_COMMUNITY_Community 74|Community 74]]
+- [[_COMMUNITY_Community 75|Community 75]]
+- [[_COMMUNITY_Community 76|Community 76]]
+- [[_COMMUNITY_Community 80|Community 80]]
+- [[_COMMUNITY_Community 81|Community 81]]
+- [[_COMMUNITY_Community 82|Community 82]]
+- [[_COMMUNITY_Community 83|Community 83]]
+- [[_COMMUNITY_Community 84|Community 84]]
+- [[_COMMUNITY_Community 85|Community 85]]
+- [[_COMMUNITY_Community 87|Community 87]]
+- [[_COMMUNITY_Community 88|Community 88]]
+- [[_COMMUNITY_Community 89|Community 89]]
+- [[_COMMUNITY_Community 90|Community 90]]
+- [[_COMMUNITY_Community 91|Community 91]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 335 edges
-2. `Button()` - 21 edges
-3. `compilerOptions` - 16 edges
-4. `useAuth()` - 11 edges
-5. `AuthHeader` - 8 edges
-6. `BottomNav` - 8 edges
-7. `AppHeader` - 8 edges
-8. `AuthButton` - 7 edges
-9. `Card()` - 7 edges
-10. `Separator()` - 7 edges
+1. `cn()` - 351 edges
+2. `Button()` - 23 edges
+3. `useAuth()` - 19 edges
+4. `compilerOptions` - 16 edges
+5. `columns` - 14 edges
+6. `AppHeader` - 13 edges
+7. `columns` - 13 edges
+8. `public.account` - 11 edges
+9. `public.session` - 11 edges
+10. `public.user` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Mobile-First Design Strategy` --implemented_by--> `app/layout.tsx`  [INFERRED]
+  CLAUDE.md → app/layout.tsx
+- `Next.js 16 Agent Rules` --semantically_similar_to--> `Next.js 16 Breaking Changes`  [INFERRED] [semantically similar]
+  AGENTS.md → CLAUDE.md
+- `DepositLoading()` --calls--> `cn()`  [EXTRACTED]
+  app/deposit/loading.tsx → lib/utils.ts
+- `Error()` --calls--> `cn()`  [EXTRACTED]
+  app/error.tsx → lib/utils.ts
 - `RootLayout()` --calls--> `cn()`  [EXTRACTED]
   app/layout.tsx → lib/utils.ts
-- `AuthScreensContent()` --calls--> `cn()`  [EXTRACTED]
-  app/login/page.tsx → lib/utils.ts
-- `CasinoHomePage()` --calls--> `cn()`  [EXTRACTED]
-  app/page.tsx → lib/utils.ts
-- `Accordion()` --calls--> `cn()`  [EXTRACTED]
-  components/ui/accordion.tsx → lib/utils.ts
-- `AccordionItem()` --calls--> `cn()`  [EXTRACTED]
-  components/ui/accordion.tsx → lib/utils.ts
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
-- **Definition of Done Requirements** — fallow_agile_workflow_dod, fallow_coding_standards, fallow_design_system [EXTRACTED 1.00]
-- **Component Development Conventions** — fallow_coding_standards_component_structure, fallow_coding_standards_import_order, fallow_coding_standards_styling, fallow_design_system_component_states [INFERRED 0.85]
-- **Design Token Hierarchy** — fallow_design_system_color_system, fallow_design_system_typography, fallow_design_system_spacing, fallow_design_system_border_radius [EXTRACTED 1.00]
-- **Modern Next.js Stack Configuration** — claude_nextjs_react_notes, claude_tailwind_v4, claude_shadcn_configuration, readme_font_optimization [EXTRACTED 0.85]
-- **Development Workflow Setup** — claude_development_commands, readme_getting_started, claude_path_aliases [EXTRACTED 0.80]
+- **tRPC Client-Server Architecture** — claudlibtrpc_client, claudlibtrpc_server, claudlibtrpc_types, claudlibtrpc_hooks, claudlibtrpc_index, claudserver_routers [INFERRED 0.85]
+- **Mobile-First Optimization Stack** — claude_mobilefirst, claude_mobilehandling, claudapp_layout, claudapp_globalscss, claudnext_config [INFERRED 0.85]
+- **Authentication Implementation Strategy** — claude_autharchitecture, claudhooks_useauth, claudmock_user, claude_mockprod, claudserver_routers [INFERRED 0.85]
+- **BC Brand Package** — public_icon_512_app_icon, public_icon_512_design_system, public_icon_512_brand_identity, public_icon_512_visual_element [EXTRACTED 1.00]
 
-## Communities (80 total, 34 thin omitted)
+## Communities (92 total, 17 thin omitted)
 
-### Community 0 - "Auth Login Components"
+### Community 0 - "Auth UI Components"
 Cohesion: 0.06
-Nodes (53): AuthHeader, AuthHeaderProps, DepositPage(), NAV_ITEMS, NETWORKS, PAYMENT_METHODS, FilterStatus, HistoryPage() (+45 more)
+Nodes (42): CollapsibleField, CollapsibleFieldProps, BottomNavProps, NavItem, CategoryTab, CategoryTabs, CategoryTabsProps, GameCard (+34 more)
 
-### Community 1 - "Home Page"
+### Community 1 - "Database & Drizzle ORM"
+Cohesion: 0.06
+Nodes (25): { GET, POST }, client, db, Account, accountRelations, NewAccount, NewSession, NewUser (+17 more)
+
+### Community 2 - "Package Dependencies"
+Cohesion: 0.04
+Nodes (50): dependencies, @base-ui/react, better-auth, @better-auth/drizzle-adapter, @better-auth/redis-storage, bullmq, class-variance-authority, clsx (+42 more)
+
+### Community 3 - "App Layout & Auth Client"
+Cohesion: 0.07
+Nodes (38): geistMono, geistSans, inter, metadata, RootLayout(), viewport, authClient, Session (+30 more)
+
+### Community 4 - "Database Schema Types"
+Cohesion: 0.04
+Nodes (49): default, name, notNull, primaryKey, type, balance, email, email_verified (+41 more)
+
+### Community 5 - "Combobox Component"
 Cohesion: 0.05
-Nodes (48): BIG_WINS, BOTTOM_NAV_ITEMS_WITH_ICONS, CasinoHomePage(), FEATURED_GAMES, GAME_CATEGORIES, NAV_ICONS, PROMO_BANNERS, CollapsibleField (+40 more)
+Nodes (38): ComboboxChip(), ComboboxChips(), ComboboxChipsInput(), ComboboxClear(), ComboboxContent(), ComboboxEmpty(), ComboboxGroup(), ComboboxInput() (+30 more)
 
-### Community 2 - "Combobox Components"
-Cohesion: 0.08
-Nodes (33): cn(), ComboboxChip(), ComboboxChips(), ComboboxChipsInput(), ComboboxClear(), ComboboxContent(), ComboboxEmpty(), ComboboxGroup() (+25 more)
+### Community 6 - "Accordion & Avatar UI"
+Cohesion: 0.07
+Nodes (36): cn(), Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), Avatar(), AvatarBadge(), AvatarFallback() (+28 more)
 
-### Community 3 - "Package Dependencies"
+### Community 7 - "Mobile Hooks & Sheets"
 Cohesion: 0.06
-Nodes (34): dependencies, @base-ui/react, class-variance-authority, clsx, cmdk, date-fns, embla-carousel-react, @hookform/resolvers (+26 more)
+Nodes (37): useIsMobile(), Sheet(), SheetContent(), SheetDescription(), SheetFooter(), SheetHeader(), SheetOverlay(), SheetTitle() (+29 more)
 
-### Community 4 - "Command Menu"
+### Community 8 - "Home Page Components"
+Cohesion: 0.08
+Nodes (31): BIG_WINS, BOTTOM_NAV_ITEMS_WITH_ICONS, CasinoHomePage(), FEATURED_GAMES, GAME_CATEGORIES, NAV_ICONS, PROMO_BANNERS, AuthInput (+23 more)
+
+### Community 9 - "Shared UI Components"
+Cohesion: 0.13
+Nodes (18): hoverTransition, AppHeaderProps, BalanceCardProps, DividerProps, GradientCard, GradientCardProps, MethodCard(), MethodCardProps (+10 more)
+
+### Community 10 - "Table Column Utilities"
+Cohesion: 0.08
+Nodes (25): columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom, tableTo, columns (+17 more)
+
+### Community 11 - "Error & Loading States"
+Cohesion: 0.13
+Nodes (15): Error(), Loading(), NotFound(), DepositLoading(), FilterStatus, HistoryPage(), NAV_ITEMS, TabValue (+7 more)
+
+### Community 12 - "Documentation & Architecture"
 Cohesion: 0.09
-Nodes (23): Command(), CommandDialog(), CommandEmpty(), CommandGroup(), CommandInput(), CommandItem(), CommandList(), CommandSeparator() (+15 more)
+Nodes (22): app/globals.css, app/layout.tsx, Intent Skills Loading System, Next.js 16 Agent Rules, Authentication Architecture, ClausBet Project, Component Organization Strategy, Multi-Currency and i18n Architecture (+14 more)
 
-### Community 5 - "Responsive Layout"
-Cohesion: 0.09
-Nodes (23): useIsMobile(), SidebarContent(), SidebarContext, SidebarContextProps, SidebarFooter(), SidebarGroup(), SidebarGroupAction(), SidebarGroupContent() (+15 more)
-
-### Community 6 - "Project Configuration"
+### Community 13 - "Path Aliases & Config"
 Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
-### Community 7 - "User Preferences"
+### Community 14 - "User Preferences & Currency"
 Cohesion: 0.15
 Nodes (17): CURRENCIES, CurrencyCode, CurrencyConfig, DEFAULT_USER_PREFERENCES, formatCurrency(), formatUserCurrency(), getCurrencyForLocale(), getCurrentCurrency() (+9 more)
 
-### Community 8 - "TypeScript Config"
-Cohesion: 0.10
-Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
+### Community 15 - "Button & Input Components"
+Cohesion: 0.09
+Nodes (22): checkConstraints, compositePrimaryKeys, foreignKeys, indexes, isRLSEnabled, name, policies, schema (+14 more)
 
-### Community 9 - "Button Group"
+### Community 16 - "Dialog & Card Components"
 Cohesion: 0.13
 Nodes (16): ButtonGroup(), ButtonGroupSeparator(), ButtonGroupText(), buttonGroupVariants, Field(), FieldContent(), FieldDescription(), FieldError() (+8 more)
 
-### Community 10 - "Menu Bar"
+### Community 17 - "Form Field Components"
+Cohesion: 0.10
+Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
+
+### Community 18 - "Navigation & Menu Components"
+Cohesion: 0.18
+Nodes (13): AuthButton, AuthButtonProps, authButtonVariants, AuthCheckboxProps, AuthHeader, AuthHeaderProps, AuthInputProps, INDIA_CODE (+5 more)
+
+### Community 19 - "Carousel & Slider Components"
+Cohesion: 0.22
+Nodes (8): OTPInput, OTPInputProps, Checkbox(), Input(), InputOTP(), InputOTPGroup(), InputOTPSlot(), Label()
+
+### Community 20 - "Community 20"
 Cohesion: 0.12
 Nodes (11): Menubar(), MenubarCheckboxItem(), MenubarContent(), MenubarItem(), MenubarLabel(), MenubarRadioItem(), MenubarSeparator(), MenubarShortcut() (+3 more)
 
-### Community 11 - "Context Menu"
+### Community 21 - "Community 21"
+Cohesion: 0.12
+Nodes (10): ForgotPasswordState, initialState, Step, Divider, initialState, SignInForm(), SignInFormProps, SignInMethod (+2 more)
+
+### Community 22 - "Community 22"
 Cohesion: 0.12
 Nodes (10): ContextMenuCheckboxItem(), ContextMenuContent(), ContextMenuItem(), ContextMenuLabel(), ContextMenuRadioItem(), ContextMenuSeparator(), ContextMenuShortcut(), ContextMenuSubContent() (+2 more)
 
-### Community 12 - "Dropdown Menu"
+### Community 23 - "Community 23"
 Cohesion: 0.12
 Nodes (9): DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel(), DropdownMenuRadioItem(), DropdownMenuSeparator(), DropdownMenuShortcut(), DropdownMenuSubContent() (+1 more)
 
-### Community 13 - "App Layout"
-Cohesion: 0.16
-Nodes (11): geistMono, geistSans, inter, metadata, RootLayout(), viewport, Toaster(), Tooltip() (+3 more)
-
-### Community 14 - "Auth Buttons"
-Cohesion: 0.25
-Nodes (10): AuthButton, AuthButtonProps, authButtonVariants, AuthInputProps, MethodToggle, MethodToggleProps, SignInMethod, SocialButtons (+2 more)
-
-### Community 15 - "Carousel"
+### Community 24 - "Community 24"
 Cohesion: 0.19
 Nodes (13): Carousel(), CarouselApi, CarouselContent(), CarouselContext, CarouselContextProps, CarouselItem(), CarouselNext(), CarouselOptions (+5 more)
 
-### Community 16 - "Auth Checkbox"
-Cohesion: 0.26
-Nodes (6): AuthCheckbox, AuthCheckboxProps, Checkbox(), Input(), Label(), Slider()
+### Community 25 - "Community 25"
+Cohesion: 0.15
+Nodes (13): devDependencies, eslint, eslint-config-next, jsdom, prettier, tailwindcss, @tailwindcss/postcss, @types/node (+5 more)
 
-### Community 17 - "App Manifest"
+### Community 26 - "Community 26"
 Cohesion: 0.15
 Nodes (12): background_color, categories, description, display, icons, name, orientation, scope (+4 more)
 
-### Community 18 - "Alert Dialog"
+### Community 27 - "Community 27"
 Cohesion: 0.15
 Nodes (9): AlertDialogAction(), AlertDialogCancel(), AlertDialogContent(), AlertDialogDescription(), AlertDialogFooter(), AlertDialogHeader(), AlertDialogMedia(), AlertDialogOverlay() (+1 more)
 
-### Community 19 - "Chart Components"
+### Community 28 - "Community 28"
 Cohesion: 0.18
 Nodes (10): ChartConfig, ChartContainer(), ChartContext, ChartContextProps, ChartLegendContent(), ChartTooltipContent(), INITIAL_DIMENSION, THEMES (+2 more)
 
-### Community 20 - "Item Components"
+### Community 29 - "Community 29"
 Cohesion: 0.18
 Nodes (12): Item(), ItemActions(), ItemContent(), ItemDescription(), ItemFooter(), ItemGroup(), ItemHeader(), ItemMedia() (+4 more)
 
-### Community 21 - "Drawer"
+### Community 30 - "Community 30"
+Cohesion: 0.25
+Nodes (9): AuthTabs, AuthTabsProps, TabValue, tabTransition, Tabs(), TabsContent(), TabsList(), tabsListVariants (+1 more)
+
+### Community 31 - "Community 31"
+Cohesion: 0.27
+Nodes (8): MethodToggle, MethodToggleProps, SignInMethod, ToggleGroup(), ToggleGroupContext, ToggleGroupItem(), Toggle(), toggleVariants
+
+### Community 32 - "Community 32"
+Cohesion: 0.18
+Nodes (10): dialect, enums, id, policies, prevId, roles, schemas, sequences (+2 more)
+
+### Community 33 - "Community 33"
+Cohesion: 0.18
+Nodes (11): name, notNull, primaryKey, type, access_token_expires_at, password, name, notNull (+3 more)
+
+### Community 34 - "Community 34"
+Cohesion: 0.18
+Nodes (11): identifier, value, name, notNull, primaryKey, type, columns, name (+3 more)
+
+### Community 35 - "Community 35"
+Cohesion: 0.18
+Nodes (11): ip_address, token, name, notNull, primaryKey, type, columns, name (+3 more)
+
+### Community 36 - "Community 36"
 Cohesion: 0.18
 Nodes (6): DrawerContent(), DrawerDescription(), DrawerFooter(), DrawerHeader(), DrawerOverlay(), DrawerTitle()
 
-### Community 22 - "Select Components"
+### Community 37 - "Community 37"
 Cohesion: 0.18
 Nodes (8): SelectContent(), SelectGroup(), SelectItem(), SelectLabel(), SelectScrollDownButton(), SelectScrollUpButton(), SelectSeparator(), SelectTrigger()
 
-### Community 23 - "Sheet"
-Cohesion: 0.18
-Nodes (7): Sheet(), SheetContent(), SheetDescription(), SheetFooter(), SheetHeader(), SheetOverlay(), SheetTitle()
-
-### Community 24 - "Auth Tabs"
+### Community 38 - "Community 38"
 Cohesion: 0.20
-Nodes (6): AuthInput, AuthTabs, tabTransition, tabVariants, AuthScreensContent(), TabValue
+Nodes (7): AuthCheckbox, initialState, SignUpState, SignUpStep1Props, SignUpStep2Props, Step, TabValue
 
-### Community 25 - "Dev Dependencies"
-Cohesion: 0.20
-Nodes (10): devDependencies, eslint, eslint-config-next, prettier, tailwindcss, @tailwindcss/postcss, @types/node, @types/react (+2 more)
-
-### Community 26 - "Navigation Menu"
+### Community 39 - "Community 39"
 Cohesion: 0.22
 Nodes (9): NavigationMenu(), NavigationMenuContent(), NavigationMenuIndicator(), NavigationMenuItem(), NavigationMenuLink(), NavigationMenuList(), NavigationMenuTrigger(), navigationMenuTriggerStyle (+1 more)
 
-### Community 27 - "Auth Tabs Props"
-Cohesion: 0.33
-Nodes (7): AuthTabsProps, TabValue, Tabs(), TabsContent(), TabsList(), tabsListVariants, TabsTrigger()
+### Community 40 - "Community 40"
+Cohesion: 0.22
+Nodes (9): session_user_id_user_id_fk, foreignKeys, columnsFrom, columnsTo, name, onDelete, onUpdate, tableFrom (+1 more)
 
-### Community 28 - "Package Config"
+### Community 41 - "Community 41"
+Cohesion: 0.22
+Nodes (9): checkConstraints, compositePrimaryKeys, foreignKeys, isRLSEnabled, name, policies, schema, uniqueConstraints (+1 more)
+
+### Community 42 - "Community 42"
 Cohesion: 0.22
 Nodes (8): name, private, scripts, build, dev, lint, start, version
 
-### Community 29 - "Pagination"
+### Community 43 - "Community 43"
 Cohesion: 0.22
 Nodes (7): Pagination(), PaginationContent(), PaginationEllipsis(), PaginationLink(), PaginationLinkProps, PaginationNext(), PaginationPrevious()
 
-### Community 30 - "OTP Input"
-Cohesion: 0.36
-Nodes (5): OTPInput, OTPInputProps, InputOTP(), InputOTPGroup(), InputOTPSlot()
-
-### Community 31 - "Breadcrumb"
+### Community 44 - "Community 44"
 Cohesion: 0.25
-Nodes (7): Breadcrumb(), BreadcrumbEllipsis(), BreadcrumbItem(), BreadcrumbLink(), BreadcrumbList(), BreadcrumbPage(), BreadcrumbSeparator()
+Nodes (7): account, accountRelations, session, sessionRelations, user, userRelations, verification
 
-### Community 32 - "Empty States"
+### Community 45 - "Community 45"
+Cohesion: 0.25
+Nodes (8): session_userId_idx, indexes, columns, concurrently, isUnique, method, name, with
+
+### Community 46 - "Community 46"
+Cohesion: 0.25
+Nodes (8): verification_identifier_idx, indexes, columns, concurrently, isUnique, method, name, with
+
+### Community 47 - "Community 47"
+Cohesion: 0.25
+Nodes (8): checkConstraints, compositePrimaryKeys, isRLSEnabled, name, policies, schema, tables, public.session
+
+### Community 48 - "Community 48"
 Cohesion: 0.29
 Nodes (7): Empty(), EmptyContent(), EmptyDescription(), EmptyHeader(), EmptyMedia(), emptyMediaVariants, EmptyTitle()
 
-### Community 33 - "Popover"
+### Community 49 - "Community 49"
 Cohesion: 0.25
 Nodes (4): PopoverContent(), PopoverDescription(), PopoverHeader(), PopoverTitle()
 
-### Community 34 - "Avatar"
-Cohesion: 0.29
-Nodes (6): Avatar(), AvatarBadge(), AvatarFallback(), AvatarGroup(), AvatarGroupCount(), AvatarImage()
+### Community 50 - "Community 50"
+Cohesion: 0.38
+Nodes (6): createIcon(), fs, generateIcons(), path, publicDir, sharp
 
-### Community 35 - "Toggle"
-Cohesion: 0.43
-Nodes (5): ToggleGroup(), ToggleGroupContext, ToggleGroupItem(), Toggle(), toggleVariants
+### Community 51 - "Community 51"
+Cohesion: 0.33
+Nodes (6): created_at, default, name, notNull, primaryKey, type
 
-### Community 36 - "Alert"
+### Community 52 - "Community 52"
 Cohesion: 0.40
 Nodes (5): Alert(), AlertAction(), AlertDescription(), AlertTitle(), alertVariants
 
-### Community 37 - "Sidebar Menu"
-Cohesion: 0.33
-Nodes (6): Sidebar(), SidebarMenuButton(), sidebarMenuButtonVariants, SidebarRail(), SidebarTrigger(), useSidebar()
-
-### Community 38 - "Accordion"
+### Community 53 - "Community 53"
 Cohesion: 0.40
-Nodes (4): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger()
+Nodes (5): name, notNull, primaryKey, type, access_token
 
-### Community 39 - "Native Select"
+### Community 54 - "Community 54"
+Cohesion: 0.40
+Nodes (5): name, notNull, primaryKey, type, account_id
+
+### Community 55 - "Community 55"
+Cohesion: 0.40
+Nodes (5): expires_at, name, notNull, primaryKey, type
+
+### Community 56 - "Community 56"
+Cohesion: 0.40
+Nodes (5): id, name, notNull, primaryKey, type
+
+### Community 57 - "Community 57"
+Cohesion: 0.40
+Nodes (5): id_token, name, notNull, primaryKey, type
+
+### Community 58 - "Community 58"
+Cohesion: 0.40
+Nodes (5): provider_id, name, notNull, primaryKey, type
+
+### Community 59 - "Community 59"
+Cohesion: 0.40
+Nodes (5): refresh_token, name, notNull, primaryKey, type
+
+### Community 60 - "Community 60"
+Cohesion: 0.40
+Nodes (5): refresh_token_expires_at, name, notNull, primaryKey, type
+
+### Community 61 - "Community 61"
+Cohesion: 0.40
+Nodes (5): scope, name, notNull, primaryKey, type
+
+### Community 62 - "Community 62"
+Cohesion: 0.40
+Nodes (5): updated_at, name, notNull, primaryKey, type
+
+### Community 63 - "Community 63"
+Cohesion: 0.40
+Nodes (5): user_agent, name, notNull, primaryKey, type
+
+### Community 64 - "Community 64"
+Cohesion: 0.40
+Nodes (5): user_id, name, notNull, primaryKey, type
+
+### Community 65 - "Community 65"
+Cohesion: 0.40
+Nodes (5): uniqueConstraints, columns, name, nullsNotDistinct, session_token_unique
+
+### Community 66 - "Community 66"
 Cohesion: 0.40
 Nodes (4): NativeSelect(), NativeSelectOptGroup(), NativeSelectOption(), NativeSelectProps
 
-### Community 40 - "Agile Workflow Docs"
+### Community 67 - "Community 67"
 Cohesion: 0.50
-Nodes (4): Definition of Done (DoD), Definition of Ready (DoR), Coding Standards & Conventions, Design System Guidelines
+Nodes (4): _meta, columns, schemas, tables
 
-### Community 41 - "Design System Docs"
+### Community 68 - "Community 68"
 Cohesion: 0.50
-Nodes (4): Styling Conventions, Color System, Dark Mode Implementation, Design Tokens
+Nodes (3): dialect, entries, version
 
-### Community 44 - "Framework Docs"
-Cohesion: 0.67
-Nodes (3): Next.js Breaking Changes Warning, Next.js 16 React 19 Critical Notes, Claude Code Project Guidance
+### Community 69 - "Community 69"
+Cohesion: 0.83
+Nodes (4): BC App Icon, BC Brand Identity, App Icon Design System, Green Background with White Text
 
-### Community 45 - "Development Docs"
+### Community 72 - "Community 72"
 Cohesion: 0.67
-Nodes (3): Component Development Patterns, Shadcn/ui Configuration, Tailwind CSS v4 Configuration
+Nodes (3): ClausBet Application Logo/Icon, BC Brand Identity Design, Minimalist Green Logo Design Pattern
 
 ## Knowledge Gaps
-- **183 isolated node(s):** `PAYMENT_METHODS`, `NETWORKS`, `NAV_ITEMS`, `TabValue`, `FilterStatus` (+178 more)
+- **447 isolated node(s):** `{ GET, POST }`, `PAYMENT_CATEGORIES`, `NAV_ITEMS`, `Step`, `ForgotPasswordState` (+442 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Combobox Components` to `Auth Login Components`, `Home Page`, `Command Menu`, `Responsive Layout`, `Button Group`, `Menu Bar`, `Context Menu`, `Dropdown Menu`, `App Layout`, `Auth Buttons`, `Carousel`, `Auth Checkbox`, `Alert Dialog`, `Chart Components`, `Item Components`, `Drawer`, `Select Components`, `Sheet`, `Auth Tabs`, `Navigation Menu`, `Auth Tabs Props`, `Pagination`, `OTP Input`, `Breadcrumb`, `Empty States`, `Popover`, `Avatar`, `Toggle`, `Alert`, `Sidebar Menu`, `Accordion`, `Native Select`, `Hover Card`, `Resizable`, `Badge`?**
-  _High betweenness centrality (0.470) - this node is a cross-community bridge._
-- **Why does `Button()` connect `Auth Login Components` to `Home Page`, `Combobox Components`, `Command Menu`, `Responsive Layout`, `Auth Buttons`, `Carousel`, `Alert Dialog`, `Sheet`, `Auth Tabs`, `Pagination`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `Package Dependencies` to `Package Config`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **What connects `PAYMENT_METHODS`, `NETWORKS`, `NAV_ITEMS` to the rest of the system?**
-  _214 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Auth Login Components` be split into smaller, more focused modules?**
-  _Cohesion score 0.056338028169014086 - nodes in this community are weakly interconnected._
-- **Should `Home Page` be split into smaller, more focused modules?**
-  _Cohesion score 0.0546448087431694 - nodes in this community are weakly interconnected._
-- **Should `Combobox Components` be split into smaller, more focused modules?**
-  _Cohesion score 0.07928118393234672 - nodes in this community are weakly interconnected._
+- **Why does `cn()` connect `Accordion & Avatar UI` to `Auth UI Components`, `App Layout & Auth Client`, `Combobox Component`, `Mobile Hooks & Sheets`, `Home Page Components`, `Shared UI Components`, `Error & Loading States`, `Dialog & Card Components`, `Navigation & Menu Components`, `Carousel & Slider Components`, `Community 20`, `Community 21`, `Community 22`, `Community 23`, `Community 24`, `Community 27`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 36`, `Community 37`, `Community 38`, `Community 39`, `Community 43`, `Community 48`, `Community 49`, `Community 52`, `Community 66`, `Community 70`, `Community 71`, `Community 73`?**
+  _High betweenness centrality (0.309) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `Package Dependencies` to `Community 42`, `App Layout & Auth Client`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **Why does `@trpc/server` connect `App Layout & Auth Client` to `Package Dependencies`?**
+  _High betweenness centrality (0.058) - this node is a cross-community bridge._
+- **What connects `{ GET, POST }`, `PAYMENT_CATEGORIES`, `NAV_ITEMS` to the rest of the system?**
+  _452 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Auth UI Components` be split into smaller, more focused modules?**
+  _Cohesion score 0.06219426974143955 - nodes in this community are weakly interconnected._
+- **Should `Database & Drizzle ORM` be split into smaller, more focused modules?**
+  _Cohesion score 0.05877551020408163 - nodes in this community are weakly interconnected._
+- **Should `Package Dependencies` be split into smaller, more focused modules?**
+  _Cohesion score 0.04 - nodes in this community are weakly interconnected._

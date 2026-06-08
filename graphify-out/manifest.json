@@ -1,572 +1,727 @@
 {
-  "/home/neo/game/client/app/deposit/page.tsx": {
-    "mtime": 1780731351.0929868,
-    "ast_hash": "a585cb4d82c1159a2d590199ac51a590",
-    "semantic_hash": "a585cb4d82c1159a2d590199ac51a590"
+  "/home/neo/clausbet/app/api/auth/[...auth]/route.ts": {
+    "mtime": 1780903333.7292485,
+    "ast_hash": "bd231f085c0ca37add0a18656935f5b8",
+    "semantic_hash": "bd231f085c0ca37add0a18656935f5b8"
   },
-  "/home/neo/game/client/app/history/page.tsx": {
-    "mtime": 1780731415.1857455,
-    "ast_hash": "e7f5dbee392444d728c59536ba4f6c53",
-    "semantic_hash": "e7f5dbee392444d728c59536ba4f6c53"
+  "/home/neo/clausbet/app/api/trpc/[trpc]/route.ts": {
+    "mtime": 1780910654.4006128,
+    "ast_hash": "f1f6d4fec84f2a77e9ee422f5c82711c",
+    "semantic_hash": "f1f6d4fec84f2a77e9ee422f5c82711c"
   },
-  "/home/neo/game/client/app/layout.tsx": {
-    "mtime": 1780555319.109134,
-    "ast_hash": "cc92800477ee96656da4e613b7a3573a",
-    "semantic_hash": "cc92800477ee96656da4e613b7a3573a"
+  "/home/neo/clausbet/app/deposit/loading.tsx": {
+    "mtime": 1780734812.7743928,
+    "ast_hash": "6772a96d9d37d80eff0bd1576b684ba3",
+    "semantic_hash": "6772a96d9d37d80eff0bd1576b684ba3"
   },
-  "/home/neo/game/client/app/login/page.tsx": {
-    "mtime": 1780731382.6091356,
-    "ast_hash": "4d54db46ae3abbd6b920b4471f074c2f",
-    "semantic_hash": "4d54db46ae3abbd6b920b4471f074c2f"
+  "/home/neo/clausbet/app/deposit/page.tsx": {
+    "mtime": 1780910738.9839602,
+    "ast_hash": "ca6c1b46e6483a229994c01c3f0de954",
+    "semantic_hash": "ca6c1b46e6483a229994c01c3f0de954"
   },
-  "/home/neo/game/client/app/more/page.tsx": {
-    "mtime": 1780731427.2462347,
-    "ast_hash": "6dc71e2edcadefa9213fd212c5b889bc",
-    "semantic_hash": "6dc71e2edcadefa9213fd212c5b889bc"
+  "/home/neo/clausbet/app/error.tsx": {
+    "mtime": 1780735203.579216,
+    "ast_hash": "44e359a850a740a46e6f77264e7115e9",
+    "semantic_hash": "44e359a850a740a46e6f77264e7115e9"
   },
-  "/home/neo/game/client/app/page.tsx": {
-    "mtime": 1780731086.45736,
-    "ast_hash": "4feb82ac504b0efdb71c473bbd053580",
-    "semantic_hash": "4feb82ac504b0efdb71c473bbd053580"
+  "/home/neo/clausbet/app/forgot-password/page.tsx": {
+    "mtime": 1780910779.9464507,
+    "ast_hash": "70e9d9c0ee06d1c5a361bff4e034efbb",
+    "semantic_hash": "70e9d9c0ee06d1c5a361bff4e034efbb"
   },
-  "/home/neo/game/client/app/profile/page.tsx": {
-    "mtime": 1780731365.4151924,
-    "ast_hash": "e221c83dc010884536739f7fb6984461",
-    "semantic_hash": "e221c83dc010884536739f7fb6984461"
+  "/home/neo/clausbet/app/history/page.tsx": {
+    "mtime": 1780910794.3019547,
+    "ast_hash": "cb06337081f5482c9957dce0aa25bffc",
+    "semantic_hash": "cb06337081f5482c9957dce0aa25bffc"
   },
-  "/home/neo/game/client/app/withdraw/page.tsx": {
-    "mtime": 1780626065.9161868,
-    "ast_hash": "ccc6f64abfea9eb4db98799c884c62fb",
-    "semantic_hash": "ccc6f64abfea9eb4db98799c884c62fb"
+  "/home/neo/clausbet/app/layout.tsx": {
+    "mtime": 1780910969.9784575,
+    "ast_hash": "e9bdeb80110cc326f5e40c2d1e3389d8",
+    "semantic_hash": "e9bdeb80110cc326f5e40c2d1e3389d8"
   },
-  "/home/neo/game/client/components.json": {
+  "/home/neo/clausbet/app/loading.tsx": {
+    "mtime": 1780904067.1010866,
+    "ast_hash": "0a43a3c4410dfe1526b91b0ebbc26955",
+    "semantic_hash": "0a43a3c4410dfe1526b91b0ebbc26955"
+  },
+  "/home/neo/clausbet/app/more/page.tsx": {
+    "mtime": 1780910781.5800707,
+    "ast_hash": "1a865d587ed13fba321f02c83cb068b4",
+    "semantic_hash": "1a865d587ed13fba321f02c83cb068b4"
+  },
+  "/home/neo/clausbet/app/not-found.tsx": {
+    "mtime": 1780734801.0274622,
+    "ast_hash": "854298b17abc0afe7ef9a62b137616c1",
+    "semantic_hash": "854298b17abc0afe7ef9a62b137616c1"
+  },
+  "/home/neo/clausbet/app/page.tsx": {
+    "mtime": 1780910783.5870214,
+    "ast_hash": "b9d87fa2733a260fff5c967c6ec08d1a",
+    "semantic_hash": "b9d87fa2733a260fff5c967c6ec08d1a"
+  },
+  "/home/neo/clausbet/app/profile/loading.tsx": {
+    "mtime": 1780734810.4084058,
+    "ast_hash": "74a6dfc0063ce6dfcf6f0cd4f1ed196f",
+    "semantic_hash": "74a6dfc0063ce6dfcf6f0cd4f1ed196f"
+  },
+  "/home/neo/clausbet/app/profile/page.tsx": {
+    "mtime": 1780910786.9226968,
+    "ast_hash": "5a7424938d7dafe1070a38ec3ee76005",
+    "semantic_hash": "5a7424938d7dafe1070a38ec3ee76005"
+  },
+  "/home/neo/clausbet/app/signin/page.tsx": {
+    "mtime": 1780913751.339091,
+    "ast_hash": "ebc9adfc784fcb58f71ca1dec0196de1",
+    "semantic_hash": "ebc9adfc784fcb58f71ca1dec0196de1"
+  },
+  "/home/neo/clausbet/app/signup/page.tsx": {
+    "mtime": 1780910784.8896253,
+    "ast_hash": "a188707bb881992b10f0b5bf1452601d",
+    "semantic_hash": "a188707bb881992b10f0b5bf1452601d"
+  },
+  "/home/neo/clausbet/app/withdraw/page.tsx": {
+    "mtime": 1780910789.331273,
+    "ast_hash": "97109ca44c3d9ab333b5bcc76d3f3f32",
+    "semantic_hash": "97109ca44c3d9ab333b5bcc76d3f3f32"
+  },
+  "/home/neo/clausbet/components.json": {
     "mtime": 1778991892.1890907,
     "ast_hash": "a0238eb4ceb9341a82b6e3640ca96743",
     "semantic_hash": "a0238eb4ceb9341a82b6e3640ca96743"
   },
-  "/home/neo/game/client/components/game/auth/auth-button.tsx": {
+  "/home/neo/clausbet/components/game/auth/auth-button.tsx": {
     "mtime": 1780731510.4290555,
     "ast_hash": "56fd458e5efcd84bc46fbe004778b0e7",
     "semantic_hash": "56fd458e5efcd84bc46fbe004778b0e7"
   },
-  "/home/neo/game/client/components/game/auth/auth-checkbox.tsx": {
+  "/home/neo/clausbet/components/game/auth/auth-checkbox.tsx": {
     "mtime": 1780551338.3976293,
     "ast_hash": "79ae03da725eb7ca06098b698c4929e8",
     "semantic_hash": "79ae03da725eb7ca06098b698c4929e8"
   },
-  "/home/neo/game/client/components/game/auth/auth-header.tsx": {
+  "/home/neo/clausbet/components/game/auth/auth-header.tsx": {
     "mtime": 1780553531.1045952,
     "ast_hash": "ddf1844802e511c936606375c2f9293c",
     "semantic_hash": "ddf1844802e511c936606375c2f9293c"
   },
-  "/home/neo/game/client/components/game/auth/auth-input.tsx": {
+  "/home/neo/clausbet/components/game/auth/auth-input.tsx": {
     "mtime": 1780551269.4179568,
     "ast_hash": "f9235c7ea75aabc792bf3368234fdcd7",
     "semantic_hash": "f9235c7ea75aabc792bf3368234fdcd7"
   },
-  "/home/neo/game/client/components/game/auth/auth-tabs.tsx": {
+  "/home/neo/clausbet/components/game/auth/auth-tabs.tsx": {
     "mtime": 1780553561.5941854,
     "ast_hash": "00be43bdcd09095c08298e5137546da5",
     "semantic_hash": "00be43bdcd09095c08298e5137546da5"
   },
-  "/home/neo/game/client/components/game/auth/collapsible-field.tsx": {
+  "/home/neo/clausbet/components/game/auth/collapsible-field.tsx": {
     "mtime": 1780551600.4371653,
     "ast_hash": "5adbf744562733d2ec32ffb07793f758",
     "semantic_hash": "5adbf744562733d2ec32ffb07793f758"
   },
-  "/home/neo/game/client/components/game/auth/index.ts": {
-    "mtime": 1780628571.0464995,
-    "ast_hash": "8ab4ddb69b6df63861604aca8135b420",
-    "semantic_hash": "8ab4ddb69b6df63861604aca8135b420"
+  "/home/neo/clausbet/components/game/auth/index.ts": {
+    "mtime": 1780733454.8475838,
+    "ast_hash": "f3b04d9ea572060a00418160ea2025e6",
+    "semantic_hash": "f3b04d9ea572060a00418160ea2025e6"
   },
-  "/home/neo/game/client/components/game/auth/method-toggle.tsx": {
+  "/home/neo/clausbet/components/game/auth/method-toggle.tsx": {
     "mtime": 1780551322.6288059,
     "ast_hash": "bca209f40c9c4ea2398df6bdf8a1b9e3",
     "semantic_hash": "bca209f40c9c4ea2398df6bdf8a1b9e3"
   },
-  "/home/neo/game/client/components/game/auth/social-buttons.tsx": {
-    "mtime": 1780551402.2218711,
-    "ast_hash": "c8e20bc87ff5c481a9fe39174279242d",
-    "semantic_hash": "c8e20bc87ff5c481a9fe39174279242d"
-  },
-  "/home/neo/game/client/components/game/home/bottom-nav.tsx": {
-    "mtime": 1780731226.1705945,
-    "ast_hash": "b8a5401c12554e2307829f6ce684db06",
-    "semantic_hash": "b8a5401c12554e2307829f6ce684db06"
-  },
-  "/home/neo/game/client/components/game/home/category-tabs.tsx": {
-    "mtime": 1780552580.1396797,
-    "ast_hash": "c5d9650a9de8d05948f11bc3faba60de",
-    "semantic_hash": "c5d9650a9de8d05948f11bc3faba60de"
-  },
-  "/home/neo/game/client/components/game/home/game-card.tsx": {
-    "mtime": 1780551491.0381663,
-    "ast_hash": "d966dc1ae6f4d129bd6042058c588969",
-    "semantic_hash": "d966dc1ae6f4d129bd6042058c588969"
-  },
-  "/home/neo/game/client/components/game/home/game-grid.tsx": {
-    "mtime": 1780550311.9386256,
-    "ast_hash": "4b8d40113ea33bb6085258fada690e1c",
-    "semantic_hash": "4b8d40113ea33bb6085258fada690e1c"
-  },
-  "/home/neo/game/client/components/game/home/index.ts": {
-    "mtime": 1780550361.520188,
-    "ast_hash": "c78527621f6015eb6163c50362b65090",
-    "semantic_hash": "c78527621f6015eb6163c50362b65090"
-  },
-  "/home/neo/game/client/components/game/home/promo-carousel.tsx": {
-    "mtime": 1780550275.2172058,
-    "ast_hash": "634095be84bb3b94ce1c10ad0310e024",
-    "semantic_hash": "634095be84bb3b94ce1c10ad0310e024"
-  },
-  "/home/neo/game/client/components/game/home/ticker-card.tsx": {
-    "mtime": 1780551506.4478886,
-    "ast_hash": "9d79a1dd1f9005272b2811db47ec58c6",
-    "semantic_hash": "9d79a1dd1f9005272b2811db47ec58c6"
-  },
-  "/home/neo/game/client/components/game/home/wins-ticker.tsx": {
-    "mtime": 1780550346.8570223,
-    "ast_hash": "6f00e3a93a532a97db6836e5c6414a66",
-    "semantic_hash": "6f00e3a93a532a97db6836e5c6414a66"
-  },
-  "/home/neo/game/client/components/game/index.ts": {
-    "mtime": 1780550675.806219,
-    "ast_hash": "5cdec266a0b5226111220f744dd3aacf",
-    "semantic_hash": "5cdec266a0b5226111220f744dd3aacf"
-  },
-  "/home/neo/game/client/components/game/shared/balance-card.tsx": {
-    "mtime": 1780555907.5662487,
-    "ast_hash": "f04836eb1a1d60b660869272d759354a",
-    "semantic_hash": "f04836eb1a1d60b660869272d759354a"
-  },
-  "/home/neo/game/client/components/game/shared/divider.tsx": {
-    "mtime": 1780551595.2469344,
-    "ast_hash": "a94be26fb5cebe462c38fb61e7f7f4c5",
-    "semantic_hash": "a94be26fb5cebe462c38fb61e7f7f4c5"
-  },
-  "/home/neo/game/client/components/game/shared/gradient-card.tsx": {
-    "mtime": 1780552615.7741098,
-    "ast_hash": "0f272eab9dc2baa660ddd816e8267f2e",
-    "semantic_hash": "0f272eab9dc2baa660ddd816e8267f2e"
-  },
-  "/home/neo/game/client/components/game/shared/index.ts": {
-    "mtime": 1780625970.2727652,
-    "ast_hash": "570e50d7e912f967f80d626c41567bdc",
-    "semantic_hash": "570e50d7e912f967f80d626c41567bdc"
-  },
-  "/home/neo/game/client/components/game/shared/method-card.tsx": {
-    "mtime": 1780556047.5821617,
-    "ast_hash": "d6380364a02f80af88607406b343d20b",
-    "semantic_hash": "d6380364a02f80af88607406b343d20b"
-  },
-  "/home/neo/game/client/components/game/shared/transaction-item.tsx": {
-    "mtime": 1780623580.931871,
-    "ast_hash": "a11a74a5a3788cf1c572273ff7c4ab4e",
-    "semantic_hash": "a11a74a5a3788cf1c572273ff7c4ab4e"
-  },
-  "/home/neo/game/client/components/lib/game-animations.ts": {
-    "mtime": 1780550084.7769814,
-    "ast_hash": "1398ac4ed877fc9b5009c3ffe07e1782",
-    "semantic_hash": "1398ac4ed877fc9b5009c3ffe07e1782"
-  },
-  "/home/neo/game/client/components/ui/accordion.tsx": {
-    "mtime": 1780544355.6077192,
-    "ast_hash": "920ce9582ece6b7dc4ee3d162b8333ad",
-    "semantic_hash": "920ce9582ece6b7dc4ee3d162b8333ad"
-  },
-  "/home/neo/game/client/components/ui/alert-dialog.tsx": {
-    "mtime": 1780544355.6061394,
-    "ast_hash": "65179d610cf06fa925439f4ae7bca908",
-    "semantic_hash": "65179d610cf06fa925439f4ae7bca908"
-  },
-  "/home/neo/game/client/components/ui/alert.tsx": {
-    "mtime": 1780544355.603156,
-    "ast_hash": "739c28799fae98b4fa01132494788e85",
-    "semantic_hash": "739c28799fae98b4fa01132494788e85"
-  },
-  "/home/neo/game/client/components/ui/aspect-ratio.tsx": {
-    "mtime": 1780544355.6128592,
-    "ast_hash": "c6d85ec0522899c5da67ffdae8b4f3ea",
-    "semantic_hash": "c6d85ec0522899c5da67ffdae8b4f3ea"
-  },
-  "/home/neo/game/client/components/ui/avatar.tsx": {
-    "mtime": 1780544355.5980892,
-    "ast_hash": "b48244919ef33575fecf5509063b7310",
-    "semantic_hash": "b48244919ef33575fecf5509063b7310"
-  },
-  "/home/neo/game/client/components/ui/badge.tsx": {
-    "mtime": 1780544355.5948088,
-    "ast_hash": "633c33997e6137921ae433dd2dd0cb31",
-    "semantic_hash": "633c33997e6137921ae433dd2dd0cb31"
-  },
-  "/home/neo/game/client/components/ui/breadcrumb.tsx": {
-    "mtime": 1780544355.6098316,
-    "ast_hash": "f42f6a0073354a8cf89f9d1123660c65",
-    "semantic_hash": "f42f6a0073354a8cf89f9d1123660c65"
-  },
-  "/home/neo/game/client/components/ui/button-group.tsx": {
-    "mtime": 1780544355.602846,
-    "ast_hash": "74a606b91a9f8d135c4dd82b9eb44c63",
-    "semantic_hash": "74a606b91a9f8d135c4dd82b9eb44c63"
-  },
-  "/home/neo/game/client/components/ui/button.tsx": {
-    "mtime": 1780731525.2948217,
-    "ast_hash": "88010ac9bfcb7b7937ab2d84fd968284",
-    "semantic_hash": "88010ac9bfcb7b7937ab2d84fd968284"
-  },
-  "/home/neo/game/client/components/ui/calendar.tsx": {
-    "mtime": 1780624170.2708688,
-    "ast_hash": "30e95e45ffdcae68cdd17b922c0f96ac",
-    "semantic_hash": "30e95e45ffdcae68cdd17b922c0f96ac"
-  },
-  "/home/neo/game/client/components/ui/card.tsx": {
-    "mtime": 1780544355.6126747,
-    "ast_hash": "77a10bd948ca424972a28e704a3df604",
-    "semantic_hash": "77a10bd948ca424972a28e704a3df604"
-  },
-  "/home/neo/game/client/components/ui/carousel.tsx": {
-    "mtime": 1780544355.6069412,
-    "ast_hash": "0267b73e177c079adecf87c826d5b59c",
-    "semantic_hash": "0267b73e177c079adecf87c826d5b59c"
-  },
-  "/home/neo/game/client/components/ui/chart.tsx": {
-    "mtime": 1780544355.5928795,
-    "ast_hash": "ea3aef621225b35027a63a606b632c54",
-    "semantic_hash": "ea3aef621225b35027a63a606b632c54"
-  },
-  "/home/neo/game/client/components/ui/checkbox.tsx": {
-    "mtime": 1780544355.6108851,
-    "ast_hash": "09073231ed001b522fd23911b54ae2f5",
-    "semantic_hash": "09073231ed001b522fd23911b54ae2f5"
-  },
-  "/home/neo/game/client/components/ui/collapsible.tsx": {
-    "mtime": 1780544355.588532,
-    "ast_hash": "d3bc158594b1f19fd28d9868792d17f1",
-    "semantic_hash": "d3bc158594b1f19fd28d9868792d17f1"
-  },
-  "/home/neo/game/client/components/ui/combobox.tsx": {
-    "mtime": 1780544355.6111171,
-    "ast_hash": "c91894eecd4823e1758dd4655e73556a",
-    "semantic_hash": "c91894eecd4823e1758dd4655e73556a"
-  },
-  "/home/neo/game/client/components/ui/command.tsx": {
-    "mtime": 1780544355.588849,
-    "ast_hash": "85d2b0196c4906103cc6832a793e5fba",
-    "semantic_hash": "85d2b0196c4906103cc6832a793e5fba"
-  },
-  "/home/neo/game/client/components/ui/context-menu.tsx": {
-    "mtime": 1780544355.5891535,
-    "ast_hash": "5c67efd6edae4e0d8b9eb4bf820d7713",
-    "semantic_hash": "5c67efd6edae4e0d8b9eb4bf820d7713"
-  },
-  "/home/neo/game/client/components/ui/dialog.tsx": {
-    "mtime": 1780544355.5895143,
-    "ast_hash": "e01132db6e9067b7b8cc2e322fdd34ff",
-    "semantic_hash": "e01132db6e9067b7b8cc2e322fdd34ff"
-  },
-  "/home/neo/game/client/components/ui/direction.tsx": {
-    "mtime": 1780544355.595215,
-    "ast_hash": "87b2e543828b0ac3444de56cfd0016d0",
-    "semantic_hash": "87b2e543828b0ac3444de56cfd0016d0"
-  },
-  "/home/neo/game/client/components/ui/drawer.tsx": {
-    "mtime": 1780544355.6087487,
-    "ast_hash": "ecce2b5100dd3d8a11f15fcc20fa33dd",
-    "semantic_hash": "ecce2b5100dd3d8a11f15fcc20fa33dd"
-  },
-  "/home/neo/game/client/components/ui/dropdown-menu.tsx": {
-    "mtime": 1780544355.5809205,
-    "ast_hash": "63fc04368c0f92980d3ab4ae34f01a18",
-    "semantic_hash": "63fc04368c0f92980d3ab4ae34f01a18"
-  },
-  "/home/neo/game/client/components/ui/empty.tsx": {
-    "mtime": 1780544355.6093597,
-    "ast_hash": "ca7063724c4b1e81d8f1337e8236a1d8",
-    "semantic_hash": "ca7063724c4b1e81d8f1337e8236a1d8"
-  },
-  "/home/neo/game/client/components/ui/field.tsx": {
-    "mtime": 1780544355.602465,
-    "ast_hash": "1b038d62623c29946f57e746fb89cc7e",
-    "semantic_hash": "1b038d62623c29946f57e746fb89cc7e"
-  },
-  "/home/neo/game/client/components/ui/hover-card.tsx": {
-    "mtime": 1780544355.6021397,
-    "ast_hash": "cc8cde9ca4bf5ced50ce3c4106268446",
-    "semantic_hash": "cc8cde9ca4bf5ced50ce3c4106268446"
-  },
-  "/home/neo/game/client/components/ui/input-group.tsx": {
-    "mtime": 1780544355.6104348,
-    "ast_hash": "750fe82601c39e80407e4b8d9f77a082",
-    "semantic_hash": "750fe82601c39e80407e4b8d9f77a082"
-  },
-  "/home/neo/game/client/components/ui/input-otp.tsx": {
-    "mtime": 1780544355.6083856,
-    "ast_hash": "561abe4157d9e73c23f7ea7c38f4bd86",
-    "semantic_hash": "561abe4157d9e73c23f7ea7c38f4bd86"
-  },
-  "/home/neo/game/client/components/ui/input.tsx": {
-    "mtime": 1780731506.8120005,
-    "ast_hash": "f9e6ca9f19f6bcdc83aef6fd138198bd",
-    "semantic_hash": "f9e6ca9f19f6bcdc83aef6fd138198bd"
-  },
-  "/home/neo/game/client/components/ui/item.tsx": {
-    "mtime": 1780544355.5898006,
-    "ast_hash": "53f9c4da2abe404e7d82ac0511d42ec9",
-    "semantic_hash": "53f9c4da2abe404e7d82ac0511d42ec9"
-  },
-  "/home/neo/game/client/components/ui/kbd.tsx": {
-    "mtime": 1780544355.5733528,
-    "ast_hash": "f8d9503a392bc89df024bc8eb65afad5",
-    "semantic_hash": "f8d9503a392bc89df024bc8eb65afad5"
-  },
-  "/home/neo/game/client/components/ui/label.tsx": {
-    "mtime": 1780544355.584044,
-    "ast_hash": "e7e0c4ad98f3485ecd3c0ca516d0a8bf",
-    "semantic_hash": "e7e0c4ad98f3485ecd3c0ca516d0a8bf"
-  },
-  "/home/neo/game/client/components/ui/menubar.tsx": {
-    "mtime": 1780544355.6100583,
-    "ast_hash": "eef04b40c08761d7a8eba60753ddc865",
-    "semantic_hash": "eef04b40c08761d7a8eba60753ddc865"
-  },
-  "/home/neo/game/client/components/ui/native-select.tsx": {
-    "mtime": 1780544355.6106894,
-    "ast_hash": "8ecaa1257740ed8c6d6da39076f4a30f",
-    "semantic_hash": "8ecaa1257740ed8c6d6da39076f4a30f"
-  },
-  "/home/neo/game/client/components/ui/navigation-menu.tsx": {
-    "mtime": 1780544355.6040003,
-    "ast_hash": "436040fc0195505929894098cada67e4",
-    "semantic_hash": "436040fc0195505929894098cada67e4"
-  },
-  "/home/neo/game/client/components/ui/pagination.tsx": {
-    "mtime": 1780544355.6122239,
-    "ast_hash": "27545e936f6d225a1dfab57fa98fab98",
-    "semantic_hash": "27545e936f6d225a1dfab57fa98fab98"
-  },
-  "/home/neo/game/client/components/ui/popover.tsx": {
-    "mtime": 1780544355.5802627,
-    "ast_hash": "32bf79a82d9ed7f3256592f7c0ca4a62",
-    "semantic_hash": "32bf79a82d9ed7f3256592f7c0ca4a62"
-  },
-  "/home/neo/game/client/components/ui/progress.tsx": {
-    "mtime": 1780544355.5806155,
-    "ast_hash": "656a678d379ff2132dd1855b2359cc1c",
-    "semantic_hash": "656a678d379ff2132dd1855b2359cc1c"
-  },
-  "/home/neo/game/client/components/ui/radio-group.tsx": {
-    "mtime": 1780544355.5950146,
-    "ast_hash": "8853af40e6ead29cdafb52c93848aee1",
-    "semantic_hash": "8853af40e6ead29cdafb52c93848aee1"
-  },
-  "/home/neo/game/client/components/ui/resizable.tsx": {
-    "mtime": 1780544355.6042726,
-    "ast_hash": "1f0f385519b1d48a14bfb81158385403",
-    "semantic_hash": "1f0f385519b1d48a14bfb81158385403"
-  },
-  "/home/neo/game/client/components/ui/scroll-area.tsx": {
-    "mtime": 1780544355.6050692,
-    "ast_hash": "5a04c269a377e8176ebbf27ee8ac35bf",
-    "semantic_hash": "5a04c269a377e8176ebbf27ee8ac35bf"
-  },
-  "/home/neo/game/client/components/ui/select.tsx": {
-    "mtime": 1780544355.6034641,
-    "ast_hash": "611b5699ced6aad54c9a0e8cb865da7f",
-    "semantic_hash": "611b5699ced6aad54c9a0e8cb865da7f"
-  },
-  "/home/neo/game/client/components/ui/separator.tsx": {
-    "mtime": 1780544355.609601,
-    "ast_hash": "f57449eae78fbd87d99e4edc45ab3c1e",
-    "semantic_hash": "f57449eae78fbd87d99e4edc45ab3c1e"
-  },
-  "/home/neo/game/client/components/ui/sheet.tsx": {
-    "mtime": 1780544355.58288,
-    "ast_hash": "136091919ca01aa135e9413cc05b2d23",
-    "semantic_hash": "136091919ca01aa135e9413cc05b2d23"
-  },
-  "/home/neo/game/client/components/ui/sidebar.tsx": {
-    "mtime": 1780544355.6045237,
-    "ast_hash": "b18963e32ea81086b494ce273436abf3",
-    "semantic_hash": "b18963e32ea81086b494ce273436abf3"
-  },
-  "/home/neo/game/client/components/ui/skeleton.tsx": {
-    "mtime": 1780544355.5968795,
-    "ast_hash": "0e6e825c43d858d98c9903f4da975382",
-    "semantic_hash": "0e6e825c43d858d98c9903f4da975382"
-  },
-  "/home/neo/game/client/components/ui/slider.tsx": {
-    "mtime": 1780544355.605856,
-    "ast_hash": "5345e0c724b2ee363ba117f5c5e3c7ec",
-    "semantic_hash": "5345e0c724b2ee363ba117f5c5e3c7ec"
-  },
-  "/home/neo/game/client/components/ui/sonner.tsx": {
-    "mtime": 1780544355.605277,
-    "ast_hash": "f46214bc2a6a5153a6e04fad523d5587",
-    "semantic_hash": "f46214bc2a6a5153a6e04fad523d5587"
-  },
-  "/home/neo/game/client/components/ui/spinner.tsx": {
-    "mtime": 1780544355.611726,
-    "ast_hash": "fd059d59ffd918b682307fc84fcb38e8",
-    "semantic_hash": "fd059d59ffd918b682307fc84fcb38e8"
-  },
-  "/home/neo/game/client/components/ui/switch.tsx": {
-    "mtime": 1780544355.5843053,
-    "ast_hash": "5cc42175a3e9b6f20f1d48960bd55158",
-    "semantic_hash": "5cc42175a3e9b6f20f1d48960bd55158"
-  },
-  "/home/neo/game/client/components/ui/table.tsx": {
-    "mtime": 1780544355.5900795,
-    "ast_hash": "44f87727e60080863edb00fdd2fcd8da",
-    "semantic_hash": "44f87727e60080863edb00fdd2fcd8da"
-  },
-  "/home/neo/game/client/components/ui/tabs.tsx": {
-    "mtime": 1780544355.6055794,
-    "ast_hash": "485d47f9e6f866e564685e6584e1e747",
-    "semantic_hash": "485d47f9e6f866e564685e6584e1e747"
-  },
-  "/home/neo/game/client/components/ui/textarea.tsx": {
-    "mtime": 1780544355.5812435,
-    "ast_hash": "d448d2a90e48542e51b93a1189127bf2",
-    "semantic_hash": "d448d2a90e48542e51b93a1189127bf2"
-  },
-  "/home/neo/game/client/components/ui/toggle-group.tsx": {
-    "mtime": 1780544355.6080637,
-    "ast_hash": "dda8b0ac114e4c4f456efa5a651b39a3",
-    "semantic_hash": "dda8b0ac114e4c4f456efa5a651b39a3"
-  },
-  "/home/neo/game/client/components/ui/toggle.tsx": {
-    "mtime": 1780544355.6119847,
-    "ast_hash": "6556d3814933e92ddef27a765a3a09fa",
-    "semantic_hash": "6556d3814933e92ddef27a765a3a09fa"
-  },
-  "/home/neo/game/client/components/ui/tooltip.tsx": {
-    "mtime": 1780544355.6124501,
-    "ast_hash": "b0b931c1a15ec3924fa5fecebaa15685",
-    "semantic_hash": "b0b931c1a15ec3924fa5fecebaa15685"
-  },
-  "/home/neo/game/client/eslint.config.mjs": {
-    "mtime": 1778990692.0524526,
-    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
-    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
-  },
-  "/home/neo/game/client/hooks/use-auto-scroll.ts": {
-    "mtime": 1780624218.8921552,
-    "ast_hash": "219f9e5223440385cbe116cde93f9d18",
-    "semantic_hash": "219f9e5223440385cbe116cde93f9d18"
-  },
-  "/home/neo/game/client/hooks/use-mobile.ts": {
-    "mtime": 1780296123.5867484,
-    "ast_hash": "209b5193af16624cdd89d3591480dd48",
-    "semantic_hash": "209b5193af16624cdd89d3591480dd48"
-  },
-  "/home/neo/game/client/lib/utils.ts": {
-    "mtime": 1778992015.0940688,
-    "ast_hash": "5a6fd53fdcf2be529e9cc0b718fde352",
-    "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
-  },
-  "/home/neo/game/client/next.config.ts": {
-    "mtime": 1780730712.4727468,
-    "ast_hash": "e04e73e1048b9787854d87a0afd59b36",
-    "semantic_hash": "e04e73e1048b9787854d87a0afd59b36"
-  },
-  "/home/neo/game/client/package.json": {
-    "mtime": 1780542160.9464426,
-    "ast_hash": "5bdea4538f2573f656eb05f68ce24767",
-    "semantic_hash": "5bdea4538f2573f656eb05f68ce24767"
-  },
-  "/home/neo/game/client/postcss.config.mjs": {
-    "mtime": 1778990692.0524526,
-    "ast_hash": "239f3ebf717465dc636818a1a619398d",
-    "semantic_hash": "239f3ebf717465dc636818a1a619398d"
-  },
-  "/home/neo/game/client/public/manifest.json": {
-    "mtime": 1780552188.6956043,
-    "ast_hash": "83574ed6d38aa0c299ef0655a91372b3",
-    "semantic_hash": "83574ed6d38aa0c299ef0655a91372b3"
-  },
-  "/home/neo/game/client/tsconfig.json": {
-    "mtime": 1778990692.0560477,
-    "ast_hash": "02fc19ad21338c2ab820a70136310db4",
-    "semantic_hash": "02fc19ad21338c2ab820a70136310db4"
-  },
-  "/home/neo/game/client/.fallow/agile-workflow.md": {
-    "mtime": 1780549920.5409794,
-    "ast_hash": "261bbbec9b76c9ff021faf6de6e75199",
-    "semantic_hash": "261bbbec9b76c9ff021faf6de6e75199"
-  },
-  "/home/neo/game/client/.fallow/coding-standards.md": {
-    "mtime": 1780549842.2089882,
-    "ast_hash": "d2ac73d2b63d1a7e67d9c0017ae24b23",
-    "semantic_hash": "d2ac73d2b63d1a7e67d9c0017ae24b23"
-  },
-  "/home/neo/game/client/.fallow/design-system.md": {
-    "mtime": 1780549879.1134584,
-    "ast_hash": "b0991256602270b786868ef700fd27ed",
-    "semantic_hash": "b0991256602270b786868ef700fd27ed"
-  },
-  "/home/neo/game/client/AGENTS.md": {
-    "mtime": 1778990798.4526346,
-    "ast_hash": "9e09241799026ac05be315a2f0b50055",
-    "semantic_hash": "9e09241799026ac05be315a2f0b50055"
-  },
-  "/home/neo/game/client/CLAUDE.md": {
-    "mtime": 1780549406.7258039,
-    "ast_hash": "0578b52a42b80d0f11380f46e69ac885",
-    "semantic_hash": "0578b52a42b80d0f11380f46e69ac885"
-  },
-  "/home/neo/game/client/README.md": {
-    "mtime": 1780555456.8271163,
-    "ast_hash": "28db3668b6fb36a5dc2640c3de5bf428",
-    "semantic_hash": "28db3668b6fb36a5dc2640c3de5bf428"
-  },
-  "/home/neo/game/client/public/file.svg": {
-    "mtime": 1778990692.0521493,
-    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
-    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
-  },
-  "/home/neo/game/client/public/globe.svg": {
-    "mtime": 1778990692.0529995,
-    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
-    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
-  },
-  "/home/neo/game/client/public/next.svg": {
-    "mtime": 1778990692.05304,
-    "ast_hash": "8e061864f388b47f33a1c3780831193e",
-    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
-  },
-  "/home/neo/game/client/public/vercel.svg": {
-    "mtime": 1778990692.053132,
-    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
-    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
-  },
-  "/home/neo/game/client/public/window.svg": {
-    "mtime": 1778990692.053132,
-    "ast_hash": "a2760511c65806022ad20adf74370ff3",
-    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
-  },
-  "/home/neo/game/client/components/game/auth/otp-input.tsx": {
+  "/home/neo/clausbet/components/game/auth/otp-input.tsx": {
     "mtime": 1780628695.597984,
     "ast_hash": "7754c4a33745bb78fbb8343e03548b4e",
     "semantic_hash": "7754c4a33745bb78fbb8343e03548b4e"
   },
-  "/home/neo/game/client/components/game/shared/app-header.tsx": {
-    "mtime": 1780626485.9096253,
-    "ast_hash": "2720cee1a0a189537fb2fa34990d9fd0",
-    "semantic_hash": "2720cee1a0a189537fb2fa34990d9fd0"
+  "/home/neo/clausbet/components/game/auth/phone-input.tsx": {
+    "mtime": 1780905446.4754915,
+    "ast_hash": "a23b23b15a31c14b751e57248658328b",
+    "semantic_hash": "a23b23b15a31c14b751e57248658328b"
   },
-  "/home/neo/game/client/hooks/use-auth.ts": {
-    "mtime": 1780626034.3296673,
-    "ast_hash": "69e8ce257800cf07c660e9350b806ea3",
-    "semantic_hash": "69e8ce257800cf07c660e9350b806ea3"
+  "/home/neo/clausbet/components/game/auth/social-buttons.tsx": {
+    "mtime": 1780551402.2218711,
+    "ast_hash": "c8e20bc87ff5c481a9fe39174279242d",
+    "semantic_hash": "c8e20bc87ff5c481a9fe39174279242d"
   },
-  "/home/neo/game/client/hooks/use-user-preferences.ts": {
+  "/home/neo/clausbet/components/game/home/bottom-nav.tsx": {
+    "mtime": 1780731226.1705945,
+    "ast_hash": "b8a5401c12554e2307829f6ce684db06",
+    "semantic_hash": "b8a5401c12554e2307829f6ce684db06"
+  },
+  "/home/neo/clausbet/components/game/home/category-tabs.tsx": {
+    "mtime": 1780552580.1396797,
+    "ast_hash": "c5d9650a9de8d05948f11bc3faba60de",
+    "semantic_hash": "c5d9650a9de8d05948f11bc3faba60de"
+  },
+  "/home/neo/clausbet/components/game/home/game-card.tsx": {
+    "mtime": 1780551491.0381663,
+    "ast_hash": "d966dc1ae6f4d129bd6042058c588969",
+    "semantic_hash": "d966dc1ae6f4d129bd6042058c588969"
+  },
+  "/home/neo/clausbet/components/game/home/game-grid.tsx": {
+    "mtime": 1780550311.9386256,
+    "ast_hash": "4b8d40113ea33bb6085258fada690e1c",
+    "semantic_hash": "4b8d40113ea33bb6085258fada690e1c"
+  },
+  "/home/neo/clausbet/components/game/home/index.ts": {
+    "mtime": 1780550361.520188,
+    "ast_hash": "c78527621f6015eb6163c50362b65090",
+    "semantic_hash": "c78527621f6015eb6163c50362b65090"
+  },
+  "/home/neo/clausbet/components/game/home/promo-carousel.tsx": {
+    "mtime": 1780550275.2172058,
+    "ast_hash": "634095be84bb3b94ce1c10ad0310e024",
+    "semantic_hash": "634095be84bb3b94ce1c10ad0310e024"
+  },
+  "/home/neo/clausbet/components/game/home/ticker-card.tsx": {
+    "mtime": 1780551506.4478886,
+    "ast_hash": "9d79a1dd1f9005272b2811db47ec58c6",
+    "semantic_hash": "9d79a1dd1f9005272b2811db47ec58c6"
+  },
+  "/home/neo/clausbet/components/game/home/wins-ticker.tsx": {
+    "mtime": 1780550346.8570223,
+    "ast_hash": "6f00e3a93a532a97db6836e5c6414a66",
+    "semantic_hash": "6f00e3a93a532a97db6836e5c6414a66"
+  },
+  "/home/neo/clausbet/components/game/index.ts": {
+    "mtime": 1780550675.806219,
+    "ast_hash": "5cdec266a0b5226111220f744dd3aacf",
+    "semantic_hash": "5cdec266a0b5226111220f744dd3aacf"
+  },
+  "/home/neo/clausbet/components/game/shared/app-header.tsx": {
+    "mtime": 1780733330.700506,
+    "ast_hash": "66fb75c67605baf5c8428055aba89890",
+    "semantic_hash": "66fb75c67605baf5c8428055aba89890"
+  },
+  "/home/neo/clausbet/components/game/shared/balance-card.tsx": {
+    "mtime": 1780555907.5662487,
+    "ast_hash": "f04836eb1a1d60b660869272d759354a",
+    "semantic_hash": "f04836eb1a1d60b660869272d759354a"
+  },
+  "/home/neo/clausbet/components/game/shared/divider.tsx": {
+    "mtime": 1780551595.2469344,
+    "ast_hash": "a94be26fb5cebe462c38fb61e7f7f4c5",
+    "semantic_hash": "a94be26fb5cebe462c38fb61e7f7f4c5"
+  },
+  "/home/neo/clausbet/components/game/shared/gradient-card.tsx": {
+    "mtime": 1780552615.7741098,
+    "ast_hash": "0f272eab9dc2baa660ddd816e8267f2e",
+    "semantic_hash": "0f272eab9dc2baa660ddd816e8267f2e"
+  },
+  "/home/neo/clausbet/components/game/shared/index.ts": {
+    "mtime": 1780625970.2727652,
+    "ast_hash": "570e50d7e912f967f80d626c41567bdc",
+    "semantic_hash": "570e50d7e912f967f80d626c41567bdc"
+  },
+  "/home/neo/clausbet/components/game/shared/method-card.tsx": {
+    "mtime": 1780556047.5821617,
+    "ast_hash": "d6380364a02f80af88607406b343d20b",
+    "semantic_hash": "d6380364a02f80af88607406b343d20b"
+  },
+  "/home/neo/clausbet/components/game/shared/transaction-item.tsx": {
+    "mtime": 1780623580.931871,
+    "ast_hash": "a11a74a5a3788cf1c572273ff7c4ab4e",
+    "semantic_hash": "a11a74a5a3788cf1c572273ff7c4ab4e"
+  },
+  "/home/neo/clausbet/components/lib/game-animations.ts": {
+    "mtime": 1780550084.7769814,
+    "ast_hash": "1398ac4ed877fc9b5009c3ffe07e1782",
+    "semantic_hash": "1398ac4ed877fc9b5009c3ffe07e1782"
+  },
+  "/home/neo/clausbet/components/ui/accordion.tsx": {
+    "mtime": 1780544355.6077192,
+    "ast_hash": "920ce9582ece6b7dc4ee3d162b8333ad",
+    "semantic_hash": "920ce9582ece6b7dc4ee3d162b8333ad"
+  },
+  "/home/neo/clausbet/components/ui/alert-dialog.tsx": {
+    "mtime": 1780544355.6061394,
+    "ast_hash": "65179d610cf06fa925439f4ae7bca908",
+    "semantic_hash": "65179d610cf06fa925439f4ae7bca908"
+  },
+  "/home/neo/clausbet/components/ui/alert.tsx": {
+    "mtime": 1780544355.603156,
+    "ast_hash": "739c28799fae98b4fa01132494788e85",
+    "semantic_hash": "739c28799fae98b4fa01132494788e85"
+  },
+  "/home/neo/clausbet/components/ui/aspect-ratio.tsx": {
+    "mtime": 1780544355.6128592,
+    "ast_hash": "c6d85ec0522899c5da67ffdae8b4f3ea",
+    "semantic_hash": "c6d85ec0522899c5da67ffdae8b4f3ea"
+  },
+  "/home/neo/clausbet/components/ui/avatar.tsx": {
+    "mtime": 1780544355.5980892,
+    "ast_hash": "b48244919ef33575fecf5509063b7310",
+    "semantic_hash": "b48244919ef33575fecf5509063b7310"
+  },
+  "/home/neo/clausbet/components/ui/badge.tsx": {
+    "mtime": 1780544355.5948088,
+    "ast_hash": "633c33997e6137921ae433dd2dd0cb31",
+    "semantic_hash": "633c33997e6137921ae433dd2dd0cb31"
+  },
+  "/home/neo/clausbet/components/ui/breadcrumb.tsx": {
+    "mtime": 1780544355.6098316,
+    "ast_hash": "f42f6a0073354a8cf89f9d1123660c65",
+    "semantic_hash": "f42f6a0073354a8cf89f9d1123660c65"
+  },
+  "/home/neo/clausbet/components/ui/button-group.tsx": {
+    "mtime": 1780544355.602846,
+    "ast_hash": "74a606b91a9f8d135c4dd82b9eb44c63",
+    "semantic_hash": "74a606b91a9f8d135c4dd82b9eb44c63"
+  },
+  "/home/neo/clausbet/components/ui/button.tsx": {
+    "mtime": 1780731525.2948217,
+    "ast_hash": "88010ac9bfcb7b7937ab2d84fd968284",
+    "semantic_hash": "88010ac9bfcb7b7937ab2d84fd968284"
+  },
+  "/home/neo/clausbet/components/ui/calendar.tsx": {
+    "mtime": 1780624170.2708688,
+    "ast_hash": "30e95e45ffdcae68cdd17b922c0f96ac",
+    "semantic_hash": "30e95e45ffdcae68cdd17b922c0f96ac"
+  },
+  "/home/neo/clausbet/components/ui/card.tsx": {
+    "mtime": 1780544355.6126747,
+    "ast_hash": "77a10bd948ca424972a28e704a3df604",
+    "semantic_hash": "77a10bd948ca424972a28e704a3df604"
+  },
+  "/home/neo/clausbet/components/ui/carousel.tsx": {
+    "mtime": 1780544355.6069412,
+    "ast_hash": "0267b73e177c079adecf87c826d5b59c",
+    "semantic_hash": "0267b73e177c079adecf87c826d5b59c"
+  },
+  "/home/neo/clausbet/components/ui/chart.tsx": {
+    "mtime": 1780544355.5928795,
+    "ast_hash": "ea3aef621225b35027a63a606b632c54",
+    "semantic_hash": "ea3aef621225b35027a63a606b632c54"
+  },
+  "/home/neo/clausbet/components/ui/checkbox.tsx": {
+    "mtime": 1780544355.6108851,
+    "ast_hash": "09073231ed001b522fd23911b54ae2f5",
+    "semantic_hash": "09073231ed001b522fd23911b54ae2f5"
+  },
+  "/home/neo/clausbet/components/ui/collapsible.tsx": {
+    "mtime": 1780544355.588532,
+    "ast_hash": "d3bc158594b1f19fd28d9868792d17f1",
+    "semantic_hash": "d3bc158594b1f19fd28d9868792d17f1"
+  },
+  "/home/neo/clausbet/components/ui/combobox.tsx": {
+    "mtime": 1780544355.6111171,
+    "ast_hash": "c91894eecd4823e1758dd4655e73556a",
+    "semantic_hash": "c91894eecd4823e1758dd4655e73556a"
+  },
+  "/home/neo/clausbet/components/ui/command.tsx": {
+    "mtime": 1780544355.588849,
+    "ast_hash": "85d2b0196c4906103cc6832a793e5fba",
+    "semantic_hash": "85d2b0196c4906103cc6832a793e5fba"
+  },
+  "/home/neo/clausbet/components/ui/context-menu.tsx": {
+    "mtime": 1780544355.5891535,
+    "ast_hash": "5c67efd6edae4e0d8b9eb4bf820d7713",
+    "semantic_hash": "5c67efd6edae4e0d8b9eb4bf820d7713"
+  },
+  "/home/neo/clausbet/components/ui/dialog.tsx": {
+    "mtime": 1780544355.5895143,
+    "ast_hash": "e01132db6e9067b7b8cc2e322fdd34ff",
+    "semantic_hash": "e01132db6e9067b7b8cc2e322fdd34ff"
+  },
+  "/home/neo/clausbet/components/ui/direction.tsx": {
+    "mtime": 1780544355.595215,
+    "ast_hash": "87b2e543828b0ac3444de56cfd0016d0",
+    "semantic_hash": "87b2e543828b0ac3444de56cfd0016d0"
+  },
+  "/home/neo/clausbet/components/ui/drawer.tsx": {
+    "mtime": 1780544355.6087487,
+    "ast_hash": "ecce2b5100dd3d8a11f15fcc20fa33dd",
+    "semantic_hash": "ecce2b5100dd3d8a11f15fcc20fa33dd"
+  },
+  "/home/neo/clausbet/components/ui/dropdown-menu.tsx": {
+    "mtime": 1780544355.5809205,
+    "ast_hash": "63fc04368c0f92980d3ab4ae34f01a18",
+    "semantic_hash": "63fc04368c0f92980d3ab4ae34f01a18"
+  },
+  "/home/neo/clausbet/components/ui/empty.tsx": {
+    "mtime": 1780544355.6093597,
+    "ast_hash": "ca7063724c4b1e81d8f1337e8236a1d8",
+    "semantic_hash": "ca7063724c4b1e81d8f1337e8236a1d8"
+  },
+  "/home/neo/clausbet/components/ui/field.tsx": {
+    "mtime": 1780544355.602465,
+    "ast_hash": "1b038d62623c29946f57e746fb89cc7e",
+    "semantic_hash": "1b038d62623c29946f57e746fb89cc7e"
+  },
+  "/home/neo/clausbet/components/ui/hover-card.tsx": {
+    "mtime": 1780544355.6021397,
+    "ast_hash": "cc8cde9ca4bf5ced50ce3c4106268446",
+    "semantic_hash": "cc8cde9ca4bf5ced50ce3c4106268446"
+  },
+  "/home/neo/clausbet/components/ui/input-group.tsx": {
+    "mtime": 1780544355.6104348,
+    "ast_hash": "750fe82601c39e80407e4b8d9f77a082",
+    "semantic_hash": "750fe82601c39e80407e4b8d9f77a082"
+  },
+  "/home/neo/clausbet/components/ui/input-otp.tsx": {
+    "mtime": 1780544355.6083856,
+    "ast_hash": "561abe4157d9e73c23f7ea7c38f4bd86",
+    "semantic_hash": "561abe4157d9e73c23f7ea7c38f4bd86"
+  },
+  "/home/neo/clausbet/components/ui/input.tsx": {
+    "mtime": 1780731506.8120005,
+    "ast_hash": "f9e6ca9f19f6bcdc83aef6fd138198bd",
+    "semantic_hash": "f9e6ca9f19f6bcdc83aef6fd138198bd"
+  },
+  "/home/neo/clausbet/components/ui/item.tsx": {
+    "mtime": 1780544355.5898006,
+    "ast_hash": "53f9c4da2abe404e7d82ac0511d42ec9",
+    "semantic_hash": "53f9c4da2abe404e7d82ac0511d42ec9"
+  },
+  "/home/neo/clausbet/components/ui/kbd.tsx": {
+    "mtime": 1780544355.5733528,
+    "ast_hash": "f8d9503a392bc89df024bc8eb65afad5",
+    "semantic_hash": "f8d9503a392bc89df024bc8eb65afad5"
+  },
+  "/home/neo/clausbet/components/ui/label.tsx": {
+    "mtime": 1780544355.584044,
+    "ast_hash": "e7e0c4ad98f3485ecd3c0ca516d0a8bf",
+    "semantic_hash": "e7e0c4ad98f3485ecd3c0ca516d0a8bf"
+  },
+  "/home/neo/clausbet/components/ui/menubar.tsx": {
+    "mtime": 1780544355.6100583,
+    "ast_hash": "eef04b40c08761d7a8eba60753ddc865",
+    "semantic_hash": "eef04b40c08761d7a8eba60753ddc865"
+  },
+  "/home/neo/clausbet/components/ui/native-select.tsx": {
+    "mtime": 1780544355.6106894,
+    "ast_hash": "8ecaa1257740ed8c6d6da39076f4a30f",
+    "semantic_hash": "8ecaa1257740ed8c6d6da39076f4a30f"
+  },
+  "/home/neo/clausbet/components/ui/navigation-menu.tsx": {
+    "mtime": 1780544355.6040003,
+    "ast_hash": "436040fc0195505929894098cada67e4",
+    "semantic_hash": "436040fc0195505929894098cada67e4"
+  },
+  "/home/neo/clausbet/components/ui/pagination.tsx": {
+    "mtime": 1780544355.6122239,
+    "ast_hash": "27545e936f6d225a1dfab57fa98fab98",
+    "semantic_hash": "27545e936f6d225a1dfab57fa98fab98"
+  },
+  "/home/neo/clausbet/components/ui/popover.tsx": {
+    "mtime": 1780544355.5802627,
+    "ast_hash": "32bf79a82d9ed7f3256592f7c0ca4a62",
+    "semantic_hash": "32bf79a82d9ed7f3256592f7c0ca4a62"
+  },
+  "/home/neo/clausbet/components/ui/progress.tsx": {
+    "mtime": 1780544355.5806155,
+    "ast_hash": "656a678d379ff2132dd1855b2359cc1c",
+    "semantic_hash": "656a678d379ff2132dd1855b2359cc1c"
+  },
+  "/home/neo/clausbet/components/ui/radio-group.tsx": {
+    "mtime": 1780544355.5950146,
+    "ast_hash": "8853af40e6ead29cdafb52c93848aee1",
+    "semantic_hash": "8853af40e6ead29cdafb52c93848aee1"
+  },
+  "/home/neo/clausbet/components/ui/resizable.tsx": {
+    "mtime": 1780544355.6042726,
+    "ast_hash": "1f0f385519b1d48a14bfb81158385403",
+    "semantic_hash": "1f0f385519b1d48a14bfb81158385403"
+  },
+  "/home/neo/clausbet/components/ui/scroll-area.tsx": {
+    "mtime": 1780544355.6050692,
+    "ast_hash": "5a04c269a377e8176ebbf27ee8ac35bf",
+    "semantic_hash": "5a04c269a377e8176ebbf27ee8ac35bf"
+  },
+  "/home/neo/clausbet/components/ui/select.tsx": {
+    "mtime": 1780544355.6034641,
+    "ast_hash": "611b5699ced6aad54c9a0e8cb865da7f",
+    "semantic_hash": "611b5699ced6aad54c9a0e8cb865da7f"
+  },
+  "/home/neo/clausbet/components/ui/separator.tsx": {
+    "mtime": 1780544355.609601,
+    "ast_hash": "f57449eae78fbd87d99e4edc45ab3c1e",
+    "semantic_hash": "f57449eae78fbd87d99e4edc45ab3c1e"
+  },
+  "/home/neo/clausbet/components/ui/sheet.tsx": {
+    "mtime": 1780544355.58288,
+    "ast_hash": "136091919ca01aa135e9413cc05b2d23",
+    "semantic_hash": "136091919ca01aa135e9413cc05b2d23"
+  },
+  "/home/neo/clausbet/components/ui/sidebar.tsx": {
+    "mtime": 1780544355.6045237,
+    "ast_hash": "b18963e32ea81086b494ce273436abf3",
+    "semantic_hash": "b18963e32ea81086b494ce273436abf3"
+  },
+  "/home/neo/clausbet/components/ui/skeleton.tsx": {
+    "mtime": 1780544355.5968795,
+    "ast_hash": "0e6e825c43d858d98c9903f4da975382",
+    "semantic_hash": "0e6e825c43d858d98c9903f4da975382"
+  },
+  "/home/neo/clausbet/components/ui/slider.tsx": {
+    "mtime": 1780544355.605856,
+    "ast_hash": "5345e0c724b2ee363ba117f5c5e3c7ec",
+    "semantic_hash": "5345e0c724b2ee363ba117f5c5e3c7ec"
+  },
+  "/home/neo/clausbet/components/ui/sonner.tsx": {
+    "mtime": 1780544355.605277,
+    "ast_hash": "f46214bc2a6a5153a6e04fad523d5587",
+    "semantic_hash": "f46214bc2a6a5153a6e04fad523d5587"
+  },
+  "/home/neo/clausbet/components/ui/spinner.tsx": {
+    "mtime": 1780544355.611726,
+    "ast_hash": "fd059d59ffd918b682307fc84fcb38e8",
+    "semantic_hash": "fd059d59ffd918b682307fc84fcb38e8"
+  },
+  "/home/neo/clausbet/components/ui/switch.tsx": {
+    "mtime": 1780544355.5843053,
+    "ast_hash": "5cc42175a3e9b6f20f1d48960bd55158",
+    "semantic_hash": "5cc42175a3e9b6f20f1d48960bd55158"
+  },
+  "/home/neo/clausbet/components/ui/table.tsx": {
+    "mtime": 1780544355.5900795,
+    "ast_hash": "44f87727e60080863edb00fdd2fcd8da",
+    "semantic_hash": "44f87727e60080863edb00fdd2fcd8da"
+  },
+  "/home/neo/clausbet/components/ui/tabs.tsx": {
+    "mtime": 1780544355.6055794,
+    "ast_hash": "485d47f9e6f866e564685e6584e1e747",
+    "semantic_hash": "485d47f9e6f866e564685e6584e1e747"
+  },
+  "/home/neo/clausbet/components/ui/textarea.tsx": {
+    "mtime": 1780544355.5812435,
+    "ast_hash": "d448d2a90e48542e51b93a1189127bf2",
+    "semantic_hash": "d448d2a90e48542e51b93a1189127bf2"
+  },
+  "/home/neo/clausbet/components/ui/toggle-group.tsx": {
+    "mtime": 1780544355.6080637,
+    "ast_hash": "dda8b0ac114e4c4f456efa5a651b39a3",
+    "semantic_hash": "dda8b0ac114e4c4f456efa5a651b39a3"
+  },
+  "/home/neo/clausbet/components/ui/toggle.tsx": {
+    "mtime": 1780544355.6119847,
+    "ast_hash": "6556d3814933e92ddef27a765a3a09fa",
+    "semantic_hash": "6556d3814933e92ddef27a765a3a09fa"
+  },
+  "/home/neo/clausbet/components/ui/tooltip.tsx": {
+    "mtime": 1780544355.6124501,
+    "ast_hash": "b0b931c1a15ec3924fa5fecebaa15685",
+    "semantic_hash": "b0b931c1a15ec3924fa5fecebaa15685"
+  },
+  "/home/neo/clausbet/drizzle.config.ts": {
+    "mtime": 1780902928.9546528,
+    "ast_hash": "716be7196651cba955e526279fbfc3dc",
+    "semantic_hash": "716be7196651cba955e526279fbfc3dc"
+  },
+  "/home/neo/clausbet/drizzle/fix-schema.sql": {
+    "mtime": 1780914400.1677606,
+    "ast_hash": "34b17fbe31a6f9522b29d883b1776b20",
+    "semantic_hash": "34b17fbe31a6f9522b29d883b1776b20"
+  },
+  "/home/neo/clausbet/drizzle/index.ts": {
+    "mtime": 1780910066.5982592,
+    "ast_hash": "8754e067747b091b822d74e1b0327fd0",
+    "semantic_hash": "8754e067747b091b822d74e1b0327fd0"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0000_far_the_executioner.sql": {
+    "mtime": 1780903315.802647,
+    "ast_hash": "33a7b77260f8a463b9e861c1856e64fe",
+    "semantic_hash": "33a7b77260f8a463b9e861c1856e64fe"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/0000_snapshot.json": {
+    "mtime": 1780903315.802647,
+    "ast_hash": "45953d4f46537e5fb4e26ac316e984fe",
+    "semantic_hash": "45953d4f46537e5fb4e26ac316e984fe"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/_journal.json": {
+    "mtime": 1780903315.802647,
+    "ast_hash": "c8ed3a86927fbed1a063b8eb20bdef6a",
+    "semantic_hash": "c8ed3a86927fbed1a063b8eb20bdef6a"
+  },
+  "/home/neo/clausbet/drizzle/schema.generated.ts": {
+    "mtime": 1780903276.6763306,
+    "ast_hash": "0a5fa6668999cc86ddcc5a57c21d30ae",
+    "semantic_hash": "0a5fa6668999cc86ddcc5a57c21d30ae"
+  },
+  "/home/neo/clausbet/drizzle/schema.ts": {
+    "mtime": 1780903305.5853028,
+    "ast_hash": "5866b13f8e3c918865a615d213754f9e",
+    "semantic_hash": "5866b13f8e3c918865a615d213754f9e"
+  },
+  "/home/neo/clausbet/eslint.config.mjs": {
+    "mtime": 1778990692.0524526,
+    "ast_hash": "dfa1f5f6a7037bf39dc510f30b180002",
+    "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
+  },
+  "/home/neo/clausbet/hooks/use-auth.ts": {
+    "mtime": 1780915013.822976,
+    "ast_hash": "81a60049620d8cbb9547f29cb23f0c28",
+    "semantic_hash": "81a60049620d8cbb9547f29cb23f0c28"
+  },
+  "/home/neo/clausbet/hooks/use-auto-scroll.ts": {
+    "mtime": 1780624218.8921552,
+    "ast_hash": "219f9e5223440385cbe116cde93f9d18",
+    "semantic_hash": "219f9e5223440385cbe116cde93f9d18"
+  },
+  "/home/neo/clausbet/hooks/use-mobile.ts": {
+    "mtime": 1780296123.5867484,
+    "ast_hash": "209b5193af16624cdd89d3591480dd48",
+    "semantic_hash": "209b5193af16624cdd89d3591480dd48"
+  },
+  "/home/neo/clausbet/hooks/use-user-preferences.ts": {
     "mtime": 1780625253.1035275,
     "ast_hash": "12ff9f1df76e29cf6ac15fa10ce30e86",
     "semantic_hash": "12ff9f1df76e29cf6ac15fa10ce30e86"
   },
-  "/home/neo/game/client/lib/config.ts": {
+  "/home/neo/clausbet/lib/auth-client.ts": {
+    "mtime": 1780914935.1851325,
+    "ast_hash": "ab1ca92b7542e728516ed4ae3b83a507",
+    "semantic_hash": "ab1ca92b7542e728516ed4ae3b83a507"
+  },
+  "/home/neo/clausbet/lib/auth.ts": {
+    "mtime": 1780906933.294,
+    "ast_hash": "b94d35571034d1a4b0dd895ba881bf99",
+    "semantic_hash": "b94d35571034d1a4b0dd895ba881bf99"
+  },
+  "/home/neo/clausbet/lib/config.ts": {
     "mtime": 1780625067.7243435,
     "ast_hash": "35fe1c8c3e4a44429a48ecbf09da8866",
     "semantic_hash": "35fe1c8c3e4a44429a48ecbf09da8866"
+  },
+  "/home/neo/clausbet/lib/redis.ts": {
+    "mtime": 1780907066.4090075,
+    "ast_hash": "fb74320e1331dfc9230e2046d7c7885c",
+    "semantic_hash": "fb74320e1331dfc9230e2046d7c7885c"
+  },
+  "/home/neo/clausbet/lib/trpc/client.ts": {
+    "mtime": 1780914950.332607,
+    "ast_hash": "6c5a65b9e4697d73fe65f4458f1a1794",
+    "semantic_hash": "6c5a65b9e4697d73fe65f4458f1a1794"
+  },
+  "/home/neo/clausbet/lib/trpc/hooks.ts": {
+    "mtime": 1780908252.556722,
+    "ast_hash": "fa1ab962d7f93dc34de991cc84f88a64",
+    "semantic_hash": "fa1ab962d7f93dc34de991cc84f88a64"
+  },
+  "/home/neo/clausbet/lib/trpc/index.ts": {
+    "mtime": 1780908605.813279,
+    "ast_hash": "e2201b4521698256f3c21456abe5eef2",
+    "semantic_hash": "e2201b4521698256f3c21456abe5eef2"
+  },
+  "/home/neo/clausbet/lib/trpc/provider.tsx": {
+    "mtime": 1780908432.3364973,
+    "ast_hash": "913ae067d4052ebc09b19ac51238d680",
+    "semantic_hash": "913ae067d4052ebc09b19ac51238d680"
+  },
+  "/home/neo/clausbet/lib/trpc/server.ts": {
+    "mtime": 1780908762.295719,
+    "ast_hash": "3c916ffdc8c8a6f5828b08cc63ef0a47",
+    "semantic_hash": "3c916ffdc8c8a6f5828b08cc63ef0a47"
+  },
+  "/home/neo/clausbet/lib/trpc/types.ts": {
+    "mtime": 1780908981.9710753,
+    "ast_hash": "d16d393dec4581b3d629ea6a12beacc5",
+    "semantic_hash": "d16d393dec4581b3d629ea6a12beacc5"
+  },
+  "/home/neo/clausbet/lib/utils.ts": {
+    "mtime": 1778992015.0940688,
+    "ast_hash": "5a6fd53fdcf2be529e9cc0b718fde352",
+    "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
+  },
+  "/home/neo/clausbet/next.config.ts": {
+    "mtime": 1780730712.4727468,
+    "ast_hash": "e04e73e1048b9787854d87a0afd59b36",
+    "semantic_hash": "e04e73e1048b9787854d87a0afd59b36"
+  },
+  "/home/neo/clausbet/package.json": {
+    "mtime": 1780908365.4471095,
+    "ast_hash": "ef19b2b8b5a2d448cc312e7dec5b6026",
+    "semantic_hash": "ef19b2b8b5a2d448cc312e7dec5b6026"
+  },
+  "/home/neo/clausbet/postcss.config.mjs": {
+    "mtime": 1778990692.0524526,
+    "ast_hash": "239f3ebf717465dc636818a1a619398d",
+    "semantic_hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "/home/neo/clausbet/public/manifest.json": {
+    "mtime": 1780552188.6956043,
+    "ast_hash": "83574ed6d38aa0c299ef0655a91372b3",
+    "semantic_hash": "83574ed6d38aa0c299ef0655a91372b3"
+  },
+  "/home/neo/clausbet/scripts/generate-icons.js": {
+    "mtime": 1780914319.1991012,
+    "ast_hash": "52202102e69a4223c4058f8f4b2e8c9b",
+    "semantic_hash": "52202102e69a4223c4058f8f4b2e8c9b"
+  },
+  "/home/neo/clausbet/server/context.ts": {
+    "mtime": 1780909351.0676038,
+    "ast_hash": "80c9dc89c5f5c938921499e39cf11137",
+    "semantic_hash": "80c9dc89c5f5c938921499e39cf11137"
+  },
+  "/home/neo/clausbet/server/routers/auth.ts": {
+    "mtime": 1780909951.5321114,
+    "ast_hash": "e38c5277d7dbbe0cb94f704c07b6f41d",
+    "semantic_hash": "e38c5277d7dbbe0cb94f704c07b6f41d"
+  },
+  "/home/neo/clausbet/server/routers/index.ts": {
+    "mtime": 1780902994.5561957,
+    "ast_hash": "094bb294e0cf590039b16fc32950ca87",
+    "semantic_hash": "094bb294e0cf590039b16fc32950ca87"
+  },
+  "/home/neo/clausbet/server/routers/user.ts": {
+    "mtime": 1780910316.7623675,
+    "ast_hash": "04aabef287caf3ee0cf69b7a8e49538b",
+    "semantic_hash": "04aabef287caf3ee0cf69b7a8e49538b"
+  },
+  "/home/neo/clausbet/server/trpc.ts": {
+    "mtime": 1780903092.7958555,
+    "ast_hash": "6d93eb31c5d9ec0a762696e1425007b3",
+    "semantic_hash": "6d93eb31c5d9ec0a762696e1425007b3"
+  },
+  "/home/neo/clausbet/tsconfig.json": {
+    "mtime": 1778990692.0560477,
+    "ast_hash": "02fc19ad21338c2ab820a70136310db4",
+    "semantic_hash": "02fc19ad21338c2ab820a70136310db4"
+  },
+  "/home/neo/clausbet/AGENTS.md": {
+    "mtime": 1780901179.4248133,
+    "ast_hash": "42446441be008d02e14d5e4931d5b120",
+    "semantic_hash": "42446441be008d02e14d5e4931d5b120"
+  },
+  "/home/neo/clausbet/CLAUDE.md": {
+    "mtime": 1780902703.6531367,
+    "ast_hash": "8bf045720d6b160286373e6c0e862c2d",
+    "semantic_hash": "8bf045720d6b160286373e6c0e862c2d"
+  },
+  "/home/neo/clausbet/public/file.svg": {
+    "mtime": 1778990692.0521493,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "/home/neo/clausbet/public/globe.svg": {
+    "mtime": 1778990692.0529995,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "/home/neo/clausbet/public/icon-192.png": {
+    "mtime": 1780914323.4551356,
+    "ast_hash": "05e11895707a322c33b8bb94d3a019cf",
+    "semantic_hash": "05e11895707a322c33b8bb94d3a019cf"
+  },
+  "/home/neo/clausbet/public/icon-512.png": {
+    "mtime": 1780914323.4578147,
+    "ast_hash": "febe3aa483d574fb8111a54fa62fa6f6",
+    "semantic_hash": "febe3aa483d574fb8111a54fa62fa6f6"
+  },
+  "/home/neo/clausbet/public/next.svg": {
+    "mtime": 1778990692.05304,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "/home/neo/clausbet/public/vercel.svg": {
+    "mtime": 1778990692.053132,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "/home/neo/clausbet/public/window.svg": {
+    "mtime": 1778990692.053132,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
   }
 }

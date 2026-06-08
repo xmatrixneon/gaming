@@ -152,4 +152,3 @@ export const PhoneInput = React.forwardRef<HTMLDivElement, PhoneInputProps>(
 
 PhoneInput.displayName = "PhoneInput";
 
-export { PhoneInput };
