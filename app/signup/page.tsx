@@ -68,7 +68,7 @@ const initialState: SignUpState = {
  */
 export default function SignUpPage() {
   const router = useRouter();
-  const { sendPhoneOTP, verifyPhoneNumber, signUp, signInWithGoogle } = useAuth();
+  const { checkPhoneNumber, sendPhoneOTP, verifyPhoneNumber, signUp, signInWithGoogle } = useAuth();
   const [state, setState] = useState<SignUpState>(initialState);
 
   // Update state helper
@@ -110,6 +110,15 @@ export default function SignUpPage() {
     const fullPhone = `+91${state.phoneNumber}`;
 
     try {
+      // Check if phone number is already registered (saves SMS costs)
+      const checkResult = await checkPhoneNumber(fullPhone);
+
+      if (checkResult.exists) {
+        updateState("error", "This phone number is already registered. Please sign in instead.");
+        updateState("isLoading", false);
+        return;
+      }
+
       const result = await sendPhoneOTP(fullPhone);
 
       if (result && !result.success) {
@@ -141,7 +150,7 @@ export default function SignUpPage() {
       updateState("error", message);
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, state.passwordValue, state.agreed, sendPhoneOTP, updateState]);
+  }, [state.phoneNumber, state.passwordValue, state.agreed, checkPhoneNumber, sendPhoneOTP, updateState]);
 
   // Step 2 - Verify OTP and Create Account
   const handleVerifyOTP = useCallback(async () => {

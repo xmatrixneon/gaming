@@ -7,6 +7,9 @@ import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/drizzle";
+import { user } from "@/drizzle/schema";
 
 // ============================================================================
 // AUTH ROUTER
@@ -36,12 +39,44 @@ export const authRouter = router({
     return { success: true };
   }),
 
+  /**
+   * Check if phone number is already registered
+   */
+  checkPhoneNumber: publicProcedure
+    .input(z.object({
+      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format. Use E.164: +1234567890"),
+    }))
+    .query(async ({ input }) => {
+      try {
+        // Query database to check if phone number exists
+        const existingUser = await db
+          .select()
+          .from(user)
+          .where(eq(user.phoneNumber, input.phoneNumber))
+          .limit(1);
+
+        return {
+          exists: existingUser.length > 0,
+          message: existingUser.length > 0
+            ? "This phone number is already registered"
+            : "Phone number is available",
+        };
+      } catch (error) {
+        console.error("[AUTH] Failed to check phone number:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to check phone number availability",
+        });
+      }
+    }),
+
   // ============================================================================
   // PHONE/SMS AUTHENTICATION
   // ============================================================================
 
   /**
    * Send OTP to phone number
+   * Includes duplicate phone number prevention at the server level
    */
   sendPhoneOTP: publicProcedure
     .input(z.object({
@@ -49,6 +84,43 @@ export const authRouter = router({
     }))
     .mutation(async ({ input }) => {
       try {
+        // =====================================================================
+        // PREVENT DUPLICATE PHONE NUMBERS
+        // =====================================================================
+        // Check if phone number is already registered AND verified
+        // This prevents duplicate signups at the server level
+        const existingUsers = await db
+          .select()
+          .from(user)
+          .where(eq(user.phoneNumber, input.phoneNumber))
+          .limit(1);
+
+        const existingUser = existingUsers[0];
+
+        // If phone number is already verified for another user, block OTP
+        if (existingUser && existingUser.phoneNumberVerified) {
+          console.log(`[AUTH] Phone number ${input.phoneNumber} already verified for user ${existingUser.id}. Blocking OTP.`);
+
+          // Throw a user-friendly error that will be caught by client
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "This phone number is already registered. Please sign in instead.",
+          });
+        }
+
+        // If phone number exists but isn't verified, clean up the old unverified user
+        // This allows the user to restart the signup process
+        if (existingUser && !existingUser.phoneNumberVerified) {
+          console.log(`[AUTH] Phone number ${input.phoneNumber} exists but unverified. Cleaning up old unverified user: ${existingUser.id}`);
+
+          // Delete the unverified user to allow a fresh signup
+          await db.delete(user).where(eq(user.id, existingUser.id));
+          console.log(`[AUTH] Deleted unverified user to allow retry: ${existingUser.id}`);
+        }
+
+        // =====================================================================
+        // SEND OTP VIA BETTER AUTH
+        // =====================================================================
         const result = await auth.api.sendPhoneNumberOTP({
           body: input,
         });
@@ -56,6 +128,16 @@ export const authRouter = router({
         return { success: true, data: result };
       } catch (error) {
         console.error("[AUTH] Failed to send OTP:", error);
+
+        // If it's our custom TRPCError, re-throw it as-is
+        if (error instanceof TRPCError) {
+          return {
+            success: false,
+            error: error.message,
+          };
+        }
+
+        // Otherwise, return a generic error
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to send OTP",

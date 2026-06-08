@@ -9,6 +9,8 @@ import { phoneNumber } from "better-auth/plugins";
 import { redisStorage } from "@better-auth/redis-storage";
 import { db } from "@/drizzle";
 import { redis } from "@/lib/redis";
+import { user } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // ============================================================================
 // BETTER AUTH CONFIGURATION
@@ -99,12 +101,15 @@ export const auth = betterAuth({
   // PLUGINS
   // ============================================================================
   plugins: [
-    // Phone/SMS Authentication Plugin with Redis OTP storage
+    // Phone/SMS Authentication Plugin with Redis OTP Storage
     phoneNumber({
       // Send OTP via SMS (using your SMS provider)
       // Note: Better Auth Infrastructure SMS service requires Pro plan
       // Alternatively, use Twilio, AWS SNS, or custom SMS provider
       sendOTP: async ({ phoneNumber, code }, _ctx) => {
+        // =====================================================================
+        // SEND OTP VIA SMS
+        // =====================================================================
         // TODO: Implement SMS sending logic
         // Options:
         // 1. Use @better-auth/infra SMS service (requires Pro plan)
@@ -123,18 +128,27 @@ export const auth = betterAuth({
         // });
 
         // Non-blocking - don't await to prevent timing attacks
+        // Use waitUntil for serverless platforms to ensure OTP is sent
         Promise.resolve().catch((err) => {
           console.error("[SMS] Failed to send OTP:", err);
         });
       },
 
       // Allow sign-up with phone number (generates temporary email)
+      // Better Auth requires an email for all users, so we generate a temporary one
       signUpOnVerification: {
+        // Generate a unique temporary email based on phone number
+        // Phone numbers are unique, so this ensures email uniqueness
         getTempEmail: (phoneNumber) => {
-          return `${phoneNumber}@clausbet.temp`;
+          // Strip the + prefix and create a valid email format
+          const cleanPhone = phoneNumber.replace(/^\+/, "");
+          return `${cleanPhone}@clausbet.temp`;
         },
+        // Generate a temporary username based on phone number
+        // Users can update this later in their profile
         getTempName: (phoneNumber) => {
-          return `User_${phoneNumber.slice(-4)}`;
+          // Use last 6 digits for anonymity (e.g., "User_123456")
+          return `User_${phoneNumber.slice(-6)}`;
         },
       },
 
@@ -157,6 +171,35 @@ export const auth = betterAuth({
       // Callback after successful verification
       callbackOnVerification: async ({ phoneNumber, user }, _ctx) => {
         console.log(`[AUTH] Phone number verified: ${phoneNumber} for user: ${user.id}`);
+
+        // =====================================================================
+        // CLEANUP UNVERIFIED DUPLICATES
+        // =====================================================================
+        // If there are other users with the same phone number that are unverified,
+        // clean them up to prevent database bloat and confusion
+        try {
+          // Use Drizzle to find and delete unverified duplicates
+          const duplicateUsers = await db
+            .select()
+            .from(user)
+            .where(eq(user.phoneNumber, phoneNumber));
+
+          // Delete unverified duplicate users (excluding current user)
+          const unverifiedDuplicates = duplicateUsers.filter(
+            (u) => u.id !== user.id && !u.phoneNumberVerified
+          );
+
+          if (unverifiedDuplicates.length > 0) {
+            console.log(`[AUTH] Found ${unverifiedDuplicates.length} unverified duplicates for ${phoneNumber}. Cleaning up.`);
+            for (const duplicate of unverifiedDuplicates) {
+              await db.delete(user).where(eq(user.id, duplicate.id));
+              console.log(`[AUTH] Deleted unverified duplicate user: ${duplicate.id}`);
+            }
+          }
+        } catch (error) {
+          console.error("[AUTH] Error cleaning up duplicates:", error);
+        }
+
         // TODO: Send welcome email or notification
       },
     }),

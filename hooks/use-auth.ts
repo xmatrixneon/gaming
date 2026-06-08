@@ -15,7 +15,7 @@
  */
 
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/trpc/client";
+import { api, useTRPCClient } from "@/lib/trpc/client";
 import { authClient } from "@/lib/auth-client";
 
 // ============================================================================
@@ -56,6 +56,7 @@ export interface AuthState {
  */
 export function useAuth() {
   const queryClient = useQueryClient();
+  const trpcClient = useTRPCClient();
 
   // ============================================================================
   // SESSION STATE - Better Auth Reactive Hook
@@ -89,37 +90,85 @@ export function useAuth() {
   // ============================================================================
 
   /**
+   * Check if phone number is already registered
+   * Prevents duplicate signups and saves SMS costs
+   */
+  const checkPhoneNumber = async (phoneNumber: string) => {
+    try {
+      // Use direct fetch to call the tRPC API
+      const baseURL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "";
+      const response = await fetch(`${baseURL}/api/trpc/auth.checkPhoneNumber`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      if (!response.ok) {
+        return {
+          exists: false,
+          message: "Unable to check phone number availability",
+        };
+      }
+
+      const result = await response.json();
+
+      if (result.error && result.error.data) {
+        return result.error.data;
+      }
+
+      return {
+        exists: false,
+        message: "Phone number is available",
+      };
+    } catch (err) {
+      return {
+        exists: false,
+        message: "Unable to check phone number availability",
+      };
+    }
+  };
+
+  /**
    * Send OTP to phone number
-   * Uses Better Auth client directly
+   * Uses tRPC mutation with server-side duplicate prevention
    */
   const sendPhoneOTP = async (phoneNumber: string) => {
     try {
-      const { data, error } = await authClient.phoneNumber.sendOtp({
-        phoneNumber: phoneNumber as any,
-      });
+      // Use tRPC client instead of Better Auth client directly
+      // This ensures our server-side duplicate prevention runs
+      const result = await trpcClient.auth.sendPhoneOTP.mutate({ phoneNumber });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Failed to send OTP",
+          error: result.error || "Failed to send OTP",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
+      // Check for TRPCError with user-friendly message
+      let errorMessage = "Failed to send OTP";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
       return {
         success: false,
-        error: err instanceof Error ? err.message : "Failed to send OTP",
+        error: errorMessage,
       };
     }
   };
 
   /**
    * Verify phone number with OTP
-   * Uses Better Auth client directly to ensure session cookies are set
+   * Uses tRPC mutation for server-side validation and consistent error handling
    * Session state will automatically update via useSession hook
    */
   const verifyPhoneNumber = async (params: {
@@ -129,17 +178,18 @@ export function useAuth() {
     updatePhoneNumber?: boolean;
   }) => {
     try {
-      const { data, error } = await authClient.phoneNumber.verify({
-        phoneNumber: params.phoneNumber as any,
-        code: params.code as any,
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.verifyPhoneNumber.mutate({
+        phoneNumber: params.phoneNumber,
+        code: params.code,
         disableSession: params.disableSession,
         updatePhoneNumber: params.updatePhoneNumber,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Verification failed",
+          error: result.error || "Verification failed",
         };
       }
 
@@ -148,7 +198,7 @@ export function useAuth() {
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -160,6 +210,7 @@ export function useAuth() {
 
   /**
    * Sign in with phone number and password
+   * Uses tRPC mutation for server-side validation
    */
   const signInWithPhone = async (params: {
     phoneNumber: string;
@@ -167,22 +218,23 @@ export function useAuth() {
     rememberMe?: boolean;
   }) => {
     try {
-      const { data, error } = await authClient.signIn.phoneNumber({
-        phoneNumber: params.phoneNumber as any,
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.signInWithPhone.mutate({
+        phoneNumber: params.phoneNumber,
         password: params.password,
         rememberMe: params.rememberMe,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Sign in failed",
+          error: result.error || "Sign in failed",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -194,23 +246,25 @@ export function useAuth() {
 
   /**
    * Request password reset via phone
+   * Uses tRPC mutation for server-side validation
    */
   const requestPasswordResetPhone = async (phoneNumber: string) => {
     try {
-      const { data, error } = await authClient.phoneNumber.requestPasswordReset({
-        phoneNumber: phoneNumber as any,
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.requestPasswordResetPhone.mutate({
+        phoneNumber,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Failed to request password reset",
+          error: result.error || "Failed to request password reset",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -222,6 +276,7 @@ export function useAuth() {
 
   /**
    * Reset password with OTP
+   * Uses tRPC mutation for server-side validation
    */
   const resetPasswordPhone = async (params: {
     phoneNumber: string;
@@ -229,22 +284,23 @@ export function useAuth() {
     newPassword: string;
   }) => {
     try {
-      const { data, error } = await authClient.phoneNumber.resetPassword({
-        phoneNumber: params.phoneNumber as any,
-        otp: params.otp as any,
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.resetPasswordPhone.mutate({
+        phoneNumber: params.phoneNumber,
+        otp: params.otp,
         newPassword: params.newPassword,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Failed to reset password",
+          error: result.error || "Failed to reset password",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -260,6 +316,7 @@ export function useAuth() {
 
   /**
    * Sign up with email and password
+   * Uses tRPC mutation for server-side validation
    */
   const signUp = async (params: {
     email: string;
@@ -268,22 +325,24 @@ export function useAuth() {
     username?: string;
   }) => {
     try {
-      const { data, error } = await authClient.signUp.email({
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.signUp.mutate({
         email: params.email,
         password: params.password,
-        name: params.name || params.email.split('@')[0],
+        name: params.name,
+        username: params.username,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Sign up failed",
+          error: result.error || "Sign up failed",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -295,6 +354,7 @@ export function useAuth() {
 
   /**
    * Sign in with email and password
+   * Uses tRPC mutation for server-side validation
    */
   const signIn = async (params: {
     email: string;
@@ -302,22 +362,23 @@ export function useAuth() {
     rememberMe?: boolean;
   }) => {
     try {
-      const { data, error } = await authClient.signIn.email({
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.signIn.mutate({
         email: params.email,
         password: params.password,
         rememberMe: params.rememberMe,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Sign in failed",
+          error: result.error || "Sign in failed",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -329,23 +390,25 @@ export function useAuth() {
 
   /**
    * Send email verification
+   * Uses tRPC mutation for server-side validation
    */
   const sendVerificationEmail = async (email: string) => {
     try {
-      const { data, error } = await authClient.sendVerificationEmail({
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.sendVerificationEmail.mutate({
         email,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Failed to send verification email",
+          error: result.error || "Failed to send verification email",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -357,25 +420,25 @@ export function useAuth() {
 
   /**
    * Verify email with token
+   * Uses tRPC mutation for server-side validation
    */
   const verifyEmail = async (params: { token: string }) => {
     try {
-      const { data, error } = await authClient.verifyEmail({
-        query: {
-          token: params.token,
-        },
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.verifyEmail.mutate({
+        token: params.token,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Failed to verify email",
+          error: result.error || "Failed to verify email",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -410,27 +473,29 @@ export function useAuth() {
 
   /**
    * Change password (authenticated)
+   * Uses tRPC mutation for server-side validation
    */
   const changePassword = async (params: {
     currentPassword: string;
     newPassword: string;
   }) => {
     try {
-      const { data, error } = await authClient.changePassword({
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.changePassword.mutate({
         currentPassword: params.currentPassword,
         newPassword: params.newPassword,
       });
 
-      if (error) {
+      if (!result.success) {
         return {
           success: false,
-          error: error.message || "Failed to change password",
+          error: result.error || "Failed to change password",
         };
       }
 
       return {
         success: true,
-        data,
+        data: result.data,
       };
     } catch (err) {
       return {
@@ -455,6 +520,7 @@ export function useAuth() {
     signOut,
 
     // Phone/SMS authentication
+    checkPhoneNumber,
     sendPhoneOTP,
     verifyPhoneNumber,
     signInWithPhone,
