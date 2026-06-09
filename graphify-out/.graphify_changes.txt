@@ -1,0 +1,7 @@
+app/signin/page.tsx
+app/signup/page.tsx
+hooks/use-auth.ts
+lib/auth.ts
+lib/trpc/client.ts
+server/routers/auth.ts
+utils/id.ts

@@ -10352,6 +10352,360 @@
       "id": "public_window",
       "community": 91,
       "norm_label": "window icon svg"
+    },
+    {
+      "id": "SignInPage",
+      "type": "component",
+      "label": "SignInPage",
+      "source_location": "app/signin/page.tsx:66",
+      "metadata": {
+        "description": "Sign in page with phone/email/OTP authentication methods",
+        "features": [
+          "Phone + Password",
+          "Email + Password",
+          "Phone OTP",
+          "Google OAuth"
+        ],
+        "auth_methods": [
+          "phone",
+          "email",
+          "otp",
+          "google"
+        ]
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "SignUpPage",
+      "type": "component",
+      "label": "SignUpPage",
+      "source_location": "app/signup/page.tsx:70",
+      "metadata": {
+        "description": "Sign up page with 3-step phone verification flow",
+        "steps": [
+          "Phone Number",
+          "OTP Verification",
+          "Password Setup"
+        ],
+        "auth_methods": [
+          "phone",
+          "google"
+        ]
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "SignInForm",
+      "type": "component",
+      "label": "SignInForm",
+      "source_location": "app/signin/page.tsx:404",
+      "metadata": {
+        "description": "Sign in form component with method switching"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "SignUpStep1",
+      "type": "component",
+      "label": "SignUpStep1",
+      "source_location": "app/signup/page.tsx:422",
+      "metadata": {
+        "description": "Sign up step 1 - Phone number input"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "SignUpStep2",
+      "type": "component",
+      "label": "SignUpStep2",
+      "source_location": "app/signup/page.tsx:511",
+      "metadata": {
+        "description": "Sign up step 2 - OTP verification"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "SignUpStep3",
+      "type": "component",
+      "label": "SignUpStep3",
+      "source_location": "app/signup/page.tsx:608",
+      "metadata": {
+        "description": "Sign up step 3 - Password setup"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "useAuth",
+      "type": "hook",
+      "label": "useAuth",
+      "source_location": "hooks/use-auth.ts:57",
+      "metadata": {
+        "description": "Main authentication hook with Better Auth integration",
+        "provides": [
+          "session_state",
+          "auth_methods",
+          "password_management"
+        ]
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "useUserProfile",
+      "type": "hook",
+      "label": "useUserProfile",
+      "source_location": "hooks/use-auth.ts:576",
+      "metadata": {
+        "description": "User profile management hook with tRPC"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "checkPhoneNumber",
+      "type": "function",
+      "label": "checkPhoneNumber",
+      "source_location": "hooks/use-auth.ts:96",
+      "metadata": {
+        "description": "Check if phone number is already registered"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "sendPhoneOTP",
+      "type": "function",
+      "label": "sendPhoneOTP",
+      "source_location": "hooks/use-auth.ts:120",
+      "metadata": {
+        "description": "Send OTP to phone number via tRPC"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "verifyPhoneNumber",
+      "type": "function",
+      "label": "verifyPhoneNumber",
+      "source_location": "hooks/use-auth.ts:161",
+      "metadata": {
+        "description": "Verify phone number with OTP code"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "signInWithPhone",
+      "type": "function",
+      "label": "signInWithPhone",
+      "source_location": "hooks/use-auth.ts:204",
+      "metadata": {
+        "description": "Sign in with phone number and password"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "signIn",
+      "type": "function",
+      "label": "signIn",
+      "source_location": "hooks/use-auth.ts:348",
+      "metadata": {
+        "description": "Sign in with email and password"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "signInWithGoogle",
+      "type": "function",
+      "label": "signInWithGoogle",
+      "source_location": "hooks/use-auth.ts:448",
+      "metadata": {
+        "description": "Sign in with Google OAuth redirect"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "setUserPassword",
+      "type": "function",
+      "label": "setUserPassword",
+      "source_location": "hooks/use-auth.ts:503",
+      "metadata": {
+        "description": "Set password for authenticated user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "auth",
+      "type": "module",
+      "label": "auth",
+      "source_location": "lib/auth.ts:30",
+      "metadata": {
+        "description": "Better Auth server configuration with plugins",
+        "plugins": [
+          "phoneNumber",
+          "drizzleAdapter",
+          "redisStorage"
+        ],
+        "providers": [
+          "google"
+        ]
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "authClient",
+      "type": "api",
+      "label": "authClient",
+      "source_location": "lib/auth-client.ts:1",
+      "metadata": {
+        "description": "Better Auth client instance"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "api",
+      "type": "module",
+      "label": "api",
+      "source_location": "lib/trpc/client.ts:22",
+      "metadata": {
+        "description": "tRPC React client with type inference"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "useTRPCClient",
+      "type": "function",
+      "label": "useTRPCClient",
+      "source_location": "lib/trpc/client.ts:134",
+      "metadata": {
+        "description": "Hook for getting typed tRPC client"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "authRouter",
+      "type": "module",
+      "label": "authRouter",
+      "source_location": "server/routers/auth.ts:19",
+      "metadata": {
+        "description": "tRPC authentication router with procedures"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "getSession",
+      "type": "function",
+      "label": "getSession",
+      "source_location": "server/routers/auth.ts:27",
+      "metadata": {
+        "description": "Get current session from tRPC context"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "checkPhoneNumberProcedure",
+      "type": "function",
+      "label": "checkPhoneNumber",
+      "source_location": "server/routers/auth.ts:46",
+      "metadata": {
+        "description": "tRPC procedure to check phone number availability"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "sendPhoneOTPProcedure",
+      "type": "function",
+      "label": "sendPhoneOTP",
+      "source_location": "server/routers/auth.ts:83",
+      "metadata": {
+        "description": "tRPC procedure to send OTP with duplicate prevention"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "verifyPhoneNumberProcedure",
+      "type": "function",
+      "label": "verifyPhoneNumber",
+      "source_location": "server/routers/auth.ts:176",
+      "metadata": {
+        "description": "tRPC procedure to verify phone with OTP"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "signInWithPhoneProcedure",
+      "type": "function",
+      "label": "signInWithPhone",
+      "source_location": "server/routers/auth.ts:209",
+      "metadata": {
+        "description": "tRPC procedure for phone + password sign in"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "setUserPasswordProcedure",
+      "type": "function",
+      "label": "setUserPassword",
+      "source_location": "server/routers/auth.ts:239",
+      "metadata": {
+        "description": "tRPC protected procedure to set user password"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "signUpProcedure",
+      "type": "function",
+      "label": "signUp",
+      "source_location": "server/routers/auth.ts:324",
+      "metadata": {
+        "description": "tRPC procedure for email + password sign up"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "signInProcedure",
+      "type": "function",
+      "label": "signIn",
+      "source_location": "server/routers/auth.ts:366",
+      "metadata": {
+        "description": "tRPC procedure for email + password sign in"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "getGoogleOAuthURL",
+      "type": "function",
+      "label": "getGoogleOAuthURL",
+      "source_location": "server/routers/auth.ts:451",
+      "metadata": {
+        "description": "tRPC procedure to get Google OAuth metadata"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "changePasswordProcedure",
+      "type": "function",
+      "label": "changePassword",
+      "source_location": "server/routers/auth.ts:480",
+      "metadata": {
+        "description": "tRPC protected procedure to change password"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "generateId",
+      "type": "function",
+      "label": "generateId",
+      "source_location": "utils/id.ts:10",
+      "metadata": {
+        "description": "Generate Better Auth compatible ID"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "generateUUID",
+      "type": "function",
+      "label": "generateUUID",
+      "source_location": "utils/id.ts:25",
+      "metadata": {
+        "description": "Generate UUID v4"
+      },
+      "confidence": 1.0
     }
   ],
   "links": [
@@ -30509,6 +30863,206 @@
       "weight": 1.0,
       "source": "public_icon_512_brand_identity",
       "target": "public_icon_512_visual_element"
+    },
+    {
+      "source": "SignInPage",
+      "target": "useAuth",
+      "key": "uses"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "useAuth",
+      "key": "uses"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "authClient",
+      "key": "imports"
+    },
+    {
+      "source": "SignInPage",
+      "target": "SignInForm",
+      "key": "renders"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "SignUpStep1",
+      "key": "renders"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "SignUpStep2",
+      "key": "renders"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "SignUpStep3",
+      "key": "renders"
+    },
+    {
+      "source": "SignInPage",
+      "target": "checkPhoneNumber",
+      "key": "calls"
+    },
+    {
+      "source": "SignInPage",
+      "target": "sendPhoneOTP",
+      "key": "calls"
+    },
+    {
+      "source": "SignInPage",
+      "target": "verifyPhoneNumber",
+      "key": "calls"
+    },
+    {
+      "source": "SignInPage",
+      "target": "signInWithPhone",
+      "key": "calls"
+    },
+    {
+      "source": "SignInPage",
+      "target": "signIn",
+      "key": "calls"
+    },
+    {
+      "source": "SignInPage",
+      "target": "signInWithGoogle",
+      "key": "calls"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "checkPhoneNumber",
+      "key": "calls"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "sendPhoneOTP",
+      "key": "calls"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "setUserPassword",
+      "key": "calls"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "signInWithGoogle",
+      "key": "calls"
+    },
+    {
+      "source": "SignUpPage",
+      "target": "authClient",
+      "key": "calls"
+    },
+    {
+      "source": "useAuth",
+      "target": "authClient",
+      "key": "uses"
+    },
+    {
+      "source": "useAuth",
+      "target": "api",
+      "key": "uses"
+    },
+    {
+      "source": "useAuth",
+      "target": "useTRPCClient",
+      "key": "uses"
+    },
+    {
+      "source": "checkPhoneNumber",
+      "target": "checkPhoneNumberProcedure",
+      "key": "calls"
+    },
+    {
+      "source": "sendPhoneOTP",
+      "target": "sendPhoneOTPProcedure",
+      "key": "calls"
+    },
+    {
+      "source": "verifyPhoneNumber",
+      "target": "verifyPhoneNumberProcedure",
+      "key": "calls"
+    },
+    {
+      "source": "signInWithPhone",
+      "target": "signInWithPhoneProcedure",
+      "key": "calls"
+    },
+    {
+      "source": "signIn",
+      "target": "signInProcedure",
+      "key": "calls"
+    },
+    {
+      "source": "setUserPassword",
+      "target": "setUserPasswordProcedure",
+      "key": "calls"
+    },
+    {
+      "source": "useAuth",
+      "target": "googleOAuthConfig",
+      "key": "uses"
+    },
+    {
+      "source": "googleOAuthConfig",
+      "target": "getGoogleOAuthURL",
+      "key": "queries"
+    },
+    {
+      "source": "authRouter",
+      "target": "auth",
+      "key": "imports"
+    },
+    {
+      "source": "sendPhoneOTPProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "verifyPhoneNumberProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "signInWithPhoneProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "setUserPasswordProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "signUpProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "signInProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "changePasswordProcedure",
+      "target": "auth",
+      "key": "calls"
+    },
+    {
+      "source": "api",
+      "target": "authRouter",
+      "key": "connects"
+    },
+    {
+      "source": "auth",
+      "target": "generateId",
+      "key": "uses"
+    },
+    {
+      "source": "authRouter",
+      "target": "generateId",
+      "key": "uses"
     }
   ],
   "hyperedges": [

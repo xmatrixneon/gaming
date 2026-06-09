@@ -13,15 +13,10 @@ import {
   AuthButton,
   OTPInput,
   PasswordField,
-  Divider,
 } from "@/components/game";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
-type Step = 1 | 2 | 3 | 4;
-
 interface ForgotPasswordState {
-  step: Step;
   phoneNumber: string;
   otpValue: string;
   newPasswordValue: string;
@@ -32,10 +27,15 @@ interface ForgotPasswordState {
   error: string | null;
   countdown: number;
   canResendOTP: boolean;
+  // mirrors SignUp: controls OTP section visibility
+  otpSent: boolean;
+  // mirrors SignUp: marks phone verified, collapses OTP
+  phoneVerified: boolean;
+  // final success state
+  success: boolean;
 }
 
 const initialState: ForgotPasswordState = {
-  step: 1,
   phoneNumber: "",
   otpValue: "",
   newPasswordValue: "",
@@ -46,23 +46,16 @@ const initialState: ForgotPasswordState = {
   error: null,
   countdown: 0,
   canResendOTP: true,
+  otpSent: false,
+  phoneVerified: false,
+  success: false,
 };
 
-/**
- * Forgot Password Page - Better Auth with Redis OTP
- *
- * Features:
- * - Phone number OTP verification
- * - Redis-backed OTP storage
- * - Password reset
- * - Multi-step process
- */
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const { requestPasswordResetPhone, resetPasswordPhone, sendPhoneOTP } = useAuth();
   const [state, setState] = useState<ForgotPasswordState>(initialState);
 
-  // Update state helper
   const updateState = useCallback(<K extends keyof ForgotPasswordState>(
     key: K,
     value: ForgotPasswordState[K]
@@ -70,559 +63,464 @@ export default function ForgotPasswordPage() {
     setState(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Step 1 - Request Password Reset OTP
+  // Shared countdown — identical to SignUp
+  const startCountdown = useCallback(() => {
+    setState(prev => ({ ...prev, countdown: 60, canResendOTP: false }));
+    const interval = setInterval(() => {
+      setState(prev => {
+        const next = prev.countdown - 1;
+        if (next <= 0) {
+          clearInterval(interval);
+          return { ...prev, countdown: 0, canResendOTP: true };
+        }
+        return { ...prev, countdown: next };
+      });
+    }, 1000);
+  }, []);
+
+  const formatCountdown = (s: number) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
+  // Send OTP — reveals OTP input (mirrors SignUp handleSendOTP)
   const handleSendOTP = useCallback(async () => {
-    if (!state.phoneNumber || state.phoneNumber.length !== 10) {
-      updateState("error", "Please enter a valid phone number");
+    if (state.phoneNumber.length !== 10) {
+      updateState("error", "Enter a valid 10-digit phone number");
       return;
     }
-
     updateState("isLoading", true);
     updateState("error", null);
-
     const fullPhone = `+91${state.phoneNumber}`;
-
     try {
       const result = await requestPasswordResetPhone(fullPhone);
-
       if (result && !result.success) {
         updateState("error", result.error || "Failed to send OTP");
-        updateState("isLoading", false);
         return;
       }
-
-      // Move to OTP verification step
-      updateState("isLoading", false);
-      updateState("step", 2);
-
-      // Start countdown
-      updateState("countdown", 60);
-      updateState("canResendOTP", false);
-
-      const interval = setInterval(() => {
-        setState((prev) => {
-          const newCountdown = prev.countdown - 1;
-          if (newCountdown <= 0) {
-            clearInterval(interval);
-            return { ...prev, countdown: 0, canResendOTP: true };
-          }
-          return { ...prev, countdown: newCountdown };
-        });
-      }, 1000);
+      updateState("otpSent", true);
+      startCountdown();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send OTP";
-      updateState("error", message);
+      updateState("error", err instanceof Error ? err.message : "Failed to send OTP");
+    } finally {
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, requestPasswordResetPhone, updateState]);
+  }, [state.phoneNumber, requestPasswordResetPhone, updateState, startCountdown]);
 
-  // Step 2 - Verify OTP
+  // Verify OTP inline — marks phone verified, collapses OTP (mirrors SignUp handleVerifyOTP)
   const handleVerifyOTP = useCallback(async () => {
     if (state.otpValue.length !== 6) {
-      updateState("error", "Please enter a valid 6-digit OTP");
+      updateState("error", "Enter the 6-digit code");
       return;
     }
-
     updateState("isLoading", true);
     updateState("error", null);
-
-    // Move to reset password step (OTP will be verified in final step)
-    updateState("isLoading", false);
-    updateState("step", 3);
+    try {
+      // OTP will be validated in the final reset step; mark verified here
+      setState(prev => ({ ...prev, phoneVerified: true, otpSent: false }));
+    } finally {
+      updateState("isLoading", false);
+    }
   }, [state.otpValue, updateState]);
 
-  // Step 3 - Reset Password
-  const handleResetPassword = useCallback(async () => {
-    if (!state.newPasswordValue || !state.confirmPasswordValue) {
-      updateState("error", "Please fill in all fields");
+  // Resend OTP (mirrors SignUp handleResendOTP)
+  const handleResendOTP = useCallback(async () => {
+    if (!state.canResendOTP) return;
+    updateState("isLoading", true);
+    updateState("error", null);
+    try {
+      const result = await sendPhoneOTP(`+91${state.phoneNumber}`);
+      if (result && !result.success) {
+        updateState("error", result.error || "Failed to resend OTP");
+        return;
+      }
+      updateState("otpValue", "");
+      startCountdown();
+    } catch (err) {
+      updateState("error", err instanceof Error ? err.message : "Failed to resend OTP");
+    } finally {
+      updateState("isLoading", false);
+    }
+  }, [state.phoneNumber, state.canResendOTP, sendPhoneOTP, updateState, startCountdown]);
+
+  // Final submit — requires phone verified + new passwords
+  const handleSubmit = useCallback(async () => {
+    if (!state.phoneVerified) {
+      updateState("error", "Please verify your phone number first");
       return;
     }
-
-    if (state.newPasswordValue.length < 6) {
+    if (!state.newPasswordValue || state.newPasswordValue.length < 6) {
       updateState("error", "Password must be at least 6 characters");
       return;
     }
-
     if (state.newPasswordValue !== state.confirmPasswordValue) {
       updateState("error", "Passwords do not match");
       return;
     }
-
     updateState("isLoading", true);
     updateState("error", null);
-
-    const fullPhone = `+91${state.phoneNumber}`;
-
     try {
       const result = await resetPasswordPhone({
-        phoneNumber: fullPhone,
+        phoneNumber: `+91${state.phoneNumber}`,
         otp: state.otpValue,
         newPassword: state.newPasswordValue,
       });
-
       if (result && !result.success) {
         updateState("error", result.error || "Failed to reset password");
-        updateState("isLoading", false);
         return;
       }
-
-      // Success - show success screen
-      updateState("isLoading", false);
-      updateState("step", 4);
+      updateState("success", true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to reset password";
-      updateState("error", message);
+      updateState("error", err instanceof Error ? err.message : "Failed to reset password");
+    } finally {
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, state.otpValue, state.newPasswordValue, state.confirmPasswordValue, resetPasswordPhone, updateState]);
+  }, [
+    state.phoneVerified,
+    state.newPasswordValue,
+    state.confirmPasswordValue,
+    state.otpValue,
+    state.phoneNumber,
+    resetPasswordPhone,
+    updateState,
+  ]);
 
-  // Resend OTP
-  const handleResendOTP = useCallback(async () => {
-    if (!state.canResendOTP) return;
+  const canSubmit =
+    state.phoneVerified &&
+    state.newPasswordValue.length >= 6 &&
+    state.confirmPasswordValue.length >= 6 &&
+    !state.isLoading;
 
-    updateState("isLoading", true);
-    updateState("error", null);
+  // ── Success screen ─────────────────────────────────────────────────────────
+  if (state.success) {
+    return (
+      <div className="min-h-screen bg-background text-foreground max-w-md mx-auto">
+        <AuthHeader onClose={() => router.push("/signin")} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.35 }}
+          className="px-4 py-5 pb-10 space-y-4 text-center sm:px-6 sm:py-7"
+        >
+          <motion.div
+            className="mb-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-1">Password Reset!</h1>
+            <p className="text-sm text-muted-foreground">
+              Your password has been reset. You can now sign in with your new password.
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.1 }}
+          >
+            <AuthButton variant="primary" className="w-full" onClick={() => router.push("/signin")}>
+              Go to Sign In
+            </AuthButton>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
 
-    const fullPhone = `+91${state.phoneNumber}`;
-
-    try {
-      const result = await sendPhoneOTP(fullPhone);
-
-      if (result && !result.success) {
-        updateState("error", result.error || "Failed to resend OTP");
-        updateState("isLoading", false);
-        return;
-      }
-
-      updateState("isLoading", false);
-      updateState("otpValue", "");
-      updateState("countdown", 60);
-      updateState("canResendOTP", false);
-
-      const interval = setInterval(() => {
-        setState((prev) => {
-          const newCountdown = prev.countdown - 1;
-          if (newCountdown <= 0) {
-            clearInterval(interval);
-            return { ...prev, countdown: 0, canResendOTP: true };
-          }
-          return { ...prev, countdown: newCountdown };
-        });
-      }, 1000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to resend OTP";
-      updateState("error", message);
-      updateState("isLoading", false);
-    }
-  }, [state.phoneNumber, state.canResendOTP, sendPhoneOTP, updateState]);
-
-  // Format countdown
-  const formatCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
+  // ── Main page ──────────────────────────────────────────────────────────────
   return (
-    <div
-      className={cn(
-        "min-h-screen",
-        "bg-background",
-        "text-foreground",
-        "max-w-md mx-auto",
-      )}
-    >
+    <div className="min-h-screen bg-background text-foreground max-w-md mx-auto">
       <AuthHeader onClose={() => router.push("/signin")} />
 
-      <AnimatePresence mode="wait" initial={false}>
-        {state.step === 1 && (
-          <Step1Phone
-            key="step1"
-            phoneNumber={state.phoneNumber}
-            error={state.error}
-            isLoading={state.isLoading}
-            isDisabled={!state.phoneNumber || state.isLoading}
-            onPhoneNumberChange={(value) => updateState("phoneNumber", value)}
-            onSubmit={handleSendOTP}
+      <div className="px-4 py-5 pb-10 space-y-4 sm:px-6 sm:py-7">
+        {/* Header */}
+        <motion.div
+          className="mb-2"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <h1 className="text-2xl font-bold text-foreground mb-1">Forgot Password?</h1>
+          <p className="text-sm text-muted-foreground">
+            Verify your phone number to reset your password
+          </p>
+        </motion.div>
+
+        {/* Error */}
+        <AnimatePresence>
+          {state.error && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
+            >
+              <p className="text-sm text-red-400">{state.error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Phone / OTP swap — identical structure to SignUp ── */}
+        <div className="relative">
+          <AnimatePresence mode="wait">
+            {/* Phone input — shown before OTP sent */}
+            {!state.otpSent && !state.phoneVerified ? (
+              <motion.div
+                key="phone"
+                initial={{ opacity: 0, x: -24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.28, ease: "easeInOut" }}
+                className="space-y-2"
+              >
+                <PhoneInput
+                  label="Phone Number"
+                  phoneNumber={state.phoneNumber}
+                  onPhoneNumberChange={v => {
+                    updateState("phoneNumber", v);
+                    if (state.error) updateState("error", null);
+                  }}
+                  required
+                  maxLength={10}
+                  className="w-full"
+                />
+                <AuthButton
+                  variant="primary"
+                  onClick={handleSendOTP}
+                  disabled={state.phoneNumber.length !== 10 || state.isLoading}
+                  className="w-full"
+                >
+                  {state.isLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Sending...</>
+                  ) : (
+                    "Send OTP"
+                  )}
+                </AuthButton>
+              </motion.div>
+            ) : (
+              /* OTP section — replaces phone field */
+              <motion.div
+                key="otp"
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24 }}
+                transition={{ duration: 0.28, ease: "easeInOut" }}
+                className="space-y-3"
+              >
+                {/* Phone summary pill */}
+                <motion.div
+                  layout
+                  className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/40 border border-border"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">+91</span>
+                    <span className="text-sm font-medium text-foreground">{state.phoneNumber}</span>
+                    <AnimatePresence>
+                      {state.phoneVerified && (
+                        <motion.span
+                          key="verified-badge"
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                          className="flex items-center gap-1 text-xs text-green-500 font-medium"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Verified
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  {!state.phoneVerified && (
+                    <Button
+                      variant="link"
+                      className="text-xs p-0 h-auto text-primary font-medium"
+                      onClick={() => setState(prev => ({
+                        ...prev, otpSent: false, otpValue: "", error: null,
+                      }))}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </motion.div>
+
+                {/* OTP input — hidden once verified */}
+                <AnimatePresence>
+                  {!state.phoneVerified && (
+                    <motion.div
+                      key="otp-fields"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-3"
+                    >
+                      <div className="relative" style={{ isolation: "isolate" }}>
+                        <OTPInput
+                          length={6}
+                          label="Verification Code"
+                          required
+                          value={state.otpValue}
+                          onChange={v => {
+                            updateState("otpValue", v);
+                            if (state.error) updateState("error", null);
+                          }}
+                        />
+                      </div>
+                      <div className="relative space-y-2" style={{ zIndex: 10 }}>
+                        {/* Timer / resend row */}
+                        <div className="flex items-center justify-between">
+                          <AnimatePresence mode="wait">
+                            {!state.canResendOTP ? (
+                              <motion.span
+                                key="countdown"
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                transition={{ duration: 0.15 }}
+                                className="text-xs text-muted-foreground tabular-nums"
+                              >
+                                Resend in {formatCountdown(state.countdown)}
+                              </motion.span>
+                            ) : (
+                              <motion.span
+                                key="spacer"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="text-xs text-transparent select-none"
+                              >
+                                &nbsp;
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                          <Button
+                            variant="link"
+                            className="text-xs p-0 h-auto text-primary font-medium"
+                            onClick={handleResendOTP}
+                            disabled={!state.canResendOTP || state.isLoading}
+                          >
+                            Resend code
+                          </Button>
+                        </div>
+                        {/* Verify button */}
+                        <AuthButton
+                          variant="primary"
+                          className="w-full"
+                          onClick={handleVerifyOTP}
+                          disabled={state.otpValue.length !== 6 || state.isLoading}
+                        >
+                          {state.isLoading ? (
+                            <><Loader2 className="h-4 w-4 animate-spin mr-2" />Verifying...</>
+                          ) : (
+                            "Verify"
+                          )}
+                        </AuthButton>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* ── New Password ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
+        >
+          <PasswordField
+            label="New Password"
+            required
+            placeholder="Min 6 characters"
+            value={state.newPasswordValue}
+            onChange={e => {
+              updateState("newPasswordValue", e.target.value);
+              if (state.error) updateState("error", null);
+            }}
+            showPassword={state.showNewPassword}
+            onTogglePassword={() => updateState("showNewPassword", !state.showNewPassword)}
           />
-        )}
-        {state.step === 2 && (
-          <Step2OTP
-            key="step2"
-            phoneValue={`+91${state.phoneNumber}`}
-            otpValue={state.otpValue}
-            error={state.error}
-            countdown={state.countdown}
-            canResendOTP={state.canResendOTP}
-            isLoading={state.isLoading}
-            isDisabled={state.otpValue.length !== 6 || state.isLoading}
-            onOtpChange={(value) => updateState("otpValue", value)}
-            onVerify={handleVerifyOTP}
-            onResend={handleResendOTP}
-            onBack={() => updateState("step", 1)}
-            formatCountdown={formatCountdown}
+        </motion.div>
+
+        {/* ── Confirm Password ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.15 }}
+        >
+          <PasswordField
+            label="Confirm Password"
+            required
+            placeholder="Confirm new password"
+            value={state.confirmPasswordValue}
+            onChange={e => {
+              updateState("confirmPasswordValue", e.target.value);
+              if (state.error) updateState("error", null);
+            }}
+            showPassword={state.showConfirmPassword}
+            onTogglePassword={() => updateState("showConfirmPassword", !state.showConfirmPassword)}
           />
-        )}
-        {state.step === 3 && (
-          <Step3Password
-            key="step3"
-            newPasswordValue={state.newPasswordValue}
-            confirmPasswordValue={state.confirmPasswordValue}
-            showNewPassword={state.showNewPassword}
-            showConfirmPassword={state.showConfirmPassword}
-            error={state.error}
-            isLoading={state.isLoading}
-            isDisabled={!state.newPasswordValue || !state.confirmPasswordValue || state.isLoading}
-            onNewPasswordChange={(value) => updateState("newPasswordValue", value)}
-            onConfirmPasswordChange={(value) => updateState("confirmPasswordValue", value)}
-            onToggleNewPassword={() => updateState("showNewPassword", !state.showNewPassword)}
-            onToggleConfirmPassword={() => updateState("showConfirmPassword", !state.showConfirmPassword)}
-            onSubmit={handleResetPassword}
-            onBack={() => updateState("step", 2)}
-          />
-        )}
-        {state.step === 4 && (
-          <Step4Success
-            key="step4"
-            onSignIn={() => router.push("/signin")}
-          />
-        )}
-      </AnimatePresence>
+        </motion.div>
+
+        {/* ── Submit ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+        >
+          <AuthButton
+            variant="primary"
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+          >
+            <AnimatePresence mode="wait">
+              {state.isLoading ? (
+                <motion.span
+                  key="loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center"
+                >
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetting...
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="idle"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  Reset Password
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </AuthButton>
+        </motion.div>
+
+        {/* ── Back to Sign In ── */}
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+        >
+          <Button
+            variant="link"
+            className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => router.push("/signin")}
+          >
+            Back to Sign In
+          </Button>
+        </motion.div>
+      </div>
     </div>
-  );
-}
-
-// Step 1: Enter Phone Number
-function Step1Phone({
-  phoneNumber,
-  error,
-  isLoading,
-  isDisabled,
-  onPhoneNumberChange,
-  onSubmit,
-}: {
-  phoneNumber: string;
-  error: string | null;
-  isLoading: boolean;
-  isDisabled: boolean;
-  onPhoneNumberChange: (number: string) => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3 }}
-      className="px-5 py-7 pb-10"
-    >
-      {/* Page Title */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Forgot Password?
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Enter your phone number to receive a verification code
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* Phone Number Input */}
-      <PhoneInput
-        label="Phone Number"
-        phoneNumber={phoneNumber}
-        onPhoneNumberChange={onPhoneNumberChange}
-        required
-        maxLength={10}
-        className="mb-6"
-      />
-
-      {/* Send Code Button */}
-      <AuthButton
-        variant="primary"
-        className="w-full"
-        onClick={onSubmit}
-        disabled={isDisabled}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending...
-          </>
-        ) : (
-          "Send Verification Code"
-        )}
-      </AuthButton>
-
-      {/* Back to Sign In */}
-      <div className="mt-6 text-center">
-        <Button
-          variant="link"
-          className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
-          onClick={() => (window.location.href = "/signin")}
-        >
-          ← Back to Sign In
-        </Button>
-      </div>
-    </motion.div>
-  );
-}
-
-// Step 2: Verify OTP
-function Step2OTP({
-  phoneValue,
-  otpValue,
-  error,
-  countdown,
-  canResendOTP,
-  isLoading,
-  isDisabled,
-  onOtpChange,
-  onVerify,
-  onResend,
-  onBack,
-  formatCountdown,
-}: {
-  phoneValue: string;
-  otpValue: string;
-  error: string | null;
-  countdown: number;
-  canResendOTP: boolean;
-  isLoading: boolean;
-  isDisabled: boolean;
-  onOtpChange: (value: string) => void;
-  onVerify: () => void;
-  onResend: () => void;
-  onBack: () => void;
-  formatCountdown: (seconds: number) => string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3 }}
-      className="px-5 py-7 pb-10"
-    >
-      {/* Page Title */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Verify your phone
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Enter the 6-digit code sent to <span className="text-green-400">{phoneValue}</span>
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* OTP Input */}
-      <OTPInput
-        length={6}
-        label="Enter verification code"
-        required
-        value={otpValue}
-        onChange={onOtpChange}
-        className="mb-7"
-      />
-
-      {/* Verify Button */}
-      <AuthButton
-        variant="primary"
-        className="w-full mb-4"
-        onClick={onVerify}
-        disabled={isDisabled}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Verifying...
-          </>
-        ) : (
-          "Verify Code"
-        )}
-      </AuthButton>
-
-      {/* Resend Code */}
-      <Button
-        variant="link"
-        className="text-sm mb-6 w-full"
-        onClick={onResend}
-        disabled={!canResendOTP}
-      >
-        {canResendOTP ? (
-          "Didn't receive code? Resend"
-        ) : (
-          `Resend in ${formatCountdown(countdown)}`
-        )}
-      </Button>
-
-      {/* Back Button */}
-      <AuthButton
-        variant="secondary"
-        className="w-full"
-        onClick={onBack}
-        disabled={isLoading}
-      >
-        Back
-      </AuthButton>
-    </motion.div>
-  );
-}
-
-// Step 3: Reset Password
-function Step3Password({
-  newPasswordValue,
-  confirmPasswordValue,
-  showNewPassword,
-  showConfirmPassword,
-  error,
-  isLoading,
-  isDisabled,
-  onNewPasswordChange,
-  onConfirmPasswordChange,
-  onToggleNewPassword,
-  onToggleConfirmPassword,
-  onSubmit,
-  onBack,
-}: {
-  newPasswordValue: string;
-  confirmPasswordValue: string;
-  showNewPassword: boolean;
-  showConfirmPassword: boolean;
-  error: string | null;
-  isLoading: boolean;
-  isDisabled: boolean;
-  onNewPasswordChange: (value: string) => void;
-  onConfirmPasswordChange: (value: string) => void;
-  onToggleNewPassword: () => void;
-  onToggleConfirmPassword: () => void;
-  onSubmit: () => void;
-  onBack: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3 }}
-      className="px-5 py-7 pb-10"
-    >
-      {/* Page Title */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Reset Password
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Create a new password for your account
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* New Password Input */}
-      <PasswordField
-        label="New Password"
-        required
-        placeholder="Enter new password (min 6 characters)"
-        value={newPasswordValue}
-        onChange={(e) => onNewPasswordChange(e.target.value)}
-        showPassword={showNewPassword}
-        onTogglePassword={onToggleNewPassword}
-        containerClassName="mb-4"
-      />
-
-      {/* Confirm Password Input */}
-      <PasswordField
-        label="Confirm Password"
-        required
-        placeholder="Confirm new password"
-        value={confirmPasswordValue}
-        onChange={(e) => onConfirmPasswordChange(e.target.value)}
-        showPassword={showConfirmPassword}
-        onTogglePassword={onToggleConfirmPassword}
-        containerClassName="mb-6"
-      />
-
-      {/* Reset Button */}
-      <AuthButton
-        variant="primary"
-        className="w-full"
-        onClick={onSubmit}
-        disabled={isDisabled}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Resetting...
-          </>
-        ) : (
-          "Reset Password"
-        )}
-      </AuthButton>
-
-      {/* Back Button */}
-      <div className="mt-4">
-        <AuthButton
-          variant="secondary"
-          className="w-full"
-          onClick={onBack}
-          disabled={isLoading}
-        >
-          Back
-        </AuthButton>
-      </div>
-    </motion.div>
-  );
-}
-
-// Step 4: Success
-function Step4Success({
-  onSignIn,
-}: {
-  onSignIn: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="px-5 py-7 pb-10 text-center"
-    >
-      <div className="mb-8">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-          <CheckCircle2 className="w-10 h-10 text-green-500" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Password Reset Successful!
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Your password has been successfully reset. You can now sign in with your new password.
-        </p>
-      </div>
-
-      <AuthButton
-        variant="primary"
-        className="w-full"
-        onClick={onSignIn}
-      >
-        Go to Sign In
-      </AuthButton>
-    </motion.div>
   );
 }

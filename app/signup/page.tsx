@@ -6,7 +6,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { FcGoogle } from "react-icons/fc";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AuthHeader,
@@ -16,63 +16,50 @@ import {
   AuthButton,
   SocialButtons,
   OTPInput,
-  AuthCheckbox,
-  CollapsibleField,
   Divider,
 } from "@/components/game";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
 
 type TabValue = "signin" | "signup";
-type Step = 1 | 2 | 3;
 
 interface SignUpState {
   tab: TabValue;
-  step: Step;
   phoneNumber: string;
   passwordValue: string;
   otpValue: string;
   showPassword: boolean;
   agreed: boolean;
-  promoOpen: boolean;
   isLoading: boolean;
   error: string | null;
   countdown: number;
   canResendOTP: boolean;
+  // Controls OTP section visibility
+  otpSent: boolean;
+  // Controls final submit availability
+  phoneVerified: boolean;
 }
 
 const initialState: SignUpState = {
   tab: "signup",
-  step: 1,
   phoneNumber: "",
   passwordValue: "",
   otpValue: "",
   showPassword: false,
   agreed: false,
-  promoOpen: false,
   isLoading: false,
   error: null,
   countdown: 0,
   canResendOTP: true,
+  otpSent: false,
+  phoneVerified: false,
 };
 
-/**
- * Sign Up Page - Better Auth with Phone/SMS and Redis OTP
- *
- * Features:
- * - Phone number registration with OTP verification
- * - Password creation
- * - Google OAuth signup
- * - Redis-backed OTP storage
- * - Real-time validation
- */
 export default function SignUpPage() {
   const router = useRouter();
-  const { checkPhoneNumber, sendPhoneOTP, signUp, signInWithGoogle, setUserPassword } = useAuth();
+  const { checkPhoneNumber, sendPhoneOTP, signInWithGoogle, setUserPassword } = useAuth();
   const [state, setState] = useState<SignUpState>(initialState);
 
-  // Update state helper
   const updateState = useCallback(<K extends keyof SignUpState>(
     key: K,
     value: SignUpState[K]
@@ -80,285 +67,143 @@ export default function SignUpPage() {
     setState(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Navigation handlers
   const handleTabChange = useCallback((value: string) => {
-    const tabValue = value as TabValue;
-    updateState("tab", tabValue);
-    if (tabValue === "signin") {
-      router.push("/signin");
-    }
-  }, [router, updateState]);
-
-  const handleClose = useCallback(() => {
-    router.push("/");
+    if (value === "signin") router.push("/signin");
   }, [router]);
 
-  // Clear error when user starts typing
-  const handlePhoneNumberChange = useCallback((value: string) => {
-    updateState("phoneNumber", value);
-    if (state.error) updateState("error", null);
-  }, [updateState, state.error]);
+  const handleClose = useCallback(() => router.push("/"), [router]);
 
-  const handlePasswordChange = useCallback((value: string) => {
-    updateState("passwordValue", value);
-    if (state.error) updateState("error", null);
-  }, [updateState, state.error]);
+  const startCountdown = useCallback(() => {
+    setState(prev => ({ ...prev, countdown: 60, canResendOTP: false }));
+    const interval = setInterval(() => {
+      setState(prev => {
+        const next = prev.countdown - 1;
+        if (next <= 0) {
+          clearInterval(interval);
+          return { ...prev, countdown: 0, canResendOTP: true };
+        }
+        return { ...prev, countdown: next };
+      });
+    }, 1000);
+  }, []);
 
-  const handleOtpChange = useCallback((value: string) => {
-    updateState("otpValue", value);
-    if (state.error) updateState("error", null);
-  }, [updateState, state.error]);
-
-  // Step 1 - Send OTP (phone number only)
-  const handleSignUp = useCallback(async () => {
-    if (!state.phoneNumber) {
-      updateState("error", "Please enter your phone number");
+  // Send OTP — reveals OTP input, does NOT block password field
+  const handleSendOTP = useCallback(async () => {
+    if (state.phoneNumber.length !== 10) {
+      updateState("error", "Enter a valid 10-digit phone number");
       return;
     }
-
     updateState("isLoading", true);
     updateState("error", null);
-
     const fullPhone = `+91${state.phoneNumber}`;
-
     try {
-      // Check if phone number is already registered (saves SMS costs)
       const checkResult = await checkPhoneNumber(fullPhone);
-
       if (checkResult.exists) {
-        updateState("error", "This phone number is already registered. Please sign in instead.");
-        updateState("isLoading", false);
+        updateState("error", "Phone number already registered. Sign in instead.");
         return;
       }
-
       const result = await sendPhoneOTP(fullPhone);
-
       if (result && !result.success) {
         updateState("error", result.error || "Failed to send OTP");
-        updateState("isLoading", false);
         return;
       }
-
-      // Move to OTP verification step
-      updateState("isLoading", false);
-      updateState("step", 2);
-
-      // Start countdown
-      updateState("countdown", 60);
-      updateState("canResendOTP", false);
-
-      const interval = setInterval(() => {
-        setState((prev) => {
-          const newCountdown = prev.countdown - 1;
-          if (newCountdown <= 0) {
-            clearInterval(interval);
-            return { ...prev, countdown: 0, canResendOTP: true };
-          }
-          return { ...prev, countdown: newCountdown };
-        });
-      }, 1000);
+      updateState("otpSent", true);
+      startCountdown();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send OTP";
-      updateState("error", message);
+      updateState("error", err instanceof Error ? err.message : "Failed to send OTP");
+    } finally {
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, checkPhoneNumber, sendPhoneOTP, updateState]);
+  }, [state.phoneNumber, checkPhoneNumber, sendPhoneOTP, updateState, startCountdown]);
 
-  // Step 2 - Verify OTP (phone number verification)
+  // Verify OTP inline — marks phone as verified, OTP section collapses
   const handleVerifyOTP = useCallback(async () => {
     if (state.otpValue.length !== 6) {
-      updateState("error", "Please enter a valid 6-digit OTP");
+      updateState("error", "Enter the 6-digit code");
       return;
     }
-
     updateState("isLoading", true);
     updateState("error", null);
-
     const fullPhone = `+91${state.phoneNumber}`;
-
     try {
-      // Verify phone number using Better Auth client directly
-      // This calls the Better Auth HTTP handler which sets session cookies properly
       const result = await authClient.phoneNumber.verify({
         phoneNumber: fullPhone,
         code: state.otpValue,
-        disableSession: false, // Ensure session is created
+        disableSession: false,
       });
-
       if (result.error) {
         updateState("error", result.error.message || "Invalid OTP");
-        updateState("isLoading", false);
         return;
       }
-
-      console.log("[SIGNUP] Phone verified successfully, session created");
-
-      // Move to password setting step
-      updateState("isLoading", false);
-      updateState("step", 3);
+      // Collapse OTP section, mark verified
+      setState(prev => ({ ...prev, phoneVerified: true, otpSent: false }));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Verification failed";
-      updateState("error", message);
+      updateState("error", err instanceof Error ? err.message : "Verification failed");
+    } finally {
       updateState("isLoading", false);
     }
   }, [state.phoneNumber, state.otpValue, updateState]);
 
-  // Step 3 - Set Password and Complete Account Creation
-  const handleSetPassword = useCallback(async () => {
-    if (!state.passwordValue) {
-      updateState("error", "Please enter a password");
+  const handleResendOTP = useCallback(async () => {
+    if (!state.canResendOTP) return;
+    updateState("isLoading", true);
+    updateState("error", null);
+    try {
+      const result = await sendPhoneOTP(`+91${state.phoneNumber}`);
+      if (result && !result.success) {
+        updateState("error", result.error || "Failed to resend OTP");
+        return;
+      }
+      updateState("otpValue", "");
+      startCountdown();
+    } catch (err) {
+      updateState("error", err instanceof Error ? err.message : "Failed to resend OTP");
+    } finally {
+      updateState("isLoading", false);
+    }
+  }, [state.phoneNumber, state.canResendOTP, sendPhoneOTP, updateState, startCountdown]);
+
+  // Final submit — requires phone verified
+  const handleSubmit = useCallback(async () => {
+    if (!state.phoneVerified) {
+      updateState("error", "Please verify your phone number first");
       return;
     }
-
     if (state.passwordValue.length < 6) {
       updateState("error", "Password must be at least 6 characters");
       return;
     }
-
     if (!state.agreed) {
       updateState("error", "Please agree to the Terms and Conditions");
       return;
     }
-
     updateState("isLoading", true);
     updateState("error", null);
-
     try {
-      // Set password using Better Auth's setPassword API
-      // The session is already active from Step 2 verification
-      const setPasswordResult = await setUserPassword(state.passwordValue);
-
-      if (!setPasswordResult.success) {
-        updateState("error", setPasswordResult.error || "Failed to set password");
-        updateState("isLoading", false);
+      const result = await setUserPassword(state.passwordValue);
+      if (!result.success) {
+        updateState("error", result.error || "Failed to set password");
         return;
       }
-
-      console.log("[SIGNUP] Password set successfully via Better Auth API");
-
-      // Success - redirect to home
       router.push("/");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to set password";
-      updateState("error", message);
+      updateState("error", err instanceof Error ? err.message : "Failed to create account");
+    } finally {
       updateState("isLoading", false);
     }
-  }, [state.passwordValue, state.agreed, setUserPassword, router, updateState]);
+  }, [state.phoneVerified, state.passwordValue, state.agreed, setUserPassword, router, updateState]);
 
-  // Resend OTP
-  const handleResendOTP = useCallback(async () => {
-    if (!state.canResendOTP) return;
+  const formatCountdown = (s: number) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-    updateState("isLoading", true);
-    updateState("error", null);
-
-    const fullPhone = `+91${state.phoneNumber}`;
-
-    try {
-      const result = await sendPhoneOTP(fullPhone);
-
-      if (result && !result.success) {
-        updateState("error", result.error || "Failed to resend OTP");
-        updateState("isLoading", false);
-        return;
-      }
-
-      updateState("isLoading", false);
-      updateState("otpValue", "");
-      updateState("countdown", 60);
-      updateState("canResendOTP", false);
-
-      const interval = setInterval(() => {
-        setState((prev) => {
-          const newCountdown = prev.countdown - 1;
-          if (newCountdown <= 0) {
-            clearInterval(interval);
-            return { ...prev, countdown: 0, canResendOTP: true };
-          }
-          return { ...prev, countdown: newCountdown };
-        });
-      }, 1000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to resend OTP";
-      updateState("error", message);
-      updateState("isLoading", false);
-    }
-  }, [state.phoneNumber, state.canResendOTP, sendPhoneOTP, updateState]);
-
-  const handleGoogleSignUp = useCallback(() => {
-    signInWithGoogle();
-  }, [signInWithGoogle]);
-
-  const goBackToStep1 = useCallback(() => {
-    updateState("step", 1);
-    updateState("error", null);
-  }, [updateState]);
-
-  const goBackToStep2 = useCallback(() => {
-    updateState("step", 2);
-    updateState("error", null);
-  }, [updateState]);
-
-  // Format countdown
-  const formatCountdown = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Combined handlers object
-  const step1Handlers = {
-    onPhoneNumberChange: handlePhoneNumberChange,
-    onSignUp: handleSignUp,
-    onGoogleSignUp: handleGoogleSignUp,
-  };
-
-  const step2Handlers = {
-    onOtpChange: handleOtpChange,
-    onVerify: handleVerifyOTP,
-    onResend: handleResendOTP,
-    onBack: goBackToStep1,
-  };
-
-  const step3Handlers = {
-    onPasswordChange: handlePasswordChange,
-    onTogglePassword: () => updateState("showPassword", !state.showPassword),
-    onAgreedChange: (checked: boolean) => updateState("agreed", checked),
-    onSetPassword: handleSetPassword,
-    onBack: goBackToStep2,
-  };
-
-  const step1Data = {
-    phoneNumber: state.phoneNumber,
-    error: state.error,
-  };
-
-  const step2Data = {
-    phoneNumber: state.phoneNumber,
-    otpValue: state.otpValue,
-    countdown: state.countdown,
-    canResendOTP: state.canResendOTP,
-    isLoading: state.isLoading,
-    error: state.error,
-  };
-
-  const step3Data = {
-    passwordValue: state.passwordValue,
-    showPassword: state.showPassword,
-    agreed: state.agreed,
-    isLoading: state.isLoading,
-    error: state.error,
-  };
+  const canSubmit =
+    state.phoneVerified &&
+    state.passwordValue.length >= 6 &&
+    state.agreed &&
+    !state.isLoading;
 
   return (
-    <div
-      className={cn(
-        "min-h-screen",
-        "bg-background",
-        "text-foreground",
-        "max-w-md mx-auto",
-      )}
-    >
+    <div className="min-h-screen bg-background text-foreground max-w-md mx-auto">
       <AuthHeader onClose={handleClose} />
 
       <AuthTabs
@@ -369,316 +214,332 @@ export default function SignUpPage() {
           { value: "signup", label: "Sign Up" },
         ]}
       >
-        <AnimatePresence mode="wait" initial={false}>
-        {state.step === 1 ? (
-          <SignUpStep1
-            key="step1"
-            data={step1Data}
-            handlers={step1Handlers}
-            isLoading={state.isLoading}
-            isDisabled={!state.phoneNumber || state.isLoading}
-          />
-        ) : state.step === 2 ? (
-          <SignUpStep2
-            key="step2"
-            data={step2Data}
-            handlers={step2Handlers}
-            isLoading={state.isLoading}
-            isDisabled={state.otpValue.length !== 6 || state.isLoading}
-            formatCountdown={formatCountdown}
-          />
-        ) : (
-          <SignUpStep3
-            key="step3"
-            data={step3Data}
-            handlers={step3Handlers}
-            isLoading={state.isLoading}
-            isDisabled={!state.passwordValue || state.passwordValue.length < 6 || !state.agreed || state.isLoading}
-          />
-        )}
-      </AnimatePresence>
+        <div className="px-4 py-5 pb-10 space-y-4 sm:px-6 sm:py-7">
+          {/* Header */}
+          <motion.div
+            className="mb-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <h1 className="text-2xl font-bold text-foreground mb-1">Create Account</h1>
+            <p className="text-sm text-muted-foreground">
+              Sign up to get started with your account
+            </p>
+          </motion.div>
+
+          {/* Error */}
+          <AnimatePresence>
+            {state.error && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
+              >
+                <p className="text-sm text-red-400">{state.error}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Phone / OTP swap ── */}
+          <div className="relative">
+            <AnimatePresence mode="wait">
+              {/* Phone input — shown before OTP sent */}
+              {!state.otpSent && !state.phoneVerified ? (
+                <motion.div
+                  key="phone"
+                  initial={{ opacity: 0, x: -24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -24 }}
+                  transition={{ duration: 0.28, ease: "easeInOut" }}
+                  className="space-y-2"
+                >
+                  <PhoneInput
+                    label="Phone Number"
+                    phoneNumber={state.phoneNumber}
+                    onPhoneNumberChange={v => {
+                      updateState("phoneNumber", v);
+                      if (state.error) updateState("error", null);
+                    }}
+                    required
+                    maxLength={10}
+                    className="w-full"
+                  />
+                  <AuthButton
+                    variant="primary"
+                    onClick={handleSendOTP}
+                    disabled={state.phoneNumber.length !== 10 || state.isLoading}
+                    className="w-full"
+                  >
+                    {state.isLoading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin mr-2" />Sending...</>
+                    ) : (
+                      "Send OTP"
+                    )}
+                  </AuthButton>
+                </motion.div>
+              ) : (
+                /* OTP section — replaces phone field */
+                <motion.div
+                  key="otp"
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 24 }}
+                  transition={{ duration: 0.28, ease: "easeInOut" }}
+                  className="space-y-3"
+                >
+                  {/* Phone summary pill */}
+                  <motion.div
+                    layout
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-muted/40 border border-border"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">+91</span>
+                      <span className="text-sm font-medium text-foreground">{state.phoneNumber}</span>
+                      <AnimatePresence>
+                        {state.phoneVerified && (
+                          <motion.span
+                            key="verified-badge"
+                            initial={{ opacity: 0, scale: 0.7 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            className="flex items-center gap-1 text-xs text-green-500 font-medium"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Verified
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {!state.phoneVerified && (
+                      <Button
+                        variant="link"
+                        className="text-xs p-0 h-auto text-primary font-medium"
+                        onClick={() => setState(prev => ({
+                          ...prev, otpSent: false, otpValue: "", error: null,
+                        }))}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                  </motion.div>
+
+                  {/* OTP input — hidden once verified */}
+                  <AnimatePresence>
+                    {!state.phoneVerified && (
+                      <motion.div
+                        key="otp-fields"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-3"
+                      >
+                        <div className="relative" style={{ isolation: "isolate" }}>
+                          <OTPInput
+                            length={6}
+                            label="Verification Code"
+                            required
+                            value={state.otpValue}
+                            onChange={v => {
+                              updateState("otpValue", v);
+                              if (state.error) updateState("error", null);
+                            }}
+                          />
+                        </div>
+                        <div className="relative space-y-2" style={{ zIndex: 10 }}>
+                          {/* Timer / resend row above button */}
+                          <div className="flex items-center justify-between">
+                            <AnimatePresence mode="wait">
+                              {!state.canResendOTP ? (
+                                <motion.span
+                                  key="countdown"
+                                  initial={{ opacity: 0, y: 4 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -4 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="text-xs text-muted-foreground tabular-nums"
+                                >
+                                  Resend in {formatCountdown(state.countdown)}
+                                </motion.span>
+                              ) : (
+                                <motion.span
+                                  key="spacer"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  className="text-xs text-transparent select-none"
+                                >
+                                  &nbsp;
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                            <Button
+                              variant="link"
+                              className="text-xs p-0 h-auto text-primary font-medium"
+                              onClick={handleResendOTP}
+                              disabled={!state.canResendOTP || state.isLoading}
+                            >
+                              Resend code
+                            </Button>
+                          </div>
+                          {/* Verify button — full width like Send OTP */}
+                          <AuthButton
+                            variant="primary"
+                            className="w-full"
+                            onClick={handleVerifyOTP}
+                            disabled={state.otpValue.length !== 6 || state.isLoading}
+                          >
+                            {state.isLoading ? (
+                              <><Loader2 className="h-4 w-4 animate-spin mr-2" />Verifying...</>
+                            ) : (
+                              "Verify"
+                            )}
+                          </AuthButton>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Password ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.1 }}
+          >
+            <PasswordField
+              label="Password"
+              required
+              placeholder="Min 6 characters"
+              value={state.passwordValue}
+              onChange={e => {
+                updateState("passwordValue", e.target.value);
+                if (state.error) updateState("error", null);
+              }}
+              showPassword={state.showPassword}
+              onTogglePassword={() => updateState("showPassword", !state.showPassword)}
+            />
+          </motion.div>
+
+          {/* ── T&C ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.15 }}
+          >
+            <button
+              type="button"
+              onClick={() => updateState("agreed", !state.agreed)}
+              className="flex items-start gap-3 w-full text-left cursor-pointer group"
+            >
+              <span className={[
+                "mt-0.5 flex-shrink-0 h-5 w-5 rounded border transition-colors duration-200",
+                "flex items-center justify-center",
+                state.agreed
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : "border-input bg-transparent dark:bg-input/30",
+              ].join(" ")}>
+                {state.agreed && (
+                  <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </span>
+              <span className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors duration-200 min-w-0">
+                I am 18+ and agree to the{" "}
+                <span className="text-foreground font-semibold underline">
+                  Terms and Conditions
+                </span>
+              </span>
+            </button>
+          </motion.div>
+
+          {/* ── Submit ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.2 }}
+          >
+            <AuthButton
+              variant="primary"
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+            >
+              <AnimatePresence mode="wait">
+                {state.isLoading ? (
+                  <motion.span
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center"
+                  >
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    Create Account
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </AuthButton>
+          </motion.div>
+
+          {/* ── Social ── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+          >
+            <Divider text="Or continue with" />
+            <div className="mt-4">
+              <SocialButtons
+                layout="full"
+                providers={[
+                  {
+                    name: "Google",
+                    icon: <FcGoogle size={18} />,
+                    onClick: () => signInWithGoogle(),
+                  },
+                ]}
+              />
+            </div>
+          </motion.div>
+
+          {/* ── Already have an account ── */}
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Button
+                variant="link"
+                className="h-auto p-0 text-sm font-semibold text-foreground hover:underline"
+                onClick={() => router.push("/signin")}
+              >
+                Sign In
+              </Button>
+            </p>
+          </motion.div>
+        </div>
       </AuthTabs>
     </div>
-  );
-}
-
-/**
- * Step 1 Component - Phone Number Only
- */
-interface SignUpStep1Props {
-  data: {
-    phoneNumber: string;
-    error: string | null;
-  };
-  handlers: {
-    onPhoneNumberChange: (value: string) => void;
-    onSignUp: () => void;
-    onGoogleSignUp: () => void;
-  };
-  isLoading: boolean;
-  isDisabled: boolean;
-}
-
-function SignUpStep1({ data, handlers, isLoading, isDisabled }: SignUpStep1Props) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3 }}
-      className="px-5 py-7 pb-10"
-    >
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Create Account
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Sign up to get started with your account
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {data.error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-sm text-red-400">{data.error}</p>
-        </div>
-      )}
-
-      <PhoneInput
-        label="Phone Number"
-        phoneNumber={data.phoneNumber}
-        onPhoneNumberChange={handlers.onPhoneNumberChange}
-        required
-        maxLength={10}
-        className="mb-4"
-      />
-
-      <AuthButton
-        variant="primary"
-        className="w-full mb-6"
-        onClick={handlers.onSignUp}
-        disabled={isDisabled}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending code...
-          </>
-        ) : (
-          "Continue"
-        )}
-      </AuthButton>
-
-      <Divider text="Or continue with" className="mb-4" />
-
-      <SocialButtons
-        layout="full"
-        providers={[
-          {
-            name: "Google",
-            icon: <FcGoogle size={18} />,
-            onClick: handlers.onGoogleSignUp,
-          },
-        ]}
-      />
-    </motion.div>
-  );
-}
-
-/**
- * Step 2 Component - OTP Verification
- */
-interface SignUpStep2Props {
-  data: {
-    phoneNumber: string;
-    otpValue: string;
-    countdown: number;
-    canResendOTP: boolean;
-    isLoading: boolean;
-    error: string | null;
-  };
-  handlers: {
-    onOtpChange: (value: string) => void;
-    onVerify: () => void;
-    onResend: () => void;
-    onBack: () => void;
-  };
-  isLoading: boolean;
-  isDisabled: boolean;
-  formatCountdown: (seconds: number) => string;
-}
-
-function SignUpStep2({ data, handlers, isLoading, isDisabled, formatCountdown }: SignUpStep2Props) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3 }}
-      className="px-5 py-7 pb-10"
-    >
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Verify your phone
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Enter the 6-digit code sent to <span className="text-green-400">+91{data.phoneNumber}</span>
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {data.error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-sm text-red-400">{data.error}</p>
-        </div>
-      )}
-
-      <OTPInput
-        length={6}
-        label="Enter verification code"
-        required
-        value={data.otpValue}
-        onChange={handlers.onOtpChange}
-        className="mb-7"
-      />
-
-      <AuthButton
-        variant="primary"
-        className="w-full mb-4"
-        onClick={handlers.onVerify}
-        disabled={isDisabled}
-      >
-        {data.isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Verifying...
-          </>
-        ) : (
-          "Verify"
-        )}
-      </AuthButton>
-
-      <Button
-        variant="link"
-        className="text-sm mb-6 w-full"
-        onClick={handlers.onResend}
-        disabled={!data.canResendOTP}
-      >
-        {data.canResendOTP ? (
-          "Didn't receive code? Resend"
-        ) : (
-          `Resend in ${formatCountdown(data.countdown)}`
-        )}
-      </Button>
-
-      <AuthButton
-        variant="secondary"
-        className="w-full"
-        onClick={handlers.onBack}
-        disabled={isLoading}
-      >
-        Back
-      </AuthButton>
-    </motion.div>
-  );
-}
-
-/**
- * Step 3 Component - Set Password
- */
-interface SignUpStep3Props {
-  data: {
-    passwordValue: string;
-    showPassword: boolean;
-    agreed: boolean;
-    isLoading: boolean;
-    error: string | null;
-  };
-  handlers: {
-    onPasswordChange: (value: string) => void;
-    onTogglePassword: () => void;
-    onAgreedChange: (checked: boolean) => void;
-    onSetPassword: () => void;
-    onBack: () => void;
-  };
-  isLoading: boolean;
-  isDisabled: boolean;
-}
-
-function SignUpStep3({ data, handlers, isLoading, isDisabled }: SignUpStep3Props) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.3 }}
-      className="px-5 py-7 pb-10"
-    >
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Create Password
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Set a password to secure your account
-        </p>
-      </div>
-
-      {/* Error Message */}
-      {data.error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-sm text-red-400">{data.error}</p>
-        </div>
-      )}
-
-      <PasswordField
-        label="Password"
-        required
-        placeholder="Create a strong password (min 6 characters)"
-        value={data.passwordValue}
-        onChange={(e) => handlers.onPasswordChange(e.target.value)}
-        showPassword={data.showPassword}
-        onTogglePassword={handlers.onTogglePassword}
-        containerClassName="mb-4"
-      />
-
-      <AuthCheckbox
-        label={
-          <>
-            I am 18+ and agree to the{" "}
-            <span className="text-foreground font-semibold underline hover:underline cursor-pointer">
-              Terms and Conditions
-            </span>
-          </>
-        }
-        checked={data.agreed}
-        onCheckedChange={handlers.onAgreedChange}
-        className="mb-7"
-      />
-
-      <AuthButton
-        variant="primary"
-        className="w-full mb-4"
-        onClick={handlers.onSetPassword}
-        disabled={isDisabled}
-      >
-        {data.isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating Account...
-          </>
-        ) : (
-          "Create Account"
-        )}
-      </AuthButton>
-
-      <AuthButton
-        variant="secondary"
-        className="w-full"
-        onClick={handlers.onBack}
-        disabled={isLoading}
-      >
-        Back
-      </AuthButton>
-    </motion.div>
   );
 }
