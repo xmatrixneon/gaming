@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { Bell, ChevronDown } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export interface AppHeaderProps {
@@ -71,6 +73,17 @@ const AppHeader = React.forwardRef<HTMLDivElement, AppHeaderProps>(
     ref
   ) => {
     const router = useRouter();
+    const [avatarError, setAvatarError] = useState(false);
+
+    // Get user initials for avatar fallback
+    const getInitials = (name?: string) => {
+      if (!name) return "👤";
+      const parts = name.split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
+    };
 
     const handleBack = () => {
       router.back();
@@ -179,16 +192,24 @@ const AppHeader = React.forwardRef<HTMLDivElement, AppHeaderProps>(
             {/* Profile Avatar */}
             <button
               className={cn(
-                "relative flex items-center justify-center",
-                "w-9 h-9 rounded-lg",
-                "bg-gradient-to-br from-primary to-primary/70",
-                "border border-primary/20",
-                "hover:border-primary/50",
-                "transition-colors duration-200"
+                "relative",
+                "hover:opacity-80",
+                "transition-opacity duration-200"
               )}
               onClick={() => router.push("/profile")}
             >
-              <span className="text-sm">{user.avatar || "👤"}</span>
+              <Avatar size="lg" className="ring-2 ring-background">
+                {user.avatar && !avatarError ? (
+                  <AvatarImage
+                    src={user.avatar}
+                    alt={user.username}
+                    onError={() => setAvatarError(true)}
+                  />
+                ) : null}
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-xs font-bold">
+                  {getInitials(user.username)}
+                </AvatarFallback>
+              </Avatar>
             </button>
           </div>
         ) : (

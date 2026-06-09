@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { AuthHeader } from "@/components/game";
 import { Button } from "@/components/ui/button";
@@ -25,15 +25,17 @@ import {
 } from "react-icons/io5";
 import { cn } from "@/lib/utils";
 
-// Settings menu items
-const SETTINGS_MENU = [
-  {
-    id: "change-password",
-    label: "Change Password",
-    icon: <IoKeyOutline size={18} />,
-    description: "Update your account password",
-    route: "/settings/change-password",
-  },
+// Type for password menu item (which has dynamic label/description)
+interface PasswordMenuItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+  route: string;
+}
+
+// Settings menu items (excluding change/set password - added dynamically)
+const SETTINGS_MENU_BASE = [
   {
     id: "account-info",
     label: "Account Information",
@@ -62,7 +64,22 @@ const SETTINGS_MENU = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isAuthenticated, user: authUser, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, user: authUser, isLoading: authLoading, hasPassword, isAccountsLoading } = useAuth();
+
+  // Build dynamic settings menu with password item (must be before early returns for React Hooks)
+  const settingsMenu = useMemo(() => {
+    const passwordItem = {
+      id: hasPassword ? "change-password" : "set-password",
+      label: hasPassword ? "Change Password" : "Set Password",
+      icon: <IoKeyOutline size={18} />,
+      description: hasPassword
+        ? "Update your account password"
+        : "Add password authentication to your account",
+      route: hasPassword ? "/settings/change-password" : "/settings/set-password",
+    };
+
+    return [passwordItem, ...SETTINGS_MENU_BASE];
+  }, [hasPassword]);
 
   // Redirect to signin if not authenticated
   useEffect(() => {
@@ -97,8 +114,8 @@ export default function SettingsPage() {
   };
 
   // Handle settings menu clicks
-  const handleSettingsMenu = (item: typeof SETTINGS_MENU[0]) => {
-    if (item.disabled) return;
+  const handleSettingsMenu = (item: typeof SETTINGS_MENU_BASE[0] | PasswordMenuItem) => {
+    if ('disabled' in item && item.disabled) return;
     router.push(item.route);
   };
 
@@ -156,53 +173,59 @@ export default function SettingsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
-          {SETTINGS_MENU.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-            >
-              <Button
-                variant="outline"
-                onClick={() => handleSettingsMenu(item)}
-                disabled={item.disabled}
-                className={cn(
-                  "w-full justify-start h-auto p-4",
-                  "gap-3",
-                  item.disabled && "opacity-50 cursor-not-allowed"
-                )}
+          {isAccountsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            settingsMenu.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
               >
-                {/* Icon */}
-                <div className="w-8 h-8 rounded-lg bg-muted-foreground/10 flex items-center justify-center flex-shrink-0">
-                  {item.icon}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">
-                      {item.label}
-                    </span>
-                    {item.disabled && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        Coming Soon
-                      </span>
-                    )}
+                <Button
+                  variant="outline"
+                  onClick={() => handleSettingsMenu(item)}
+                  disabled={'disabled' in item ? (item.disabled as boolean) : false}
+                  className={cn(
+                    "w-full justify-start h-auto p-4",
+                    "gap-3",
+                    (('disabled' in item && item.disabled) ? "opacity-50 cursor-not-allowed" : undefined)
+                  )}
+                >
+                  {/* Icon */}
+                  <div className="w-8 h-8 rounded-lg bg-muted-foreground/10 flex items-center justify-center flex-shrink-0">
+                    {item.icon}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
 
-                {/* Chevron */}
-                <IoChevronForward
-                  className="text-muted-foreground flex-shrink-0"
-                  size={18}
-                />
-              </Button>
-            </motion.div>
-          ))}
+                  {/* Content */}
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">
+                        {item.label}
+                      </span>
+                      {'disabled' in item && item.disabled ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          Coming Soon
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  {/* Chevron */}
+                  <IoChevronForward
+                    className="text-muted-foreground flex-shrink-0"
+                    size={18}
+                  />
+                </Button>
+              </motion.div>
+            ))
+          )}
         </motion.section>
       </div>
 

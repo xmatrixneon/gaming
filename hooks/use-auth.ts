@@ -12,8 +12,10 @@
  * - Google OAuth
  * - Email authentication
  * - Reactive session management
+ * - Password credential detection
  */
 
+import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, useTRPCClient } from "@/lib/trpc/client";
 import { authClient } from "@/lib/auth-client";
@@ -71,6 +73,47 @@ export function useAuth() {
 
   const isAuthenticated = !!session;
   const user = session?.user as UserProfile | null;
+
+  // ============================================================================
+  // ACCOUNT DETECTION - Check if user has password credential
+  // ============================================================================
+  // Fetch user accounts to detect if they have a password credential
+  // This allows us to show "Set Password" for OAuth users vs "Change Password" for users with passwords
+  const [accounts, setAccounts] = React.useState<any[]>([]);
+  const [accountsLoading, setAccountsLoading] = React.useState(false);
+  const [accountsError, setAccountsError] = React.useState<Error | null>(null);
+
+  // Function to fetch accounts
+  const fetchAccounts = React.useCallback(async () => {
+    if (!isAuthenticated) {
+      setAccounts([]);
+      setAccountsLoading(false);
+      setAccountsError(null);
+      return;
+    }
+
+    setAccountsLoading(true);
+    setAccountsError(null);
+    try {
+      const result = await authClient.listAccounts();
+      // Access the data property of the result
+      setAccounts(result.data || []);
+    } catch (err) {
+      console.error("[AUTH] Failed to list accounts:", err);
+      setAccountsError(err as Error);
+      setAccounts([]);
+    } finally {
+      setAccountsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch accounts when authentication state changes
+  React.useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  // Check if user has a password credential
+  const hasPassword = accounts.some((account) => account.providerId === "credential");
 
   // ============================================================================
   // SIGN OUT
@@ -156,14 +199,12 @@ export function useAuth() {
    * Verify phone number with OTP
    * Uses tRPC mutation for server-side validation and consistent error handling
    * Session state will automatically update via useSession hook
-   * Optionally sets password immediately after verification (server-side)
    */
   const verifyPhoneNumber = async (params: {
     phoneNumber: string;
     code: string;
     disableSession?: boolean;
     updatePhoneNumber?: boolean;
-    password?: string; // Optional password to set after verification
   }) => {
     try {
       // Use tRPC client for server-side validation
@@ -172,7 +213,6 @@ export function useAuth() {
         code: params.code,
         disableSession: params.disableSession,
         updatePhoneNumber: params.updatePhoneNumber,
-        password: params.password, // Pass password to set after verification
       });
 
       if (!result.success) {
@@ -443,12 +483,18 @@ export function useAuth() {
 
   /**
    * Sign in with Google OAuth
-   * Redirects to Google sign-in page
+   * Uses Better Auth client-side signIn method
    */
-  const signInWithGoogle = () => {
-    // Better Auth handles OAuth via callback
-    // Redirect to the Better Auth OAuth endpoint
-    window.location.href = "/api/auth/sign-in/google";
+  const signInWithGoogle = async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Google sign-in failed:", error);
+      // Optional: redirect to error page or show error message
+    }
   };
 
   /**
@@ -532,6 +578,12 @@ export function useAuth() {
     user,
     isLoading: sessionLoading,
     error: sessionError as Error | null,
+
+    // Account detection
+    hasPassword,
+    isAccountsLoading: accountsLoading,
+    accountsError: accountsError,
+    refetchAccounts: fetchAccounts,
 
     // Session management (legacy compatibility)
     signOut,

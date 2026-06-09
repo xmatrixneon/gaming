@@ -4,13 +4,16 @@ export const dynamic = "force-dynamic";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/game";
-import { AuthHeader } from "@/components/game";
 import { AuthButton } from "@/components/game/auth";
 import { GradientCard, BalanceCard } from "@/components/game/shared";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/game";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { BOTTOM_NAV_ITEMS, formatUserCurrency } from "@/lib/config";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -70,6 +73,7 @@ const QUICK_ACTIONS = [
 export default function ProfilePage() {
   const router = useRouter();
   const { isAuthenticated, user: authUser, isLoading: authLoading, signOut } = useAuth();
+  const [avatarError, setAvatarError] = useState(false);
 
   // Redirect to signin if not authenticated (useEffect to avoid setState during render)
   useEffect(() => {
@@ -99,12 +103,21 @@ export default function ProfilePage() {
   const userProfile = {
     username: authUser.username || authUser.email?.split('@')[0] || "Player",
     email: authUser.email || "",
-    avatar: authUser.image || "🎮",
+    avatar: authUser.image || "",
     memberSince: authUser.createdAt ? new Date(authUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Recent",
     vipLevel: authUser.vipLevel || "Bronze",
     phoneNumber: authUser.phoneNumber,
     phoneNumberVerified: authUser.phoneNumberVerified || false,
     balance: authUser.balance || "0",
+  };
+
+  // Get user initials for avatar fallback
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
   // Map icon names to actual icon components for bottom nav
@@ -185,7 +198,7 @@ export default function ProfilePage() {
       icon: <IoShieldCheckmarkOutline size={18} />,
       description: userProfile.phoneNumberVerified ? "Phone verified" : "Verify your phone",
       badge: userProfile.phoneNumberVerified ? "Verified" : "Pending",
-      badgeColor: userProfile.phoneNumberVerified ? "#22c55e" : "#eab308",
+      badgeVariant: (userProfile.phoneNumberVerified ? "default" : "secondary") as "default" | "secondary",
     },
     {
       id: "payment-methods",
@@ -215,6 +228,21 @@ export default function ProfilePage() {
     }
   };
 
+  // VIP badge color mapping
+  const getVIPBadgeVariant = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "gold":
+        return "default";
+      case "platinum":
+        return "default";
+      case "silver":
+        return "secondary";
+      case "bronze":
+      default:
+        return "outline";
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -237,61 +265,75 @@ export default function ProfilePage() {
         title="Profile"
       />
 
-      <div className="px-5 py-7">
-        {/* User Profile Header */}
-        <section className="mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            {/* Avatar */}
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-3xl shadow-lg">
-              {userProfile.avatar}
+      <div className="px-4 py-6 sm:px-5 sm:py-7">
+        {/* User Profile Card */}
+        <Card className="mb-6">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-4">
+              {/* Avatar with improved display */}
+              <div className="relative">
+                <Avatar size="xl" className="ring-4 ring-background/50">
+                  {userProfile.avatar && !avatarError ? (
+                    <AvatarImage
+                      src={userProfile.avatar}
+                      alt={userProfile.username}
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : null}
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold">
+                    {getInitials(userProfile.username)}
+                  </AvatarFallback>
+                </Avatar>
+                {/* VIP Badge on avatar */}
+                <div className="absolute -bottom-1 -right-1">
+                  <Badge variant={getVIPBadgeVariant(userProfile.vipLevel)} className="text-[10px] px-1.5 py-0">
+                    {userProfile.vipLevel.slice(0, 2).toUpperCase()}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h1 className="text-lg sm:text-xl font-bold truncate">{userProfile.username}</h1>
+                </div>
+                <p className="text-sm text-muted-foreground truncate">{userProfile.email}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <p className="text-xs text-muted-foreground">
+                    Since {userProfile.memberSince}
+                  </p>
+                  {userProfile.phoneNumber && (
+                    <>
+                      <span className="text-muted-foreground">•</span>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        {userProfile.phoneNumber}
+                        {userProfile.phoneNumberVerified && (
+                          <IoShieldCheckmarkOutline className="text-green-500" size={12} />
+                        )}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* User Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-xl font-bold">{userProfile.username}</h1>
-                {/* VIP Badge */}
-                <span className={cn(
-                  "px-2 py-0.5 text-xs font-semibold rounded-full border",
-                  userProfile.vipLevel === "Gold" && "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
-                  userProfile.vipLevel === "Silver" && "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30",
-                  userProfile.vipLevel === "Bronze" && "bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30",
-                  userProfile.vipLevel === "Platinum" && "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30"
-                )}>
-                  {userProfile.vipLevel}
-                </span>
+            {/* Verification Status */}
+            {userProfile.phoneNumberVerified && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <IoShieldCheckmarkOutline className="text-green-500" size={16} />
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                    Verified Phone Number
+                  </span>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">{userProfile.email}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-muted-foreground">
-                  Member since {userProfile.memberSince}
-                </p>
-                {userProfile.phoneNumber && (
-                  <>
-                    <span className="text-muted-foreground">•</span>
-                    <p className="text-xs text-muted-foreground">
-                      {userProfile.phoneNumber} {userProfile.phoneNumberVerified && "✓"}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Verification Status */}
-          {userProfile.phoneNumberVerified && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <IoShieldCheckmarkOutline className="text-green-500" size={16} />
-              <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                Verified Phone Number
-              </span>
-            </div>
-          )}
-        </section>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Balance Overview */}
         <section className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3">
+          <h2 className="text-sm font-semibold text-foreground mb-3 px-1">
             Your Balances
           </h2>
           <div className="space-y-2.5">
@@ -310,12 +352,14 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Quick Actions */}
+        <Separator className="mb-6" />
+
+        {/* Quick Actions - Responsive Grid */}
         <section className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3">
+          <h2 className="text-sm font-semibold text-foreground mb-3 px-1">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {QUICK_ACTIONS.map((action) => (
               <GradientCard
                 key={action.id}
@@ -331,9 +375,11 @@ export default function ProfilePage() {
           </div>
         </section>
 
+        <Separator className="mb-6" />
+
         {/* Account Menu */}
         <section className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3">
+          <h2 className="text-sm font-semibold text-foreground mb-3 px-1">
             Account
           </h2>
           <div className="space-y-2">
@@ -353,24 +399,18 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 text-left">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-foreground">
                       {item.label}
                     </span>
                     {item.badge && (
-                      <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor: `${item.badgeColor}20`,
-                          color: item.badgeColor,
-                        }}
-                      >
+                      <Badge variant={item.badgeVariant} className="text-[10px]">
                         {item.badge}
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground truncate">
                     {item.description}
                   </p>
                 </div>
@@ -384,6 +424,8 @@ export default function ProfilePage() {
             ))}
           </div>
         </section>
+
+        <Separator className="mb-6" />
 
         {/* Logout Button */}
         <AuthButton
