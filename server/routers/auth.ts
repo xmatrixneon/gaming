@@ -5,6 +5,7 @@
 
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { auth } from "@/lib/auth";
+import { redis } from "@/lib/redis";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
@@ -46,7 +47,7 @@ export const authRouter = router({
     .input(z.object({
       phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format. Use E.164: +1234567890"),
     }))
-    .query(async ({ input }) => {
+    .mutation(async ({ input }) => {
       try {
         // Query database to check if phone number exists
         const existingUser = await db
@@ -77,18 +78,19 @@ export const authRouter = router({
   /**
    * Send OTP to phone number
    * Includes duplicate phone number prevention at the server level
+   * Supports both signup (new users) and signin (existing verified users)
    */
   sendPhoneOTP: publicProcedure
     .input(z.object({
       phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format. Use E.164: +1234567890"),
+      password: z.string().min(6, "Password must be at least 6 characters").optional(),
+      isSignin: z.boolean().optional().default(false), // true for signin, false for signup
     }))
     .mutation(async ({ input }) => {
       try {
         // =====================================================================
-        // PREVENT DUPLICATE PHONE NUMBERS
+        // CHECK EXISTING USER
         // =====================================================================
-        // Check if phone number is already registered AND verified
-        // This prevents duplicate signups at the server level
         const existingUsers = await db
           .select()
           .from(user)
@@ -97,6 +99,28 @@ export const authRouter = router({
 
         const existingUser = existingUsers[0];
 
+        // =====================================================================
+        // SIGNIN FLOW: Send OTP to existing verified users
+        // =====================================================================
+        if (input.isSignin) {
+          if (!existingUser || !existingUser.phoneNumberVerified) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Phone number not found. Please sign up first.",
+            });
+          }
+
+          // Send OTP for signin (Better Auth allows this for verified users)
+          const result = await auth.api.sendPhoneNumberOTP({
+            body: { phoneNumber: input.phoneNumber },
+          });
+
+          return { success: true, data: result, isSignin: true };
+        }
+
+        // =====================================================================
+        // SIGNUP FLOW: Prevent duplicate phone numbers
+        // =====================================================================
         // If phone number is already verified for another user, block OTP
         if (existingUser && existingUser.phoneNumberVerified) {
           console.log(`[AUTH] Phone number ${input.phoneNumber} already verified for user ${existingUser.id}. Blocking OTP.`);
@@ -119,13 +143,13 @@ export const authRouter = router({
         }
 
         // =====================================================================
-        // SEND OTP VIA BETTER AUTH
+        // SEND OTP VIA BETTER AUTH (for signup)
         // =====================================================================
         const result = await auth.api.sendPhoneNumberOTP({
-          body: input,
+          body: { phoneNumber: input.phoneNumber },
         });
 
-        return { success: true, data: result };
+        return { success: true, data: result, isSignin: false };
       } catch (error) {
         console.error("[AUTH] Failed to send OTP:", error);
 
@@ -147,6 +171,7 @@ export const authRouter = router({
 
   /**
    * Verify phone number with OTP
+   * Creates user and session (no password setting - that's Step 3)
    */
   verifyPhoneNumber: publicProcedure
     .input(z.object({
@@ -157,8 +182,15 @@ export const authRouter = router({
     }))
     .mutation(async ({ input }) => {
       try {
+        // Verify phone number - creates user and session
+        // Session cookies will be set in the response
         const result = await auth.api.verifyPhoneNumber({
-          body: input,
+          body: {
+            phoneNumber: input.phoneNumber,
+            code: input.code,
+            disableSession: input.disableSession,
+            updatePhoneNumber: input.updatePhoneNumber,
+          },
         });
 
         return { success: true, data: result };
@@ -192,6 +224,44 @@ export const authRouter = router({
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to sign in",
+        };
+      }
+    }),
+
+  /**
+   * Set password for authenticated user
+   * Called after phone verification to create credential account
+   * This enables phone + password signin
+   *
+   * Uses protectedProcedure to ensure session context is available
+   * Better Auth's setPassword API requires an active session
+   */
+  setUserPassword: protectedProcedure
+    .input(z.object({
+      newPassword: z.string().min(6, "Password must be at least 6 characters"),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Import headers dynamically to avoid issues with Next.js headers()
+        const { headers } = await import("next/headers");
+
+        // Use Better Auth's internal API with session from request headers
+        // protectedProcedure ensures session context is available
+        const result = await auth.api.setPassword({
+          body: {
+            newPassword: input.newPassword,
+          },
+          // Pass the request headers which include session cookies
+          headers: await headers(),
+        });
+
+        console.log("[AUTH] Password set successfully via Better Auth API");
+        return { success: true, data: result };
+      } catch (error) {
+        console.error("[AUTH] Failed to set password:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to set password",
         };
       }
     }),

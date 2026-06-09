@@ -49,8 +49,9 @@ export const trpcClientOptions = {
      * HTTP batch link for making requests to the tRPC API
      * Uses SuperJSON for data serialization (tRPC v11 requires transformer on link)
      *
-     * Better Auth Integration: Include session cookies from auth client
-     * Following Better Auth best practices for Next.js + tRPC
+     * Better Auth Integration: Cookies are handled automatically by the browser
+     * Better Auth sets HTTP-only cookies that the browser includes with every request
+     * No manual cookie handling needed for web clients
      */
     httpBatchLink({
       url: process.env.NEXT_PUBLIC_TRPC_URL || "/api/trpc",

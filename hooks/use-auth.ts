@@ -95,34 +95,12 @@ export function useAuth() {
    */
   const checkPhoneNumber = async (phoneNumber: string) => {
     try {
-      // Use direct fetch to call the tRPC API
-      const baseURL = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "";
-      const response = await fetch(`${baseURL}/api/trpc/auth.checkPhoneNumber`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ phoneNumber }),
+      // Use tRPC client for proper type safety and error handling
+      const result = await trpcClient.auth.checkPhoneNumber.mutate({
+        phoneNumber,
       });
 
-      if (!response.ok) {
-        return {
-          exists: false,
-          message: "Unable to check phone number availability",
-        };
-      }
-
-      const result = await response.json();
-
-      if (result.error && result.error.data) {
-        return result.error.data;
-      }
-
-      return {
-        exists: false,
-        message: "Phone number is available",
-      };
+      return result;
     } catch (err) {
       return {
         exists: false,
@@ -134,12 +112,20 @@ export function useAuth() {
   /**
    * Send OTP to phone number
    * Uses tRPC mutation with server-side duplicate prevention
+   * Optionally stores password for signup flow
+   * @param phoneNumber - Phone number in E.164 format
+   * @param password - Optional password (for signup flow)
+   * @param isSignin - True for signin flow, false for signup flow
    */
-  const sendPhoneOTP = async (phoneNumber: string) => {
+  const sendPhoneOTP = async (phoneNumber: string, password?: string, isSignin?: boolean) => {
     try {
       // Use tRPC client instead of Better Auth client directly
       // This ensures our server-side duplicate prevention runs
-      const result = await trpcClient.auth.sendPhoneOTP.mutate({ phoneNumber });
+      const result = await trpcClient.auth.sendPhoneOTP.mutate({
+        phoneNumber,
+        password, // Pass password for signup flow (stored temporarily in Redis)
+        isSignin, // Pass true for signin, false/undefined for signup
+      });
 
       if (!result.success) {
         return {
@@ -170,12 +156,14 @@ export function useAuth() {
    * Verify phone number with OTP
    * Uses tRPC mutation for server-side validation and consistent error handling
    * Session state will automatically update via useSession hook
+   * Optionally sets password immediately after verification (server-side)
    */
   const verifyPhoneNumber = async (params: {
     phoneNumber: string;
     code: string;
     disableSession?: boolean;
     updatePhoneNumber?: boolean;
+    password?: string; // Optional password to set after verification
   }) => {
     try {
       // Use tRPC client for server-side validation
@@ -184,6 +172,7 @@ export function useAuth() {
         code: params.code,
         disableSession: params.disableSession,
         updatePhoneNumber: params.updatePhoneNumber,
+        password: params.password, // Pass password to set after verification
       });
 
       if (!result.success) {
@@ -505,6 +494,34 @@ export function useAuth() {
     }
   };
 
+  /**
+   * Set password for authenticated user
+   * Uses tRPC server-side validation
+   * Call this after phone verification when user is logged in
+   * Creates the credential account needed for phone + password signin
+   */
+  const setUserPassword = async (newPassword: string) => {
+    try {
+      const result = await trpcClient.auth.setUserPassword.mutate({
+        newPassword,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || "Failed to set password",
+        };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Failed to set password",
+      };
+    }
+  };
+
   // ============================================================================
   // RETURN AUTH STATE AND METHODS
   // ============================================================================
@@ -539,6 +556,7 @@ export function useAuth() {
 
     // Password management
     changePassword,
+    setUserPassword,
 
     // 2FA (commented out - requires @better-auth/two-factor plugin)
     // enable2FA,

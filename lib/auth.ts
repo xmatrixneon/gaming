@@ -169,37 +169,8 @@ export const auth = betterAuth({
       },
 
       // Callback after successful verification
-      callbackOnVerification: async ({ phoneNumber, user }, _ctx) => {
+      callbackOnVerification: async ({ phoneNumber, user }) => {
         console.log(`[AUTH] Phone number verified: ${phoneNumber} for user: ${user.id}`);
-
-        // =====================================================================
-        // CLEANUP UNVERIFIED DUPLICATES
-        // =====================================================================
-        // If there are other users with the same phone number that are unverified,
-        // clean them up to prevent database bloat and confusion
-        try {
-          // Use Drizzle to find and delete unverified duplicates
-          const duplicateUsers = await db
-            .select()
-            .from(user)
-            .where(eq(user.phoneNumber, phoneNumber));
-
-          // Delete unverified duplicate users (excluding current user)
-          const unverifiedDuplicates = duplicateUsers.filter(
-            (u) => u.id !== user.id && !u.phoneNumberVerified
-          );
-
-          if (unverifiedDuplicates.length > 0) {
-            console.log(`[AUTH] Found ${unverifiedDuplicates.length} unverified duplicates for ${phoneNumber}. Cleaning up.`);
-            for (const duplicate of unverifiedDuplicates) {
-              await db.delete(user).where(eq(user.id, duplicate.id));
-              console.log(`[AUTH] Deleted unverified duplicate user: ${duplicate.id}`);
-            }
-          }
-        } catch (error) {
-          console.error("[AUTH] Error cleaning up duplicates:", error);
-        }
-
         // TODO: Send welcome email or notification
       },
     }),

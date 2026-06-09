@@ -22,9 +22,10 @@ import {
 } from "@/components/game";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { authClient } from "@/lib/auth-client";
 
 type TabValue = "signin" | "signup";
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
 
 interface SignUpState {
   tab: TabValue;
@@ -68,7 +69,7 @@ const initialState: SignUpState = {
  */
 export default function SignUpPage() {
   const router = useRouter();
-  const { checkPhoneNumber, sendPhoneOTP, verifyPhoneNumber, signUp, signInWithGoogle } = useAuth();
+  const { checkPhoneNumber, sendPhoneOTP, signUp, signInWithGoogle, setUserPassword } = useAuth();
   const [state, setState] = useState<SignUpState>(initialState);
 
   // Update state helper
@@ -92,15 +93,26 @@ export default function SignUpPage() {
     router.push("/");
   }, [router]);
 
-  // Step 1 - Send OTP
-  const handleSignUp = useCallback(async () => {
-    if (!state.phoneNumber || !state.passwordValue || !state.agreed) {
-      updateState("error", "Please fill in all required fields and agree to terms");
-      return;
-    }
+  // Clear error when user starts typing
+  const handlePhoneNumberChange = useCallback((value: string) => {
+    updateState("phoneNumber", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
 
-    if (state.passwordValue.length < 6) {
-      updateState("error", "Password must be at least 6 characters");
+  const handlePasswordChange = useCallback((value: string) => {
+    updateState("passwordValue", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
+
+  const handleOtpChange = useCallback((value: string) => {
+    updateState("otpValue", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
+
+  // Step 1 - Send OTP (phone number only)
+  const handleSignUp = useCallback(async () => {
+    if (!state.phoneNumber) {
+      updateState("error", "Please enter your phone number");
       return;
     }
 
@@ -150,9 +162,9 @@ export default function SignUpPage() {
       updateState("error", message);
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, state.passwordValue, state.agreed, checkPhoneNumber, sendPhoneOTP, updateState]);
+  }, [state.phoneNumber, checkPhoneNumber, sendPhoneOTP, updateState]);
 
-  // Step 2 - Verify OTP and Create Account
+  // Step 2 - Verify OTP (phone number verification)
   const handleVerifyOTP = useCallback(async () => {
     if (state.otpValue.length !== 6) {
       updateState("error", "Please enter a valid 6-digit OTP");
@@ -165,26 +177,73 @@ export default function SignUpPage() {
     const fullPhone = `+91${state.phoneNumber}`;
 
     try {
-      const result = await verifyPhoneNumber({
+      // Verify phone number using Better Auth client directly
+      // This calls the Better Auth HTTP handler which sets session cookies properly
+      const result = await authClient.phoneNumber.verify({
         phoneNumber: fullPhone,
         code: state.otpValue,
-        disableSession: false,
+        disableSession: false, // Ensure session is created
       });
 
-      if (result && !result.success) {
-        updateState("error", result.error || "Invalid OTP");
+      if (result.error) {
+        updateState("error", result.error.message || "Invalid OTP");
         updateState("isLoading", false);
         return;
       }
 
-      // Success - redirect to home
-      router.push("/");
+      console.log("[SIGNUP] Phone verified successfully, session created");
+
+      // Move to password setting step
+      updateState("isLoading", false);
+      updateState("step", 3);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Verification failed";
       updateState("error", message);
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, state.otpValue, verifyPhoneNumber, router, updateState]);
+  }, [state.phoneNumber, state.otpValue, updateState]);
+
+  // Step 3 - Set Password and Complete Account Creation
+  const handleSetPassword = useCallback(async () => {
+    if (!state.passwordValue) {
+      updateState("error", "Please enter a password");
+      return;
+    }
+
+    if (state.passwordValue.length < 6) {
+      updateState("error", "Password must be at least 6 characters");
+      return;
+    }
+
+    if (!state.agreed) {
+      updateState("error", "Please agree to the Terms and Conditions");
+      return;
+    }
+
+    updateState("isLoading", true);
+    updateState("error", null);
+
+    try {
+      // Set password using Better Auth's setPassword API
+      // The session is already active from Step 2 verification
+      const setPasswordResult = await setUserPassword(state.passwordValue);
+
+      if (!setPasswordResult.success) {
+        updateState("error", setPasswordResult.error || "Failed to set password");
+        updateState("isLoading", false);
+        return;
+      }
+
+      console.log("[SIGNUP] Password set successfully via Better Auth API");
+
+      // Success - redirect to home
+      router.push("/");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to set password";
+      updateState("error", message);
+      updateState("isLoading", false);
+    }
+  }, [state.passwordValue, state.agreed, setUserPassword, router, updateState]);
 
   // Resend OTP
   const handleResendOTP = useCallback(async () => {
@@ -235,6 +294,11 @@ export default function SignUpPage() {
     updateState("error", null);
   }, [updateState]);
 
+  const goBackToStep2 = useCallback(() => {
+    updateState("step", 2);
+    updateState("error", null);
+  }, [updateState]);
+
   // Format countdown
   const formatCountdown = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -244,36 +308,45 @@ export default function SignUpPage() {
 
   // Combined handlers object
   const step1Handlers = {
-    onPhoneNumberChange: (value: string) => updateState("phoneNumber", value),
-    onPasswordChange: (value: string) => updateState("passwordValue", value),
-    onTogglePassword: () => updateState("showPassword", !state.showPassword),
-    onPromoOpenChange: (open: boolean) => updateState("promoOpen", open),
-    onAgreedChange: (checked: boolean) => updateState("agreed", checked),
+    onPhoneNumberChange: handlePhoneNumberChange,
     onSignUp: handleSignUp,
     onGoogleSignUp: handleGoogleSignUp,
   };
 
   const step2Handlers = {
-    onOtpChange: (value: string) => updateState("otpValue", value),
+    onOtpChange: handleOtpChange,
     onVerify: handleVerifyOTP,
     onResend: handleResendOTP,
     onBack: goBackToStep1,
   };
 
+  const step3Handlers = {
+    onPasswordChange: handlePasswordChange,
+    onTogglePassword: () => updateState("showPassword", !state.showPassword),
+    onAgreedChange: (checked: boolean) => updateState("agreed", checked),
+    onSetPassword: handleSetPassword,
+    onBack: goBackToStep2,
+  };
+
   const step1Data = {
     phoneNumber: state.phoneNumber,
-    passwordValue: state.passwordValue,
-    showPassword: state.showPassword,
-    promoOpen: state.promoOpen,
-    agreed: state.agreed,
     error: state.error,
   };
 
   const step2Data = {
-    phoneValue: `+91${state.phoneNumber}`,
+    phoneNumber: state.phoneNumber,
     otpValue: state.otpValue,
     countdown: state.countdown,
     canResendOTP: state.canResendOTP,
+    isLoading: state.isLoading,
+    error: state.error,
+  };
+
+  const step3Data = {
+    passwordValue: state.passwordValue,
+    showPassword: state.showPassword,
+    agreed: state.agreed,
+    isLoading: state.isLoading,
     error: state.error,
   };
 
@@ -303,9 +376,9 @@ export default function SignUpPage() {
             data={step1Data}
             handlers={step1Handlers}
             isLoading={state.isLoading}
-            isDisabled={!state.phoneNumber || !state.passwordValue || !state.agreed || state.isLoading}
+            isDisabled={!state.phoneNumber || state.isLoading}
           />
-        ) : (
+        ) : state.step === 2 ? (
           <SignUpStep2
             key="step2"
             data={step2Data}
@@ -313,6 +386,14 @@ export default function SignUpPage() {
             isLoading={state.isLoading}
             isDisabled={state.otpValue.length !== 6 || state.isLoading}
             formatCountdown={formatCountdown}
+          />
+        ) : (
+          <SignUpStep3
+            key="step3"
+            data={step3Data}
+            handlers={step3Handlers}
+            isLoading={state.isLoading}
+            isDisabled={!state.passwordValue || state.passwordValue.length < 6 || !state.agreed || state.isLoading}
           />
         )}
       </AnimatePresence>
@@ -322,23 +403,15 @@ export default function SignUpPage() {
 }
 
 /**
- * Step 1 Component - Phone + Password + Terms
+ * Step 1 Component - Phone Number Only
  */
 interface SignUpStep1Props {
   data: {
     phoneNumber: string;
-    passwordValue: string;
-    showPassword: boolean;
-    promoOpen: boolean;
-    agreed: boolean;
     error: string | null;
   };
   handlers: {
     onPhoneNumberChange: (value: string) => void;
-    onPasswordChange: (value: string) => void;
-    onTogglePassword: () => void;
-    onPromoOpenChange: (open: boolean) => void;
-    onAgreedChange: (checked: boolean) => void;
     onSignUp: () => void;
     onGoogleSignUp: () => void;
   };
@@ -380,39 +453,6 @@ function SignUpStep1({ data, handlers, isLoading, isDisabled }: SignUpStep1Props
         className="mb-4"
       />
 
-      <PasswordField
-        label="Password"
-        required
-        placeholder="Create a strong password (min 6 characters)"
-        value={data.passwordValue}
-        onChange={(e) => handlers.onPasswordChange(e.target.value)}
-        showPassword={data.showPassword}
-        onTogglePassword={handlers.onTogglePassword}
-        containerClassName="mb-4"
-      />
-
-      <CollapsibleField
-        label="Enter Referral / Promo Code (Optional)"
-        open={data.promoOpen}
-        onOpenChange={handlers.onPromoOpenChange}
-        placeholder="Referral / Promo Code"
-        className="mb-5"
-      />
-
-      <AuthCheckbox
-        label={
-          <>
-            I am 18+ and agree to the{" "}
-            <span className="text-foreground font-semibold underline hover:underline cursor-pointer">
-              Terms and Conditions
-            </span>
-          </>
-        }
-        checked={data.agreed}
-        onCheckedChange={handlers.onAgreedChange}
-        className="mb-7"
-      />
-
       <AuthButton
         variant="primary"
         className="w-full mb-6"
@@ -450,10 +490,11 @@ function SignUpStep1({ data, handlers, isLoading, isDisabled }: SignUpStep1Props
  */
 interface SignUpStep2Props {
   data: {
-    phoneValue: string;
+    phoneNumber: string;
     otpValue: string;
     countdown: number;
     canResendOTP: boolean;
+    isLoading: boolean;
     error: string | null;
   };
   handlers: {
@@ -481,7 +522,7 @@ function SignUpStep2({ data, handlers, isLoading, isDisabled, formatCountdown }:
           Verify your phone
         </h1>
         <p className="text-sm text-muted-foreground">
-          Enter the 6-digit code sent to <span className="text-green-400">{data.phoneValue}</span>
+          Enter the 6-digit code sent to <span className="text-green-400">+91{data.phoneNumber}</span>
         </p>
       </div>
 
@@ -507,13 +548,13 @@ function SignUpStep2({ data, handlers, isLoading, isDisabled, formatCountdown }:
         onClick={handlers.onVerify}
         disabled={isDisabled}
       >
-        {isLoading ? (
+        {data.isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Verifying...
           </>
         ) : (
-          "Verify & Create Account"
+          "Verify"
         )}
       </AuthButton>
 
@@ -529,6 +570,106 @@ function SignUpStep2({ data, handlers, isLoading, isDisabled, formatCountdown }:
           `Resend in ${formatCountdown(data.countdown)}`
         )}
       </Button>
+
+      <AuthButton
+        variant="secondary"
+        className="w-full"
+        onClick={handlers.onBack}
+        disabled={isLoading}
+      >
+        Back
+      </AuthButton>
+    </motion.div>
+  );
+}
+
+/**
+ * Step 3 Component - Set Password
+ */
+interface SignUpStep3Props {
+  data: {
+    passwordValue: string;
+    showPassword: boolean;
+    agreed: boolean;
+    isLoading: boolean;
+    error: string | null;
+  };
+  handlers: {
+    onPasswordChange: (value: string) => void;
+    onTogglePassword: () => void;
+    onAgreedChange: (checked: boolean) => void;
+    onSetPassword: () => void;
+    onBack: () => void;
+  };
+  isLoading: boolean;
+  isDisabled: boolean;
+}
+
+function SignUpStep3({ data, handlers, isLoading, isDisabled }: SignUpStep3Props) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="px-5 py-7 pb-10"
+    >
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Create Password
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Set a password to secure your account
+        </p>
+      </div>
+
+      {/* Error Message */}
+      {data.error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-sm text-red-400">{data.error}</p>
+        </div>
+      )}
+
+      <PasswordField
+        label="Password"
+        required
+        placeholder="Create a strong password (min 6 characters)"
+        value={data.passwordValue}
+        onChange={(e) => handlers.onPasswordChange(e.target.value)}
+        showPassword={data.showPassword}
+        onTogglePassword={handlers.onTogglePassword}
+        containerClassName="mb-4"
+      />
+
+      <AuthCheckbox
+        label={
+          <>
+            I am 18+ and agree to the{" "}
+            <span className="text-foreground font-semibold underline hover:underline cursor-pointer">
+              Terms and Conditions
+            </span>
+          </>
+        }
+        checked={data.agreed}
+        onCheckedChange={handlers.onAgreedChange}
+        className="mb-7"
+      />
+
+      <AuthButton
+        variant="primary"
+        className="w-full mb-4"
+        onClick={handlers.onSetPassword}
+        disabled={isDisabled}
+      >
+        {data.isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Creating Account...
+          </>
+        ) : (
+          "Create Account"
+        )}
+      </AuthButton>
 
       <AuthButton
         variant="secondary"

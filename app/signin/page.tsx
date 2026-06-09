@@ -96,6 +96,27 @@ export default function SignInPage() {
     updateState("otpCode", "");
   }, [updateState]);
 
+  // Clear error when user starts typing
+  const handlePhoneNumberChange = useCallback((value: string) => {
+    updateState("phoneNumber", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
+
+  const handleEmailChange = useCallback((value: string) => {
+    updateState("email", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
+
+  const handlePasswordChange = useCallback((value: string) => {
+    updateState("passwordValue", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
+
+  const handleOTPCodeChange = useCallback((value: string) => {
+    updateState("otpCode", value);
+    if (state.error) updateState("error", null);
+  }, [updateState, state.error]);
+
   // Phone + Password Sign In
   const handlePhonePasswordSignIn = useCallback(async () => {
     if (!state.phoneNumber || !state.passwordValue) {
@@ -175,7 +196,8 @@ export default function SignInPage() {
     const fullPhone = `+91${state.phoneNumber}`;
 
     try {
-      const result = await sendPhoneOTP(fullPhone);
+      // Pass isSignin: true to indicate this is for signin, not signup
+      const result = await sendPhoneOTP(fullPhone, undefined, true);
 
       if (result && !result.success) {
         updateState("error", result.error || "Failed to send OTP");
@@ -335,10 +357,10 @@ export default function SignInPage() {
               state={state}
               onStateChange={updateState}
               onMethodChange={handleMethodChange}
-              onPhoneNumberChange={(value) => updateState("phoneNumber", value)}
-              onEmailChange={(value) => updateState("email", value)}
-              onPasswordChange={(value) => updateState("passwordValue", value)}
-              onOTPCodeChange={(value) => updateState("otpCode", value)}
+              onPhoneNumberChange={handlePhoneNumberChange}
+              onEmailChange={handleEmailChange}
+              onPasswordChange={handlePasswordChange}
+              onOTPCodeChange={handleOTPCodeChange}
               onTogglePassword={togglePassword}
               onPhonePasswordSignIn={handlePhonePasswordSignIn}
               onEmailPasswordSignIn={handleEmailPasswordSignIn}
