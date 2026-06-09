@@ -6,6 +6,8 @@
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { authRouter } from "./auth";
 import { userRouter } from "./user";
+import { transactionRouter } from "./transaction";
+import { walletRouter } from "./wallet";
 import { z } from "zod";
 
 // ============================================================================
@@ -28,6 +30,12 @@ export const appRouter = router({
 
   // User procedures
   user: userRouter,
+
+  // Transaction procedures
+  transaction: transactionRouter,
+
+  // Wallet procedures
+  wallet: walletRouter,
 });
 
 // ============================================================================
