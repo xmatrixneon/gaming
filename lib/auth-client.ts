@@ -26,9 +26,11 @@ import { phoneNumberClient } from "better-auth/client/plugins";
  * ```
  */
 export const authClient = createAuthClient({
-  // For local development, use relative URLs (no baseURL)
+  // For local development, use localhost explicitly
   // For production with external domain, set NEXT_PUBLIC_BETTER_AUTH_URL
-  baseURL: process.env.NODE_ENV === 'production' ? process.env.NEXT_PUBLIC_BETTER_AUTH_URL : undefined,
+  baseURL: process.env.NODE_ENV === 'production'
+    ? process.env.NEXT_PUBLIC_BETTER_AUTH_URL
+    : 'http://localhost:3000',
   plugins: [
     phoneNumberClient(),
   ],

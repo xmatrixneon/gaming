@@ -484,10 +484,18 @@ export const authRouter = router({
     }))
     .mutation(async ({ input }) => {
       try {
+        // Import headers dynamically to avoid issues with Next.js headers()
+        const { headers } = await import("next/headers");
+
+        // Use Better Auth's internal API with session from request headers
+        // protectedProcedure ensures session context is available
         const result = await auth.api.changePassword({
           body: input,
+          // Pass the request headers which include session cookies
+          headers: await headers(),
         });
 
+        console.log("[AUTH] Password changed successfully via Better Auth API");
         return { success: true, data: result };
       } catch (error) {
         console.error("[AUTH] Failed to change password:", error);
