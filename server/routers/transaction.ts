@@ -14,6 +14,7 @@ import { walletService } from "@/lib/wallet-service";
 import { idempotencyService } from "@/lib/idempotency";
 import { fraudDetection } from "@/lib/fraud-detection";
 import { velopayGateway } from "@/lib/velopay-gateway";
+import { okpayGateway } from "@/lib/okpay-gateway";
 
 // ============================================================================
 // TRANSACTION ROUTER
@@ -31,7 +32,8 @@ export const transactionRouter = router({
   initiateDeposit: protectedProcedure
     .input(z.object({
       amount: z.string().regex(/^\d+(\.\d{1,8})?$/, "Invalid amount format"),
-      method: z.enum(['upi', 'paytm', 'phonepe', 'bank_transfer', 'crypto']),
+      method: z.enum(['upi', 'paytm', 'phonepe', 'okpay-upi', 'okpay-intent', 'bank_transfer', 'crypto']),
+      phone: z.string().optional(), // Required for okpay-intent
       clientProvidedKey: z.string().optional(), // For idempotency
       currency: z.string().default('USD'),
     }))
@@ -143,6 +145,52 @@ export const transactionRouter = router({
             throw new TRPCError({
               code: 'INTERNAL_SERVER_ERROR',
               message: 'Failed to initiate deposit with payment gateway',
+            });
+          }
+        }
+
+        // Integrate with OKPay for UPI deposits
+        if (input.method === 'okpay-upi' || input.method === 'okpay-intent') {
+          try {
+            const payType = input.method === 'okpay-upi' ? 'UPI' : 'UPI_INTENT';
+
+            // OKPay expects amount in rupees (no decimals)
+            const amountInRupees = (BigInt(input.amount) / 100n).toString();
+
+            const okpayResponse = await okpayGateway.createDeposit({
+              out_trade_no: depositId,
+              pay_type: payType,
+              money: amountInRupees,
+              returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/deposit/success`,
+              phone: input.phone,
+            });
+
+            // Update deposit with gateway reference
+            await db.update(deposit)
+              .set({
+                gatewayReference: okpayResponse.data.transaction_Id,
+                gatewayMetadata: okpayResponse,
+                updatedAt: new Date(),
+              })
+              .where(eq(deposit.id, depositId));
+
+            await idempotencyService.complete(idempotencyKey);
+
+            return {
+              success: true,
+              depositId,
+              transactionId,
+              paymentUrl: okpayResponse.data.url,
+              message: input.method === 'okpay-intent'
+                ? 'Open UPI app to complete payment'
+                : 'Complete UPI payment to credit your balance',
+            };
+          } catch (error) {
+            await idempotencyService.delete(idempotencyKey);
+            console.error('[TRANSACTION] OKPay deposit failed:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to initiate deposit with OKPay gateway',
             });
           }
         }
