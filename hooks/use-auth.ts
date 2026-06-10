@@ -46,6 +46,14 @@ export interface AuthState {
   error: Error | null;
 }
 
+export interface LinkedAccount {
+  accountId: string;
+  providerId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  scopes: string[];
+}
+
 // ============================================================================
 // AUTH HOOK
 // ============================================================================
@@ -79,7 +87,7 @@ export function useAuth() {
   // ============================================================================
   // Fetch user accounts to detect if they have a password credential
   // This allows us to show "Set Password" for OAuth users vs "Change Password" for users with passwords
-  const [accounts, setAccounts] = React.useState<any[]>([]);
+  const [accounts, setAccounts] = React.useState<LinkedAccount[]>([]);
   const [accountsLoading, setAccountsLoading] = React.useState(false);
   const [accountsError, setAccountsError] = React.useState<Error | null>(null);
 
@@ -97,7 +105,7 @@ export function useAuth() {
     try {
       const result = await authClient.listAccounts();
       // Access the data property of the result
-      setAccounts(result.data || []);
+      setAccounts((result.data as LinkedAccount[]) || []);
     } catch (err) {
       console.error("[AUTH] Failed to list accounts:", err);
       setAccountsError(err as Error);

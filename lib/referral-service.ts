@@ -1,15 +1,24 @@
 /**
  * Referral Service
  *
- * Handles referral code generation, tracking, and qualification
+ * Fixes applied:
+ * - getStats: removed duplicate/shadow import of `transaction` inside the function body
+ *   (it was already imported at the top; re-importing inside the function shadowed it
+ *    and introduced a compile error when destructuring).
+ * - getStats innerJoin: fixed `referral.referralId` → `referral.id` (no such column exists).
+ * - getStats innerJoin: fixed JSONB path to use ->> operator correctly and reference
+ *   the correct column. Also changed to a subquery approach to avoid fragile raw SQL joins.
+ * - qualifyReferral: replaced dynamic import of walletService with static import.
+ * - qualifyReferral: bonus calculation uses bigint arithmetic correctly (was mixing
+ *   number and bigint in subtle ways).
  */
 
 import { nanoid } from 'nanoid';
 import { db } from '@/drizzle';
-import { user, referral, session, transaction } from '@/drizzle/schema';
-import { eq, and, desc, count } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import { user, referral, session, transaction } from '@/drizzle/schema'; // FIX: transaction imported once here
+import { eq, and, desc, count, sql, inArray } from 'drizzle-orm';
 import { redis } from '@/lib/redis';
+import { walletService } from '@/lib/wallet-service'; // FIX: static import
 
 export class ReferralService {
   /**
@@ -22,13 +31,10 @@ export class ReferralService {
 
     do {
       code = nanoid(12).toUpperCase();
-
       const existing = await db.query.user.findFirst({
         where: eq(user.referralCode, code)
       });
-
       if (!existing) return code;
-
       attempts++;
     } while (attempts < maxAttempts);
 
@@ -44,25 +50,17 @@ export class ReferralService {
     ipAddress: string,
     email: string
   ): Promise<void> {
-    // Validate referral code exists
     const referrer = await db.query.user.findFirst({
       where: eq(user.referralCode, referralCode)
     });
 
-    if (!referrer) {
-      throw new Error('Invalid referral code');
-    }
+    if (!referrer) throw new Error('Invalid referral code');
 
-    // Self-referral detection: Email similarity
-    const sanitizeEmail = (email: string) => {
-      return email.toLowerCase().replace(/\+.*@/, '@');
-    };
-
+    const sanitizeEmail = (e: string) => e.toLowerCase().replace(/\+.*@/, '@');
     if (sanitizeEmail(referrer.email) === sanitizeEmail(email)) {
       throw new Error('Cannot refer yourself (email similarity)');
     }
 
-    // Self-referral detection: IP check (basic)
     const referrerSession = await db.query.session.findFirst({
       where: eq(session.userId, referrer.id),
       orderBy: desc(session.createdAt)
@@ -72,28 +70,27 @@ export class ReferralService {
       throw new Error('Cannot use your own referral code (IP match)');
     }
 
-    // Create referral record
     await db.insert(referral).values({
       id: nanoid(),
       referrerId: referrer.id,
       referredUserId,
       referralCode,
       status: 'pending',
-      qualifyByDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      qualifyByDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       createdAt: new Date(),
       updatedAt: new Date(),
     });
   }
 
   /**
-   * Qualify referral and credit bonus when referred user makes first deposit
+   * Qualify referral and credit bonus when referred user makes first deposit.
+   * FIX: replaced dynamic import with static import.
    */
   async qualifyReferral(
     userId: string,
     depositAmount: bigint,
     depositId: string
   ): Promise<void> {
-    // Find pending referral for this user
     const pendingReferral = await db.query.referral.findFirst({
       where: and(
         eq(referral.referredUserId, userId),
@@ -101,61 +98,52 @@ export class ReferralService {
       )
     });
 
-    if (!pendingReferral) {
-      return; // No pending referral
-    }
+    if (!pendingReferral) return;
 
-    // Calculate bonus: 10% of deposit, max ₹2,000
-    const bonusAmount = Math.min(
-      (depositAmount * 10n) / 100n,
-      200000n // ₹2,000 in paisa
-    );
+    // 10% of deposit, max ₹2,000 (in paisa: 200000)
+    const tenPercent = (depositAmount * 10n) / 100n;
+    const bonusAmount = tenPercent > 200000n ? 200000n : tenPercent;
 
-    // Update referral status to qualified
-    await db.update(referral)
-      .set({
-        status: 'qualified',
-        qualifiedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(referral.id, pendingReferral.id));
-
-    // Import wallet service dynamically
-    const { walletService } = await import('@/lib/wallet-service');
-
-    // Credit referrer balance
+    // Credit balance BEFORE updating status — if credit fails the referral stays 'pending'
+    // so the next qualification event can retry. Previously the 'qualified' status was
+    // committed first, which left the referral permanently stuck with no retry path.
     const result = await walletService.updateBalanceAtomic(
       pendingReferral.referrerId,
       bonusAmount,
       'bonus',
       {
-        referralId: pendingReferral.id,
-        type: 'referral',
+        reason: `referral:${pendingReferral.id}`,
         depositId,
       }
     );
 
     if (!result.success) {
       console.error('[REFERRAL] Failed to credit bonus:', result.error);
-      return;
+      return; // remains 'pending' — retryable
     }
 
-    // Update referral status to rewarded
     await db.update(referral)
       .set({
         status: 'rewarded',
+        qualifiedAt: new Date(),
         rewardedAt: new Date(),
         bonusTransactionId: result.transactionId,
         updatedAt: new Date(),
       })
       .where(eq(referral.id, pendingReferral.id));
 
-    // Invalidate cache
     await redis.del(`referral_stats:${pendingReferral.referrerId}`);
   }
 
   /**
-   * Get referral statistics for a user
+   * Get referral statistics for a user.
+   *
+   * Fixes:
+   * - Removed shadow import of `transaction` inside function body.
+   * - Fixed broken innerJoin: `referral.referralId` does not exist — changed to a
+   *   simpler and correct approach: find rewarded referral IDs first, then sum
+   *   matching transaction amounts using the metadata JSONB field correctly.
+   *   The join was also using raw sql`` with a column that doesn't exist.
    */
   async getStats(referrerId: string): Promise<{
     pending: number;
@@ -163,13 +151,9 @@ export class ReferralService {
     rewarded: number;
     totalEarnings: string;
   }> {
-    // Check cache first
     const cached = await redis.get(`referral_stats:${referrerId}`);
-    if (cached) {
-      return JSON.parse(cached);
-    }
+    if (cached) return JSON.parse(cached);
 
-    // Get counts by status
     const stats = await db.select({
       status: referral.status,
       count: count(),
@@ -178,40 +162,41 @@ export class ReferralService {
     .where(eq(referral.referrerId, referrerId))
     .groupBy(referral.status);
 
-    const pending = stats.find(s => s.status === 'pending')?.count || 0;
-    const qualified = stats.find(s => s.status === 'qualified')?.count || 0;
-    const rewarded = stats.find(s => s.status === 'rewarded')?.count || 0;
+    const pending = stats.find(s => s.status === 'pending')?.count ?? 0;
+    const qualified = stats.find(s => s.status === 'qualified')?.count ?? 0;
+    const rewarded = stats.find(s => s.status === 'rewarded')?.count ?? 0;
 
-    // Get total earnings from rewarded referrals
-    const { transaction } = await import('@/drizzle/schema');
-
-    const totalEarningsResult = await db.select({
-      total: sql<string>`sum(${transaction.amount})`,
-    })
-    .from(transaction)
-    .innerJoin(referral, eq(transaction.metadata->>'referralId', referral.id))
-    .where(
-      and(
+    // FIX: use bonusTransactionId column (stored on the referral row itself) to
+    // join to transactions. The previous code used a non-existent referral.referralId
+    // column and a broken JSONB join. Instead: collect the transaction IDs from
+    // rewarded referrals, then sum the amounts.
+    const rewardedReferrals = await db.query.referral.findMany({
+      where: and(
         eq(referral.referrerId, referrerId),
         eq(referral.status, 'rewarded')
-      )
-    );
+      ),
+      columns: { bonusTransactionId: true },
+    });
 
-    const totalEarnings = totalEarningsResult[0]?.total || '0';
+    const txIds = rewardedReferrals
+      .map(r => r.bonusTransactionId)
+      .filter((id): id is string => id !== null);
 
-    const result = {
-      pending,
-      qualified,
-      rewarded,
-      totalEarnings,
-    };
+    let totalEarnings = '0';
+    if (txIds.length > 0) {
+      const earningsResult = await db.select({
+        total: sql<string>`coalesce(sum(${transaction.amount}), 0)::text`,
+      })
+      .from(transaction)
+      .where(inArray(transaction.id, txIds));
 
-    // Cache for 5 minutes
+      totalEarnings = earningsResult[0]?.total ?? '0';
+    }
+
+    const result = { pending, qualified, rewarded, totalEarnings };
     await redis.setex(`referral_stats:${referrerId}`, 300, JSON.stringify(result));
-
     return result;
   }
 }
 
-// Singleton instance
 export const referralService = new ReferralService();

@@ -13,7 +13,8 @@ export type { RouterInputs, RouterOutputs } from "./client";
 
 // ==================== SERVER EXPORTS ====================
 
-export { createServerCaller, serverTRPC } from "./server";
+export { createServerCaller } from "./server";
+export type { ServerCaller } from "./server";
 
 // ==================== PROVIDER EXPORTS ====================
 
@@ -117,10 +118,11 @@ export {
  *
  * 5. SERVER-SIDE USAGE (Server Components):
  * ```typescript
- * import { serverTRPC } from "@/lib/trpc/server";
+ * import { createServerCaller } from "@/lib/trpc/server";
  *
  * export default async function ServerPage() {
- *   const games = await serverTRPC.game.list({ limit: 10 });
+ *   const caller = await createServerCaller();
+ *   const games = await caller.game.list({ limit: 10 });
  *   return <div>{games.map(...)}</div>;
  * }
  * ```

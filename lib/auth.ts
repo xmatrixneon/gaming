@@ -14,6 +14,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { phoneNumber } from "better-auth/plugins";
+import { twoFactor } from "better-auth/plugins";
 import { redisStorage } from "@better-auth/redis-storage";
 import { db } from "@/drizzle";
 import { redis } from "@/lib/redis";
@@ -57,7 +58,7 @@ export const auth = betterAuth({
   ],
 
   // ──────────────────────────────────────────────────────────────────────────
-  // SESSION
+  // SESSION & IP VALIDATION
   // ──────────────────────────────────────────────────────────────────────────
   session: {
     expiresIn: 60 * 60 * 24 * 30,   // 30 days
@@ -65,6 +66,10 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60,                // 5 min client-side cache
+    },
+    // 🔒 Require same IP for sensitive operations (withdrawals, admin, bonus claims)
+    ipAddress: {
+      strictSecurity: ["withdrawal", "admin", "bonus-claim", "deposit"],
     },
   },
 
@@ -78,12 +83,18 @@ export const auth = betterAuth({
   },
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ACCOUNT LINKING
+  // ACCOUNT & SECURITY
   // ──────────────────────────────────────────────────────────────────────────
   account: {
+    // 🔒 Encrypt OAuth tokens before storing in database
+    encryptOAuthTokens: true,
+    // Store OAuth state in database for security
+    storeStateStrategy: "database",
     accountLinking: {
       enabled: true,
       trustedProviders: ["google", "phone"],
+      // Require same email for account linking (prevents hijacking)
+      allowDifferentEmails: false,
     },
   },
 
@@ -104,6 +115,16 @@ export const auth = betterAuth({
   // PLUGINS
   // ──────────────────────────────────────────────────────────────────────────
   plugins: [
+    // Two-Factor Authentication (TOTP)
+    twoFactor({
+      totp: {
+        enabled: true,
+        issuer: "ClausBet",
+        algorithm: "SHA256",
+        digits: 6,
+        period: 30,
+      },
+    }),
     phoneNumber({
       sendOTP: async ({ phoneNumber, code }, _ctx) => {
         // TODO: wire up SMS provider (Twilio / AWS SNS / MSG91)
@@ -137,7 +158,7 @@ export const auth = betterAuth({
   // ──────────────────────────────────────────────────────────────────────────
   // USER — additional casino fields
   // These are read/written by Better Auth on sign-up/sign-in.
-  // The actual columns (balance, vipLevel) already exist in your schema.
+  // The actual columns (balance, vipLevel, twoFactorEnabled) already exist in your schema.
   // ──────────────────────────────────────────────────────────────────────────
   user: {
     additionalFields: {
@@ -151,11 +172,16 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "Bronze",
       },
+      twoFactorEnabled: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
     },
   },
 
   // ──────────────────────────────────────────────────────────────────────────
-  // ADVANCED
+  // ADVANCED SECURITY
   // ──────────────────────────────────────────────────────────────────────────
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
@@ -165,6 +191,8 @@ export const auth = betterAuth({
     database: {
       generateId: () => crypto.randomUUID(),
     },
+    // Enable CSRF protection
+    csrfProtection: true,
   },
 
   // ──────────────────────────────────────────────────────────────────────────

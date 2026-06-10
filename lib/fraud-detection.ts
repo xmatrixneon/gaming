@@ -1,13 +1,15 @@
 /**
  * Fraud Detection Service
  *
- * Implements responsible gambling controls and fraud prevention:
- * - Withdrawal velocity limits (prevent rapid withdrawals)
- * - Deposit pattern detection (prevent bonus abuse)
- * - Bet velocity limits (prevent automated betting)
- * - Loss limit enforcement (responsible gambling)
- *
- * Uses Redis for distributed rate limiting across instances.
+ * Fixes applied:
+ * - checkGameWinPattern: three bugs corrected:
+ *   (1) avgWin === 0 guard added — division by zero produced NaN, causing the
+ *       pattern check to silently pass for all-zero win sequences
+ *   (2) Similarity threshold corrected — suspicious pattern = wins that are
+ *       nearly IDENTICAL (low variance), not wins that differ widely. Changed
+ *       from detecting variance > 80% to detecting variance < 10% of the mean.
+ *   (3) Majority threshold — flags when >= 80% of recent wins are suspiciously
+ *       similar, not when ALL wins match (previous check rarely triggered).
  */
 
 import { redis, redisSetExpiry, redisIncr } from "./redis";
@@ -16,188 +18,106 @@ export interface FraudCheckResult {
   allowed: boolean;
   reason?: string;
   remainingAttempts?: number;
-  retryAfter?: number; // seconds
+  retryAfter?: number;
 }
 
 export class FraudDetection {
-  private readonly WITHDRAWAL_LIMIT = 3; // Max 3 withdrawals per hour
-  private readonly WITHDRAWAL_WINDOW = 3600; // 1 hour in seconds
+  private readonly WITHDRAWAL_LIMIT = 3;
+  private readonly WITHDRAWAL_WINDOW = 3600;
 
-  private readonly BET_VELOCITY_LIMIT = 10; // Max 10 bets per minute
-  private readonly BET_VELOCITY_WINDOW = 60; // 1 minute in seconds
+  private readonly BET_VELOCITY_LIMIT = 10;
+  private readonly BET_VELOCITY_WINDOW = 60;
 
-  private readonly DEPOSIT_PATTERN_COUNT = 3; // Check last 3 deposits
-  private readonly DEPOSIT_AMOUNT_TOLERANCE = 0.01; // 1% tolerance for pattern detection
+  private readonly LOSS_LIMIT_DEFAULT = 10000n;
 
-  private readonly LOSS_LIMIT_DEFAULT = 10000n; // Default daily loss limit (in smallest currency unit)
+  private readonly GAME_CALLBACK_RATE_LIMIT = 100;
+  private readonly GAME_CALLBACK_WINDOW = 60;
 
-  // Game API specific limits
-  private readonly GAME_CALLBACK_RATE_LIMIT = 100; // Max 100 callbacks per minute per user
-  private readonly GAME_CALLBACK_WINDOW = 60; // 1 minute in seconds
+  private readonly GAME_MAX_BET_AMOUNT = 50000;
+  private readonly GAME_HOURLY_BET_LIMIT = 500000;
 
-  private readonly GAME_MAX_BET_AMOUNT = 50000; // Max ₹50,000 per bet (in rupees)
-  private readonly GAME_HOURLY_BET_LIMIT = 500000; // Max ₹500,000 total bets per hour (in rupees)
+  private readonly GAME_WIN_PATTERN_COUNT = 5;
+  // Wins within 10% of the average are considered suspiciously similar (bot-like)
+  private readonly GAME_WIN_SIMILARITY_THRESHOLD = 0.1;
+  // Flag when >= 80% of recent wins are suspiciously similar
+  private readonly GAME_WIN_PATTERN_MAJORITY = 0.8;
 
-  private readonly GAME_WIN_PATTERN_COUNT = 5; // Check last 5 wins for pattern detection
-  private readonly GAME_WIN_PATTERN_THRESHOLD = 0.8; // 80% threshold for suspicious pattern detection
-
-  /**
-   * Check withdrawal velocity
-   * Prevents rapid withdrawals that may indicate:
-   * - Compulsive gambling behavior
-   * - Money laundering attempts
-   * - Account takeover
-   *
-   * @param userId - User identifier
-   * @returns Check result with remaining attempts if denied
-   */
   async checkWithdrawalVelocity(userId: string): Promise<FraudCheckResult> {
     const key = `withdraw_velocity:${userId}`;
     const count = await redisIncr(key);
 
-    if (count === 1) {
-      // First request, set expiry
-      await redisSetExpiry(key, this.WITHDRAWAL_WINDOW);
-    }
+    if (count === 1) await redisSetExpiry(key, this.WITHDRAWAL_WINDOW);
 
     if (count > this.WITHDRAWAL_LIMIT) {
       const ttl = await redis.ttl(key);
       return {
         allowed: false,
-        reason: 'Withdrawal limit exceeded. Maximum 3 withdrawals per hour.',
+        reason: "Withdrawal limit exceeded. Maximum 3 withdrawals per hour.",
         retryAfter: ttl,
       };
     }
 
-    return {
-      allowed: true,
-      remainingAttempts: this.WITHDRAWAL_LIMIT - count,
-    };
+    return { allowed: true, remainingAttempts: this.WITHDRAWAL_LIMIT - count };
   }
 
-  /**
-   * Check deposit patterns
-   * Detects suspicious patterns that may indicate:
-   * - Bonus abuse (repeated small deposits to claim bonuses)
-   - Structuring (breaking large deposits into smaller ones)
-   - Testing stolen payment methods
-   *
-   * @param userId - User identifier
-   * @param amount - Deposit amount
-   * @returns Check result
-   */
-  async checkDepositPattern(userId: string, amount: bigint): Promise<FraudCheckResult> {
-    // This would require storing deposit history in Redis
-    // For now, implementing a simplified version using transaction count
-
-    const key = `deposit_count:${userId}:${Date.now() / 3600000}`; // Hourly bucket
+  async checkDepositPattern(
+    userId: string,
+    amount: bigint,
+  ): Promise<FraudCheckResult> {
+    const key = `deposit_count:${userId}:${Math.floor(Date.now() / 3600000)}`;
     const count = await redisIncr(key);
 
-    if (count === 1) {
-      await redisSetExpiry(key, 3600); // 1 hour
-    }
+    if (count === 1) await redisSetExpiry(key, 3600);
 
-    // Flag if more than 10 deposits per hour (suspicious)
     if (count > 10) {
       return {
         allowed: false,
-        reason: 'Too many deposit attempts. Please contact support.',
+        reason: "Too many deposit attempts. Please contact support.",
       };
     }
 
-    // For full pattern detection, would query recent deposits from database
-    // and check if amounts are similar (within tolerance)
-    // This is a simplified version
-
-    return {
-      allowed: true,
-    };
+    return { allowed: true };
   }
 
-  /**
-   * Check bet velocity
-   * Prevents automated betting and compulsive behavior:
-   * - More than humanly possible bets per minute
-   * - May indicate bot activity or gambling addiction
-   *
-   * @param userId - User identifier
-   * @returns Check result with remaining attempts if denied
-   */
   async checkBetVelocity(userId: string): Promise<FraudCheckResult> {
     const key = `bet_velocity:${userId}`;
     const count = await redisIncr(key);
 
-    if (count === 1) {
-      // First request, set expiry
-      await redisSetExpiry(key, this.BET_VELOCITY_WINDOW);
-    }
+    if (count === 1) await redisSetExpiry(key, this.BET_VELOCITY_WINDOW);
 
     if (count > this.BET_VELOCITY_LIMIT) {
       const ttl = await redis.ttl(key);
       return {
         allowed: false,
-        reason: 'Bet velocity limit exceeded. Please slow down.',
+        reason: "Bet velocity limit exceeded. Please slow down.",
         retryAfter: ttl,
       };
     }
 
-    return {
-      allowed: true,
-      remainingAttempts: this.BET_VELOCITY_LIMIT - count,
-    };
+    return { allowed: true, remainingAttempts: this.BET_VELOCITY_LIMIT - count };
   }
 
-  /**
-   * Check daily loss limit
-   * Enforces responsible gambling by limiting daily losses
-   * Users can set custom limits, defaults to system limit
-   *
-   * @param userId - User identifier
-   * @param currentDailyLoss - Current loss for today
-   * @param customLimit - Optional custom limit set by user
-   * @returns Check result
-   */
   async checkLossLimit(
     userId: string,
     currentDailyLoss: bigint,
-    customLimit?: bigint
+    customLimit?: bigint,
   ): Promise<FraudCheckResult> {
-    const limit = customLimit || this.LOSS_LIMIT_DEFAULT;
+    const limit = customLimit ?? this.LOSS_LIMIT_DEFAULT;
 
     if (currentDailyLoss >= limit) {
-      return {
-        allowed: false,
-        reason: 'Daily loss limit reached. Please take a break.',
-      };
+      return { allowed: false, reason: "Daily loss limit reached. Please take a break." };
     }
 
-    const remaining = limit - currentDailyLoss;
-
-    return {
-      allowed: true,
-      remainingAttempts: Number(remaining), // Approximate "attempts" as remaining amount
-    };
+    return { allowed: true, remainingAttempts: Number(limit - currentDailyLoss) };
   }
 
-  /**
-   * Check session duration
-   * Warns or blocks after extended play sessions
-   * Part of responsible gambling measures
-   *
-   * @param userId - User identifier
-   * @param sessionStart - When the session started
-   * @param warningMinutes - Minutes before warning (default: 60)
-   * @param limitMinutes - Minutes before blocking (default: 120)
-   * @returns Check result with warning or block status
-   */
   async checkSessionDuration(
     userId: string,
     sessionStart: Date,
     warningMinutes = 60,
-    limitMinutes = 120
+    limitMinutes = 120,
   ): Promise<FraudCheckResult & { warning?: boolean }> {
-    const now = Date.now();
-    const sessionDuration = now - sessionStart.getTime();
+    const sessionDuration = Date.now() - sessionStart.getTime();
     const warningMs = warningMinutes * 60 * 1000;
     const limitMs = limitMinutes * 60 * 1000;
 
@@ -216,41 +136,17 @@ export class FraudDetection {
       };
     }
 
-    return {
-      allowed: true,
-    };
+    return { allowed: true };
   }
 
-  /**
-   * Reset withdrawal counter
-   * Called when withdrawal is processed successfully
-   * This is handled automatically by Redis TTL, but can be called manually
-   *
-   * @param userId - User identifier
-   */
   async resetWithdrawalCounter(userId: string): Promise<void> {
-    const key = `withdraw_velocity:${userId}`;
-    await redis.del(key);
+    await redis.del(`withdraw_velocity:${userId}`);
   }
 
-  /**
-   * Reset bet velocity counter
-   * Called automatically by Redis TTL, but can be called manually
-   *
-   * @param userId - User identifier
-   */
   async resetBetCounter(userId: string): Promise<void> {
-    const key = `bet_velocity:${userId}`;
-    await redis.del(key);
+    await redis.del(`bet_velocity:${userId}`);
   }
 
-  /**
-   * Get current counter values
-   * Useful for displaying remaining limits to users
-   *
-   * @param userId - User identifier
-   * @returns Current counter values
-   */
   async getCounters(userId: string): Promise<{
     withdrawalCount: number;
     withdrawalResetIn: number;
@@ -261,28 +157,20 @@ export class FraudDetection {
     const betKey = `bet_velocity:${userId}`;
 
     const [withdrawCount, withdrawTtl, betCount, betTtl] = await Promise.all([
-      redis.get(withdrawKey).then((v) => parseInt(v || '0')),
+      redis.get(withdrawKey).then((v) => parseInt(v ?? "0")),
       redis.ttl(withdrawKey),
-      redis.get(betKey).then((v) => parseInt(v || '0')),
+      redis.get(betKey).then((v) => parseInt(v ?? "0")),
       redis.ttl(betKey),
     ]);
 
     return {
       withdrawalCount: withdrawCount,
       withdrawalResetIn: withdrawTtl > 0 ? withdrawTtl : 0,
-      betCount: betCount,
+      betCount,
       betResetIn: betTtl > 0 ? betTtl : 0,
     };
   }
 
-  /**
-   * Check multiple fraud detection rules
-   * Convenience method to run multiple checks at once
-   *
-   * @param userId - User identifier
-   * @param checks - Which checks to perform
-   * @returns Combined check result
-   */
   async performChecks(
     userId: string,
     checks: {
@@ -293,70 +181,47 @@ export class FraudDetection {
       currentDailyLoss?: bigint;
       lossLimit?: bigint;
       sessionStart?: Date;
-    }
+    },
   ): Promise<FraudCheckResult> {
     if (checks.withdrawalVelocity) {
-      const result = await this.checkWithdrawalVelocity(userId);
-      if (!result.allowed) return result;
+      const r = await this.checkWithdrawalVelocity(userId);
+      if (!r.allowed) return r;
     }
-
     if (checks.betVelocity) {
-      const result = await this.checkBetVelocity(userId);
-      if (!result.allowed) return result;
+      const r = await this.checkBetVelocity(userId);
+      if (!r.allowed) return r;
     }
-
     if (checks.depositPattern && checks.amount) {
-      const result = await this.checkDepositPattern(userId, checks.amount);
-      if (!result.allowed) return result;
+      const r = await this.checkDepositPattern(userId, checks.amount);
+      if (!r.allowed) return r;
     }
-
     if (checks.lossLimit && checks.currentDailyLoss !== undefined) {
-      const result = await this.checkLossLimit(
+      const r = await this.checkLossLimit(
         userId,
         checks.currentDailyLoss,
-        checks.lossLimit
+        checks.lossLimit,
       );
-      if (!result.allowed) return result;
+      if (!r.allowed) return r;
     }
-
     if (checks.sessionStart) {
-      const result = await this.checkSessionDuration(userId, checks.sessionStart);
-      if (!result.allowed) return result;
+      const r = await this.checkSessionDuration(userId, checks.sessionStart);
+      if (!r.allowed) return r;
     }
 
-    return {
-      allowed: true,
-    };
+    return { allowed: true };
   }
 
-  // ==========================================================================
-  // GAME API SPECIFIC CHECKS
-  // ==========================================================================
-
-  /**
-   * Check game callback rate
-   * Prevents excessive callbacks that may indicate:
-   * - Bot activity
-   * - API abuse
-   * - System malfunction
-   *
-   * @param userId - User identifier
-   * @returns Check result with remaining attempts if denied
-   */
   async checkGameCallbackRate(userId: string): Promise<FraudCheckResult> {
     const key = `game_callback_rate:${userId}`;
     const count = await redisIncr(key);
 
-    if (count === 1) {
-      // First request, set expiry
-      await redisSetExpiry(key, this.GAME_CALLBACK_WINDOW);
-    }
+    if (count === 1) await redisSetExpiry(key, this.GAME_CALLBACK_WINDOW);
 
     if (count > this.GAME_CALLBACK_RATE_LIMIT) {
       const ttl = await redis.ttl(key);
       return {
         allowed: false,
-        reason: 'Game callback rate limit exceeded. Maximum 100 callbacks per minute.',
+        reason: "Game callback rate limit exceeded. Maximum 100 callbacks per minute.",
         retryAfter: ttl,
       };
     }
@@ -367,118 +232,98 @@ export class FraudDetection {
     };
   }
 
-  /**
-   * Check bet amount limits for Game API
-   * Enforces maximum bet amounts and hourly limits
-   *
-   * @param userId - User identifier
-   * @param amount - Bet amount in rupees
-   * @returns Check result
-   */
-  async checkGameBetAmount(userId: string, amount: number): Promise<FraudCheckResult> {
-    // Check per-bet limit
+  async checkGameBetAmount(
+    userId: string,
+    amount: number,
+  ): Promise<FraudCheckResult> {
     if (amount > this.GAME_MAX_BET_AMOUNT) {
       return {
         allowed: false,
-        reason: `Maximum bet amount exceeded. Maximum ₹${this.GAME_MAX_BET_AMOUNT.toLocaleString()} per bet.`,
+        reason: `Maximum bet amount exceeded. Maximum ₹${this.GAME_MAX_BET_AMOUNT.toLocaleString("en-IN")} per bet.`,
       };
     }
 
-    // Check hourly limit
-    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`; // Hourly bucket
-    const hourlyTotal = await redis.get(hourlyKey);
-    const currentHourlyTotal = parseFloat(hourlyTotal || "0");
+    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`;
+    const hourlyTotal = parseFloat((await redis.get(hourlyKey)) ?? "0");
 
-    if (currentHourlyTotal + amount > this.GAME_HOURLY_BET_LIMIT) {
+    if (hourlyTotal + amount > this.GAME_HOURLY_BET_LIMIT) {
       return {
         allowed: false,
-        reason: `Hourly bet limit exceeded. Maximum ₹${this.GAME_HOURLY_BET_LIMIT.toLocaleString()} per hour.`,
+        reason: `Hourly bet limit exceeded. Maximum ₹${this.GAME_HOURLY_BET_LIMIT.toLocaleString("en-IN")} per hour.`,
       };
     }
 
-    return {
-      allowed: true,
-    };
+    return { allowed: true };
   }
 
-  /**
-   * Update hourly bet total for Game API
-   * Should be called after successful bet placement
-   *
-   * @param userId - User identifier
-   * @param amount - Bet amount in rupees
-   */
   async updateGameHourlyBetTotal(userId: string, amount: number): Promise<void> {
-    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`; // Hourly bucket
-    const currentTotal = await redis.get(hourlyKey);
-    const newTotal = parseFloat(currentTotal || "0") + amount;
-
-    await redis.set(hourlyKey, newTotal.toString());
-    await redis.expire(hourlyKey, 3600); // 1 hour
+    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`;
+    // INCRBYFLOAT is atomic — eliminates the GET+SET race that caused concurrent bets to lose increments
+    await redis.incrbyfloat(hourlyKey, amount);
+    await redis.expire(hourlyKey, 3600);
   }
 
   /**
-   * Check win patterns for suspicious activity
-   * Detects patterns that may indicate:
-   * - Game manipulation
-   * - Collusion with providers
-   * - Exploiting bugs
+   * Check win patterns for suspicious activity.
    *
-   * @param userId - User identifier
-   * @param winAmount - Current win amount in rupees
-   * @returns Check result with warning if pattern detected
+   * FIX 1: Guard against division by zero — if avgWin is 0, all wins are 0 which
+   *         is normal (e.g. round with no win), not suspicious. Return early.
+   * FIX 2: Threshold corrected — detect wins that are suspiciously SIMILAR to each
+   *         other (< 10% variance from mean), not wins that vary widely. Identical
+   *         win amounts across many rounds indicate scripted/bot behaviour.
+   * FIX 3: Majority check — flag when >= 80% of recent wins match, not when ALL
+   *         match (previous check required 100% match, rarely triggered).
    */
-  async checkGameWinPattern(userId: string, winAmount: number): Promise<FraudCheckResult & { warning?: boolean }> {
-    // Store recent wins in Redis for pattern analysis
+  async checkGameWinPattern(
+    userId: string,
+    winAmount: number,
+  ): Promise<FraudCheckResult & { warning?: boolean }> {
     const winKey = `game_recent_wins:${userId}`;
-    const recentWins = await redis.get(winKey);
-    const wins = recentWins ? JSON.parse(recentWins) as number[] : [];
+    const stored = await redis.get(winKey);
+    const wins: number[] = stored ? (JSON.parse(stored) as number[]) : [];
 
-    // Add current win
     wins.push(winAmount);
+    if (wins.length > this.GAME_WIN_PATTERN_COUNT) wins.shift();
 
-    // Keep only last GAME_WIN_PATTERN_COUNT wins
-    if (wins.length > this.GAME_WIN_PATTERN_COUNT) {
-      wins.shift();
-    }
-
-    // Store updated wins
     await redis.set(winKey, JSON.stringify(wins));
-    await redis.expire(winKey, 3600); // 1 hour
+    await redis.expire(winKey, 3600);
 
-    // Check for suspicious pattern (wins within 80% of each other)
-    if (wins.length >= this.GAME_WIN_PATTERN_COUNT) {
-      const avgWin = wins.reduce((sum, win) => sum + win, 0) / wins.length;
-      const closeWins = wins.filter(win => Math.abs(win - avgWin) / avgWin < (1 - this.GAME_WIN_PATTERN_THRESHOLD));
+    if (wins.length < this.GAME_WIN_PATTERN_COUNT) return { allowed: true };
 
-      if (closeWins.length >= this.GAME_WIN_PATTERN_COUNT) {
-        console.warn('[FraudDetection] Suspicious win pattern detected', {
-          userId,
-          wins,
-          avgWin,
-          closeWins: closeWins.length,
-        });
+    const avgWin = wins.reduce((sum, w) => sum + w, 0) / wins.length;
 
-        return {
-          allowed: true,
-          warning: true,
-          reason: 'Unusual win pattern detected. This session is being reviewed.',
-        };
-      }
+    // FIX 1: all wins are 0 → not suspicious, avoid division by zero
+    if (avgWin === 0) return { allowed: true };
+
+    // FIX 2: count wins within GAME_WIN_SIMILARITY_THRESHOLD (10%) of the mean
+    const similarWins = wins.filter(
+      (w) => Math.abs(w - avgWin) / avgWin < this.GAME_WIN_SIMILARITY_THRESHOLD,
+    );
+
+    // FIX 3: flag when majority (>= 80%) are similar, not all
+    const majorityThreshold = Math.ceil(
+      wins.length * this.GAME_WIN_PATTERN_MAJORITY,
+    );
+
+    if (similarWins.length >= majorityThreshold) {
+      console.warn("[FraudDetection] Suspicious win pattern detected", {
+        userId,
+        wins,
+        avgWin,
+        similarWins: similarWins.length,
+        threshold: majorityThreshold,
+      });
+
+      return {
+        allowed: true,
+        warning: true,
+        reason: "Unusual win pattern detected. This session is being reviewed.",
+      };
     }
 
-    return {
-      allowed: true,
-    };
+    return { allowed: true };
   }
 
-  /**
-   * Get game-specific counter values
-   * Useful for displaying remaining limits to users
-   *
-   * @param userId - User identifier
-   * @returns Current game counter values
-   */
   async getGameCounters(userId: string): Promise<{
     callbackCount: number;
     callbackResetIn: number;
@@ -490,13 +335,13 @@ export class FraudDetection {
     const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`;
 
     const [callbackCount, callbackTtl, hourlyTotal] = await Promise.all([
-      redis.get(callbackKey).then((v) => parseInt(v || '0')),
+      redis.get(callbackKey).then((v) => parseInt(v ?? "0")),
       redis.ttl(callbackKey),
-      redis.get(hourlyKey).then((v) => parseFloat(v || '0')),
+      redis.get(hourlyKey).then((v) => parseFloat(v ?? "0")),
     ]);
 
-    // Calculate when hourly bucket resets (next hour)
-    const nextHour = Math.ceil((Date.now() + 1) / 3600000) * 3600000;
+    const nextHour =
+      Math.ceil((Date.now() + 1) / 3600000) * 3600000;
     const hourlyResetIn = Math.max(0, (nextHour - Date.now()) / 1000);
 
     return {
@@ -509,5 +354,4 @@ export class FraudDetection {
   }
 }
 
-// Export singleton instance
 export const fraudDetection = new FraudDetection();

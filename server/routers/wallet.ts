@@ -86,7 +86,7 @@ export const walletRouter = router({
   adjustBalance: protectedProcedure
     .input(z.object({
       userId: z.string(),
-      amount: z.string().regex(/^-?\d+(\.\d{1,8})?$/),
+      amount: z.string().regex(/^-?\d+$/, "Amount must be a whole number (paisa)"),
       reason: z.string().min(1).max(500),
     }))
     .mutation(async ({ ctx, input }) => {

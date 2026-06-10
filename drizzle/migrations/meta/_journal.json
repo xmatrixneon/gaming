@@ -15,6 +15,41 @@
       "when": 1781070014925,
       "tag": "0001_tiresome_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781084694904,
+      "tag": "0002_sleepy_retro_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781084712747,
+      "tag": "0003_minor_logan",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781085071513,
+      "tag": "0004_ancient_scourge",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781088754800,
+      "tag": "0005_hot_firestar",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781093484393,
+      "tag": "0006_windy_shadowcat",
+      "breakpoints": true
     }
   ]
 }

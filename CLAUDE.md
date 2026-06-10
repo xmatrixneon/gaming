@@ -39,6 +39,9 @@ npx drizzle-kit studio      # Open Drizzle Studio for database GUI
 npx vitest                 # Run tests (vitest is configured but no test scripts in package.json)
 npx vitest --ui           # Run tests with UI
 npx vitest run           # Run tests once (CI mode)
+
+# Scripts
+npx tsx scripts/generate-referral-codes.ts # Backfill referral codes for existing users
 ```
 
 ## Architecture
@@ -75,7 +78,11 @@ server/
     ├── auth.ts        # Authentication procedures (sign-in, sign-up, OAuth)
     ├── user.ts        # User profile and preferences
     ├── wallet.ts      # Wallet operations (balance, transactions)
-    └── transaction.ts # Deposit/withdrawal processing
+    ├── transaction.ts # Deposit/withdrawal processing
+    ├── game.ts        # Game session and bet queries
+    ├── bonus.ts       # Bonus queries and claims
+    ├── referral.ts    # Referral stats and code lookup
+    └── vip.ts         # VIP status and benefits
 
 lib/                   # Shared business logic and utilities
 ├── auth.ts            # Better Auth server configuration (Google OAuth, phone)
@@ -83,10 +90,15 @@ lib/                   # Shared business logic and utilities
 ├── redis.ts           # Redis client with helpers (OTP, rate limiting, sessions)
 ├── config.ts          # Navigation, currency, and locale configuration
 ├── utils.ts           # Utility functions (cn class merger)
-├── wallet-service.ts  # Wallet business logic (transaction handling)
+├── wallet-service.ts  # Wallet business logic (transaction handling, atomic balance updates)
 ├── velopay-gateway.ts # Velopay payment gateway integration
 ├── fraud-detection.ts # Fraud detection rules and checks
 ├── idempotency.ts     # Idempotency keys for duplicate request prevention
+├── aggregator-adapter.ts # Game aggregator wallet API (debit/credit/rollback)
+├── bonus-service.ts   # Bonus management (awards, wagering tracking, completion)
+├── referral-service.ts # Referral program (code generation, qualification, rewards)
+├── vip-service.ts     # VIP tier management (progress tracking, upgrades, benefits)
+├── format-currency.ts # Currency formatting utilities (paisa ↔ display string)
 └── trpc/              # tRPC client and server utilities
     ├── client.ts      # tRPC React client with React Query integration
     ├── server.ts      # Server-side tRPC helpers (references @/server/routers)
@@ -138,18 +150,51 @@ The project uses `@/*` path alias mapping (configured in tsconfig.json and compo
 
 **Payment Architecture**: Multi-layer payment processing:
 - `velopay-gateway.ts` - External payment gateway integration (Velopay)
-- `wallet-service.ts` - Business logic for deposits/withdrawals
+- `wallet-service.ts` - Business logic for deposits/withdrawals with atomic balance updates
 - `fraud-detection.ts` - Pre-transaction fraud checks (amount limits, velocity checks)
 - `idempotency.ts` - Duplicate request prevention using Redis
 - Transaction records with status tracking (pending, completed, failed)
 
+**Game Integration** (`aggregator-adapter.ts`): Standard aggregator wallet API for external game providers:
+- `debit()` - Deduct balance for bet placement with idempotency
+- `credit()` - Add winnings with bet lookup and settlement
+- `rollback()` - Reverse failed transactions
+- Integrates with bonus wagering tracking and VIP progress (on bets only, not wins)
+
+**Bonus System** (`bonus-service.ts`): Flexible bonus management:
+- Template-based bonuses (welcome, referral, deposit match)
+- Wagering requirement tracking with progress distribution across active bonuses
+- Atomic completion: bonus status transitions to "completed" only after wallet credit succeeds
+- Welcome bonus auto-awarded on first deposit (100% match, capped)
+
+**Referral System** (`referral-service.ts`): User referral program:
+- Unique 12-character referral codes (nanoid-based)
+- Self-referral prevention (email similarity and IP match detection)
+- Qualification on referred user's first deposit (10% of deposit, max ₹2,000)
+- Bonus credited BEFORE status update for retry safety
+
+**VIP System** (`vip-service.ts`): Tiered loyalty program:
+- Five tiers: Bronze → Silver → Gold → Platinum → Diamond
+- Progress tracked by total wagered (not wins)
+- Tier thresholds: Bronze (0), Silver (₹50,000), Gold (₹2,00,000), Platinum (₹5,00,000), Diamond (₹10,00,000)
+- Bonus multipliers per tier (1.0x to 2.0x)
+- Automatic upgrade with optimistic locking and capped retries
+- Benefits per tier: withdrawal limits, exclusive bonuses, support levels
+
 **Database Schema**: Key tables:
-- `user` - User accounts with balance and VIP level (Better Auth managed)
-- `session` - User sessions (Better Auth managed)
+- `user` - User accounts with balance, VIP level, referral code (Better Auth managed)
+- `session` - User sessions with IP/userAgent tracking (Better Auth managed)
 - `account` - OAuth provider accounts (Better Auth managed)
-- `wallet` - User wallets (USD, crypto currencies)
-- `transaction` - Transaction history with status tracking
-- `idempotency_record` - Idempotency key storage
+- `transaction` - Immutable transaction ledger (deposit, withdraw, bet, win, bonus, adjustment)
+- `deposit` / `withdrawal` - Payment-specific records with gateway references and approval flags
+- `gameSession` - Game provider sessions with total bet/win tracking
+- `bet` - Individual bet records linked to transactions and game sessions
+- `referral` - Referral relationships with qualification status and reward tracking
+- `bonusTemplate` - Configurable bonus types (welcome, referral, deposit_match)
+- `userBonus` - User bonus claims with wagering requirements and expiry
+- `notification` - User notifications with typed metadata
+- `auditLog` - Append-only audit trail for admin actions
+- `gameStats` - Per-user game statistics (total wagered, win/loss streaks, VIP progress)
 
 **Currency & i18n**: Multi-currency (USD, INR, EUR, BTC, ETH, USDT, USDC, SOL) and multi-locale support (en, hi, es, pt, zh, ja, ko, de, fr) via `lib/config.ts` with type-safe formatting functions using dinero.js for precise currency calculations.
 
@@ -158,6 +203,9 @@ The project uses `@/*` path alias mapping (configured in tsconfig.json and compo
 - Custom OTP storage and verification (`lib/redis.ts` helpers)
 - Rate limiting for authentication endpoints
 - Session caching for performance
+- Referral stats caching (`referral_stats:{userId}`, 300s TTL)
+- VIP status caching (`vip_status:{userId}`)
+- Active bonuses invalidation (`active_bonuses:{userId}`)
 
 ### Component Organization
 
@@ -172,6 +220,45 @@ Components are organized by feature domain (`game/`), with shared components in 
 **Component Styling**: shadcn/ui components use CSS variables for theming. Custom components use Tailwind utility classes with `cn()` for conditional styling.
 
 **Tailwind CSS 4**: Uses `@tailwindcss/postcss` (new PostCSS plugin in v4) and `shadcn/tailwind.css` import in globals.css.
+
+### Service Patterns
+
+**Optimistic Locking**: Services that update user state use version-based optimistic locking to prevent race conditions:
+- `user.balanceVersion` - Incremented on each balance update (wallet-service.ts)
+- `gameStats.statsVersion` - Incremented on each wagering update (vip-service.ts)
+- Pattern: `WHERE id = X AND version = N` with retry loop on failure (max 5 retries)
+
+**Atomic Balance Updates**: `walletService.updateBalanceAtomic()` is the single source of truth for balance changes:
+- Always returns `{ success, transactionId, balanceBefore, balanceAfter, error }`
+- Creates immutable transaction records
+- Uses optimistic locking via `balanceVersion`
+- All services call this — never update `user.balance` directly
+
+**Idempotency Pattern**: Critical operations use idempotency keys:
+- `idempotencyService.generateKey(userId, type, ref)` creates unique keys
+- `checkWithStatus()` returns `{ canProceed, status }`
+- `complete()` marks successful completion
+- `delete()` cleans up on failure
+- Used in: aggregator-adapter.ts, wallet-service.ts, transaction router
+
+**Notification Metadata Schema**: When inserting notifications, only include keys defined in `notification.metadata` type:
+- `transactionId`, `withdrawalId`, `depositId`, `betId`, `bonusId`, `referralId`, `actionUrl`
+- Do NOT add arbitrary fields — this causes TypeScript errors
+
+**Bonus Wagering Distribution**: Active bonuses share wagering proportionally:
+- Each bet's amount is split across all active bonuses based on remaining requirement
+- Distribution formula: `(betAmount × bonusRemaining) / totalRemaining`
+- Prevents bonus abuse by ensuring all bonuses progress together
+
+**VIP Progress on Bets Only**: VIP tier upgrades track total wagered, not total won:
+- `vipService.trackProgress()` called on `debit()` (bet placement) only
+- NOT called on `credit()` (winning) — VIP is earned by play, not by receiving money
+- Same pattern applies to bonus wagering tracking
+
+**Retry with Exponential Backoff**: Operations with optimistic locking use capped retries:
+- `MAX_RETRIES = 5` (vip-service.ts)
+- Delay: `50ms × (retryCount + 1)`
+- Prevents infinite loops under heavy concurrent load
 
 ### Configuration Files
 
@@ -230,15 +317,34 @@ Components are organized by feature domain (`game/`), with shared components in 
 
 **`drizzle/schema.ts`**: Database schema with:
 - Better Auth tables (user, session, account, verification)
-- Custom tables (wallet, transaction, idempotency_record)
+- Payment tables (transaction, deposit, withdrawal)
+- Gaming tables (gameSession, bet, gameStats)
+- Bonus system tables (bonusTemplate, userBonus)
+- Referral tables (referral)
+- System tables (notification, auditLog)
 - Relations defined for optimal queries
 - Indexes for performance
+- JSONB metadata columns with typed schemas
+- Check constraints for data integrity
 
 **`hooks/use-auth.ts`**: Mock authentication using localStorage. Returns `MOCK_USER` with test data (Player_12345, balance: 12458.50). This should be replaced with Better Auth client hooks for production.
 
 **`app/layout.tsx`**: Root layout with ThemeProvider (dark mode default), TooltipProvider, Toaster (sonner), and font configurations (Inter, Geist Sans/Mono).
 
 **`lib/trpc/client.ts`**: tRPC React client with superjson transformer, development logging, and React Query integration (5min staleTime, retry logic).
+
+**`lib/format-currency.ts`**: Centralized currency formatting:
+- `formatPaisa()` - Convert BigInt paisa to ₹ display string with Indian comma grouping
+- `paisaToRupeeString()` - Plain number string for API responses
+- `rupeeStringToPaisa()` - Parse user input back to BigInt
+- All internal amounts use BigInt paisa to avoid floating-point issues
+
+**Scripts**:
+- `scripts/generate-referral-codes.ts` - Backfill referral codes for existing users (run: `npx tsx scripts/generate-referral-codes.ts`)
+- `scripts/reconcile-balances.ts` - Balance reconciliation job (run: `npx tsx scripts/reconcile-balances.ts [--dry-run] [--auto-fix-threshold=100]`)
+  - Critical for financial correctness - compares cached user.balance against transaction ledger
+  - Run daily/hourly to detect drift from bugs or race conditions
+  - Auto-fixes small discrepancies, flags large ones for manual review
 
 ## Important Notes
 
@@ -258,6 +364,16 @@ Components are organized by feature domain (`game/`), with shared components in 
 - Run `npx drizzle-kit migrate` to apply to database
 - Use `npx drizzle-kit push` for rapid prototyping (not recommended for production)
 
+**Latest Schema Changes** (2024-06-10 production review):
+- Round 1: UNIQUE constraints on `deposit.transactionId`, `withdrawal.transactionId`, `bet.transactionId` (critical for accounting correctness)
+- Round 1: Composite indexes: `transaction_user_created_idx`, `transaction_user_type_created_idx`, `deposit_user_status_created_idx`, `withdrawal_user_status_created_idx`, `bet_user_created_idx`
+- Round 1: Partial index `notification_user_unread_created_idx` for efficient unread queries
+- Round 2: **Removed `transaction.updatedAt`** - makes ledger truly immutable (append-only)
+- Round 2: **Added FK to `user.bannedBy`** - referential integrity for admin actions
+- Round 2: **Added `referral_not_self` CHECK** - prevents self-referral at DB level
+- Round 2: **Added bonusTemplate CHECKs** - `expiryDays > 0`, `maxClaimsPerUser > 0`, `maxValue >= value`
+- See `drizzle/schema.ts` header for financial correctness strategy and reconciliation notes
+
 **Testing**: vitest is configured in `vitest.config.ts` with test files matching `*.test.ts`. Test scripts are not in package.json yet - add them when implementing tests:
 ```json
 "test": "vitest",
@@ -271,7 +387,7 @@ Components are organized by feature domain (`game/`), with shared components in 
 
 **Mobile Testing**: Test all changes in mobile viewport (375px width) to ensure responsive behavior. The bottom navigation and safe areas require careful testing on actual devices.
 
-**Currency Handling**: Use `dinero.js` for all currency calculations to avoid floating-point precision issues. The `lib/config.ts` provides type-safe formatting functions.
+**Currency Handling**: All amounts are stored as BigInt paisa (integer paise). Use `lib/format-currency.ts` for display formatting. Do NOT use floating-point division. Use dinero.js for multi-currency calculations via `lib/config.ts`.
 
 **Error Handling**: tRPC procedures throw `TRPCError` with appropriate codes (UNAUTHORIZED, BAD_REQUEST, INTERNAL_SERVER_ERROR). Zod validation errors are formatted in the error shape.
 
@@ -290,3 +406,11 @@ Components are organized by feature domain (`game/`), with shared components in 
 - `NEXT_PUBLIC_APP_URL` - Public app URL
 - `NEXT_PUBLIC_UPI_GATEWAY_URL` - UPI payment gateway
 - `NEXT_PUBLIC_CRYPTO_GATEWAY_URL` - Crypto payment gateway
+- `GAME_API_AGENCY_UID`, `GAME_API_AES_KEY`, `GAME_API_SERVER_URL` - External game provider (see GameApi_Doc_EN.md)
+
+**External Game Provider Integration**: The app integrates with an external game API documented in `GameApi_Doc_EN.md`. The integration flow:
+1. Game launch via `/game/v1` (seamless) or `/game/v2` (transfer) endpoints
+2. Bet settlement via callback endpoint (game server → your server)
+3. Transaction records retrieval via `/game/transaction/list`
+4. All requests use AES256-encrypted payloads with the agency credentials
+5. The `aggregator-adapter.ts` implements the wallet API for this integration

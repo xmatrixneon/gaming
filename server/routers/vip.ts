@@ -23,15 +23,17 @@ export const vipRouter = router({
    */
   getVIPBenefits: protectedProcedure
     .query(async ({ ctx }) => {
-      const user = await db.query.user.findFirst({
+      // FIX: renamed from `user` — that name shadowed the imported Drizzle table,
+      // making eq(user.id, ...) reference the local variable instead of the column.
+      const userRecord = await db.query.user.findFirst({
         where: eq(user.id, ctx.user.id),
         columns: { vipLevel: true },
       });
 
-      if (!user) {
+      if (!userRecord) {
         throw new Error('User not found');
       }
 
-      return await vipService.getBenefits(user.vipLevel);
+      return await vipService.getBenefits(userRecord.vipLevel);
     }),
 });

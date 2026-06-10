@@ -1,40 +1,20 @@
 /**
- * tRPC Server-Side Helpers for Next.js 16
+ * tRPC server-side caller for Next.js Server Components and Server Actions.
+ * Uses createCallerFactory for in-process invocation (no HTTP round-trip).
  *
- * These utilities are used in Server Components and Server Actions
- * to call tRPC procedures directly on the server.
- *
- * Note: These utilities require the server router to be implemented.
- * The @/server/routers directory and AppRouter type must exist.
+ * Usage:
+ *   const caller = await createServerCaller();
+ *   const profile = await caller.user.getProfile();
  */
 
-import { createTRPCClient } from "@trpc/client";
-import { transformer } from "./client";
-import type { AppRouter } from "@/server/routers"; // Import type from server
+import { createCallerFactory } from "@/server/trpc";
+import { appRouter } from "@/server/routers";
+import { createContext } from "@/server/context";
 
-/**
- * Create a tRPC caller for server-side usage
- *
- * @example
- * ```typescript
- * const trpc = createServerCaller();
- * const games = await trpc.game.list({ limit: 10 });
- * ```
- */
-export function createServerCaller() {
-  // This will be configured with the actual server context
-  // once the server router is implemented
-  return createTRPCClient<AppRouter>({
-    // Transformer is now configured on links, not client
-    // Add server-specific configuration here when router exists
-    links: [],
-  });
+const createCaller = createCallerFactory(appRouter);
+
+export async function createServerCaller() {
+  return createCaller(await createContext());
 }
 
-/**
- * Type-safe server-side tRPC caller
- * Use this in Server Components and Server Actions
- *
- * Note: This will throw an error at runtime until @/server/routers is implemented.
- */
-export const serverTRPC = createServerCaller();
+export type ServerCaller = Awaited<ReturnType<typeof createServerCaller>>;

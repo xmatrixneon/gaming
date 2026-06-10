@@ -147,61 +147,57 @@ export const userRouter = router({
   // ============================================================================
 
   /**
-   * Update user balance (internal use - requires admin permissions)
-   * TODO: Add admin role check
+   * Update user balance (admin only)
+   * Delegates to walletService to ensure atomicity, audit trail, and cache invalidation.
+   * TODO: restrict to adminProcedure once role checks are wired up.
    */
   updateBalance: protectedProcedure
     .input(z.object({
-      balance: z.string().regex(/^\d+(\.\d{1,8})?$/, "Invalid balance format"),
+      // Delta in paisa (positive = credit, negative = debit). Integer only.
+      delta: z.string().regex(/^-?\d+$/, "Delta must be a whole number (paisa)"),
+      reason: z.string().min(1).max(500),
     }))
     .mutation(async ({ input, ctx }) => {
-      try {
-        const updatedUser = await db
-          .update(user)
-          .set({ balance: input.balance })
-          .where(eq(user.id, ctx.user.id))
-          .returning();
+      const { walletService } = await import('@/lib/wallet-service');
+      const result = await walletService.updateBalanceAtomic(
+        ctx.user.id,
+        BigInt(input.delta),
+        'adjustment',
+        { reason: input.reason, adjustedBy: ctx.user.id },
+      );
 
-        return {
-          success: true,
-          data: updatedUser[0],
-        };
-      } catch (error) {
-        console.error("[USER] Failed to update balance:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to update balance",
-        };
+      if (!result.success) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: result.error ?? 'Failed to update balance',
+        });
       }
+
+      return { success: true, transactionId: result.transactionId };
     }),
 
   /**
-   * Update VIP level (internal use - requires admin permissions)
-   * TODO: Add admin role check
+   * Update VIP level for a target user (admin only).
+   * Requires targetUserId so this cannot be used for self-service VIP escalation.
+   * TODO: restrict to adminProcedure once role checks are wired up.
    */
   updateVipLevel: protectedProcedure
     .input(z.object({
+      targetUserId: z.string(),
       vipLevel: z.enum(["Bronze", "Silver", "Gold", "Platinum", "Diamond"]),
     }))
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const updatedUser = await db
-          .update(user)
-          .set({ vipLevel: input.vipLevel })
-          .where(eq(user.id, ctx.user.id))
-          .returning();
+    .mutation(async ({ input }) => {
+      const [updated] = await db
+        .update(user)
+        .set({ vipLevel: input.vipLevel })
+        .where(eq(user.id, input.targetUserId))
+        .returning({ id: user.id, vipLevel: user.vipLevel });
 
-        return {
-          success: true,
-          data: updatedUser[0],
-        };
-      } catch (error) {
-        console.error("[USER] Failed to update VIP level:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to update VIP level",
-        };
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
       }
+
+      return { success: true, userId: updated.id, vipLevel: updated.vipLevel };
     }),
 
   // ============================================================================

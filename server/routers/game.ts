@@ -2,14 +2,21 @@
  * Game Router
  *
  * tRPC router for game operations.
- * Provides type-safe API procedures for launching games,
- * fetching game lists, and managing game sessions.
+ * Provides type-safe API procedures for:
+ * - Launching games
+ * - Fetching game lists from API
+ * - Managing games and providers (admin)
+ * - Game transaction history
  */
 
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { gameAdapter } from "@/lib/game-adapter";
+import { gameService, type SyncOptions } from "@/lib/game-service";
+import { db } from "@/drizzle";
+import { game, gameProvider } from "@/drizzle/schema";
+import { eq, and, desc, asc, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
-import type { GameCallbackPayload } from "@/lib/game-api-types";
+import { TRPCError } from "@trpc/server";
 
 // ============================================================================
 // GAME ROUTER
@@ -49,9 +56,11 @@ export const gameRouter = router({
         language: input.language,
       });
 
-      // TODO: Get user's member account from database
-      // For now, use user ID as member account (will be updated when user table has member_account field)
-      const memberAccount = ctx.user.id;
+      // Generate member account with required prefix
+      // Game API requires: 4-20 chars, a-z and 0-9 only, must start with "h5ab3a"
+      // Clean user ID to alphanumeric only and prepend prefix
+      const cleanUserId = ctx.user.id.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      const memberAccount = `h5ab3a${cleanUserId}`.slice(0, 20);
 
       try {
         // Launch game via adapter
@@ -282,6 +291,407 @@ export const gameRouter = router({
   // ========================================================================
   // INTERNAL/ADMIN OPERATIONS
   // ========================================================================
+
+  /**
+   * Sync games and providers from Game API
+   *
+   * Admin only - syncs all providers and games from the Game API.
+   * Games are synced with placeholder images that must be replaced by admin.
+   */
+  syncGames: protectedProcedure
+    .input(
+      z
+        .object({
+          force: z.boolean().optional(),
+          providers: z.array(z.string()).optional(),
+          skipImages: z.boolean().optional(),
+        })
+        .optional()
+    )
+    .mutation(async ({ input }) => {
+      const options: SyncOptions = input || {};
+
+      const result = await gameService.syncGames(options);
+
+      return {
+        success: true,
+        ...result,
+        message: `Sync complete: ${result.providersAdded} providers added, ${result.providersUpdated} updated, ${result.gamesAdded} games added, ${result.gamesUpdated} updated. ${result.gamesSkipped} games need images.`,
+      };
+    }),
+
+  /**
+   * Get games that need images
+   *
+   * Admin only - returns all games with placeholder images.
+   */
+  getGamesNeedingImages: protectedProcedure.query(async () => {
+    return await gameService.getGamesNeedingImages();
+  }),
+
+  /**
+   * Get game statistics
+   *
+   * Returns counts of providers, games, and games needing images.
+   */
+  getStats: publicProcedure.query(async () => {
+    return await gameService.getStats();
+  }),
+
+  /**
+   * Get games from database (with filters)
+   *
+   * Fetches games from local database with optional filters.
+   * Unlike getGameList which fetches from API, this uses synced data.
+   */
+  getDbGames: publicProcedure
+    .input(
+      z.object({
+        status: z.enum(["active", "disabled", "maintenance"]).optional(),
+        gameType: z.string().optional(),
+        providerCode: z.string().optional(),
+        isFeatured: z.boolean().optional(),
+        isNew: z.boolean().optional(),
+        isHot: z.boolean().optional(),
+        search: z.string().optional(),
+        limit: z.number().int().min(1).max(100).default(50),
+        offset: z.number().int().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const status = input.status || "active";
+
+      const conditions = [
+        eq(game.status, status),
+        input.gameType ? eq(game.gameType, input.gameType) : undefined,
+        input.isFeatured !== undefined ? eq(game.isFeatured, input.isFeatured) : undefined,
+        input.isNew !== undefined ? eq(game.isNew, input.isNew) : undefined,
+        input.isHot !== undefined ? eq(game.isHot, input.isHot) : undefined,
+        input.search
+          ? or(
+              like(game.gameName, `%${input.search}%`),
+              like(game.gameType, `%${input.search}%`)
+            )
+          : undefined,
+      ].filter(Boolean);
+
+      const query = db
+        .select({
+          id: game.id,
+          gameUid: game.gameUid,
+          gameName: game.gameName,
+          gameType: game.gameType,
+          imageUrl: game.imageUrl,
+          thumbnailUrl: game.thumbnailUrl,
+          bannerUrl: game.bannerUrl,
+          backgroundUrl: game.backgroundUrl,
+          imageAlt: game.imageAlt,
+          displayOrder: game.displayOrder,
+          isFeatured: game.isFeatured,
+          isNew: game.isNew,
+          isHot: game.isHot,
+          status: game.status,
+          metadata: game.metadata,
+          slug: game.slug,
+          createdAt: game.createdAt,
+          updatedAt: game.updatedAt,
+          provider: {
+            id: gameProvider.id,
+            code: gameProvider.code,
+            name: gameProvider.name,
+            category: gameProvider.category,
+            imageUrl: gameProvider.imageUrl,
+          },
+        })
+        .from(game)
+        .innerJoin(gameProvider, eq(game.providerId, gameProvider.id));
+
+      // Apply filters
+      if (conditions.length > 0) {
+        query.where(and(...conditions));
+      }
+
+      // Apply provider filter
+      if (input.providerCode) {
+        query.where(
+          and(
+            eq(game.status, status),
+            eq(gameProvider.code, input.providerCode)
+          )
+        );
+      }
+
+      query
+        .orderBy(asc(game.displayOrder), desc(game.createdAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      const games = await query;
+
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(game)
+        .innerJoin(gameProvider, eq(game.providerId, gameProvider.id))
+        .where(and(...conditions));
+
+      return {
+        games,
+        total: Number(count),
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
+  /**
+   * Get providers from database
+   *
+   * Returns synced providers from local database.
+   */
+  getDbProviders: publicProcedure
+    .input(
+      z
+        .object({
+          status: z.enum(["active", "disabled", "maintenance"]).optional(),
+          category: z.string().optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const status = input?.status || "active";
+
+      const providers = await db
+        .select()
+        .from(gameProvider)
+        .where(
+          and(
+            eq(gameProvider.status, status),
+            input?.category ? eq(gameProvider.category, input.category) : undefined
+          )
+        )
+        .orderBy(asc(gameProvider.displayOrder), asc(gameProvider.name));
+
+      return providers;
+    }),
+
+  /**
+   * Get a single game by ID or slug
+   */
+  getGame: publicProcedure
+    .input(
+      z.object({
+        id: z.string().optional(),
+        slug: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      if (!input.id && !input.slug) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Either id or slug is required",
+        });
+      }
+
+      const where = input.slug
+        ? eq(game.slug, input.slug)
+        : eq(game.id, input.id!);
+
+      const result = await db
+        .select({
+          id: game.id,
+          gameUid: game.gameUid,
+          gameName: game.gameName,
+          gameType: game.gameType,
+          supportedCurrencies: game.supportedCurrencies,
+          supportedLanguages: game.supportedLanguages,
+          imageUrl: game.imageUrl,
+          thumbnailUrl: game.thumbnailUrl,
+          bannerUrl: game.bannerUrl,
+          backgroundUrl: game.backgroundUrl,
+          imageAlt: game.imageAlt,
+          displayOrder: game.displayOrder,
+          isFeatured: game.isFeatured,
+          isNew: game.isNew,
+          isHot: game.isHot,
+          status: game.status,
+          metadata: game.metadata,
+          slug: game.slug,
+          metaTitle: game.metaTitle,
+          metaDescription: game.metaDescription,
+          createdAt: game.createdAt,
+          updatedAt: game.updatedAt,
+          provider: {
+            id: gameProvider.id,
+            code: gameProvider.code,
+            name: gameProvider.name,
+            category: gameProvider.category,
+            imageUrl: gameProvider.imageUrl,
+          },
+        })
+        .from(game)
+        .innerJoin(gameProvider, eq(game.providerId, gameProvider.id))
+        .where(where)
+        .limit(1);
+
+      if (result.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      return result[0];
+    }),
+
+  /**
+   * Update game images
+   *
+   * Admin only - updates image URLs for a game.
+   */
+  updateGameImages: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string().min(1),
+        imageUrl: z.string().url().optional(),
+        thumbnailUrl: z.string().url().optional(),
+        bannerUrl: z.string().url().optional(),
+        backgroundUrl: z.string().url().optional(),
+        imageAlt: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const result = await gameService.updateGameImages(input.gameId, {
+          imageUrl: input.imageUrl,
+          thumbnailUrl: input.thumbnailUrl,
+          bannerUrl: input.bannerUrl,
+          backgroundUrl: input.backgroundUrl,
+          imageAlt: input.imageAlt,
+        });
+        return {
+          success: true,
+          game: result,
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error.message || "Failed to update game images",
+        });
+      }
+    }),
+
+  /**
+   * Update game status
+   *
+   * Admin only - enables/disables a game.
+   */
+  updateGameStatus: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string().min(1),
+        status: z.enum(["active", "disabled", "maintenance"]),
+      })
+    )
+    .mutation(async ({ input }) => {
+      await db
+        .update(game)
+        .set({
+          status: input.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(game.id, input.gameId));
+
+      const updated = await db
+        .select()
+        .from(game)
+        .where(eq(game.id, input.gameId))
+        .limit(1);
+
+      if (updated.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      return {
+        success: true,
+        game: updated[0],
+      };
+    }),
+
+  /**
+   * Update game flags
+   *
+   * Admin only - sets featured, new, hot flags.
+   */
+  updateGameFlags: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string().min(1),
+        isFeatured: z.boolean().optional(),
+        isNew: z.boolean().optional(),
+        isHot: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const updateData: Record<string, boolean> = {};
+      if (input.isFeatured !== undefined) updateData.isFeatured = input.isFeatured;
+      if (input.isNew !== undefined) updateData.isNew = input.isNew;
+      if (input.isHot !== undefined) updateData.isHot = input.isHot;
+
+      await db
+        .update(game)
+        .set({
+          ...updateData,
+          updatedAt: new Date(),
+        })
+        .where(eq(game.id, input.gameId));
+
+      const updated = await db
+        .select()
+        .from(game)
+        .where(eq(game.id, input.gameId))
+        .limit(1);
+
+      return {
+        success: true,
+        game: updated[0] || null,
+      };
+    }),
+
+  /**
+   * Update display order
+   *
+   * Admin only - bulk update display order for games.
+   */
+  updateGameOrder: protectedProcedure
+    .input(
+      z.object({
+        games: z.array(
+          z.object({
+            id: z.string().min(1),
+            displayOrder: z.number().int(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      for (const item of input.games) {
+        await db
+          .update(game)
+          .set({
+            displayOrder: item.displayOrder,
+            updatedAt: new Date(),
+          })
+          .where(eq(game.id, item.id));
+      }
+
+      return {
+        success: true,
+        message: "Display order updated",
+      };
+    }),
 
   /**
    * Process game callback (internal use by webhook)

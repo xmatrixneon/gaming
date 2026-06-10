@@ -25,9 +25,9 @@
     "semantic_hash": "44e359a850a740a46e6f77264e7115e9"
   },
   "/home/neo/clausbet/app/forgot-password/page.tsx": {
-    "mtime": 1780910779.9464507,
-    "ast_hash": "70e9d9c0ee06d1c5a361bff4e034efbb",
-    "semantic_hash": "70e9d9c0ee06d1c5a361bff4e034efbb"
+    "mtime": 1780977415.3261795,
+    "ast_hash": "cf01c7f5287232f3e0892472d14eaa9b",
+    "semantic_hash": "cf01c7f5287232f3e0892472d14eaa9b"
   },
   "/home/neo/clausbet/app/history/page.tsx": {
     "mtime": 1780910794.3019547,
@@ -65,19 +65,19 @@
     "semantic_hash": "74a6dfc0063ce6dfcf6f0cd4f1ed196f"
   },
   "/home/neo/clausbet/app/profile/page.tsx": {
-    "mtime": 1780917578.7400265,
-    "ast_hash": "867d64343bf2797b76c0ab8c1a3f0666",
-    "semantic_hash": "867d64343bf2797b76c0ab8c1a3f0666"
+    "mtime": 1780992860.5721664,
+    "ast_hash": "265a7d87d29ab28677452535e7a495f9",
+    "semantic_hash": "265a7d87d29ab28677452535e7a495f9"
   },
   "/home/neo/clausbet/app/signin/page.tsx": {
-    "mtime": 1780913751.339091,
-    "ast_hash": "ebc9adfc784fcb58f71ca1dec0196de1",
-    "semantic_hash": "ebc9adfc784fcb58f71ca1dec0196de1"
+    "mtime": 1780977054.265642,
+    "ast_hash": "a9edbf98ea2254462c7f282e8105058a",
+    "semantic_hash": "a9edbf98ea2254462c7f282e8105058a"
   },
   "/home/neo/clausbet/app/signup/page.tsx": {
-    "mtime": 1780917941.007152,
-    "ast_hash": "eb55d6df0418b058073f6969dd650506",
-    "semantic_hash": "eb55d6df0418b058073f6969dd650506"
+    "mtime": 1780977437.265356,
+    "ast_hash": "72a2f905371ff072a4b9f34e601f9d04",
+    "semantic_hash": "72a2f905371ff072a4b9f34e601f9d04"
   },
   "/home/neo/clausbet/app/withdraw/page.tsx": {
     "mtime": 1780910789.331273,
@@ -190,9 +190,9 @@
     "semantic_hash": "5cdec266a0b5226111220f744dd3aacf"
   },
   "/home/neo/clausbet/components/game/shared/app-header.tsx": {
-    "mtime": 1780733330.700506,
-    "ast_hash": "66fb75c67605baf5c8428055aba89890",
-    "semantic_hash": "66fb75c67605baf5c8428055aba89890"
+    "mtime": 1780985496.6036246,
+    "ast_hash": "b9cd00dd76039a58f6d71b638b1e4096",
+    "semantic_hash": "b9cd00dd76039a58f6d71b638b1e4096"
   },
   "/home/neo/clausbet/components/game/shared/balance-card.tsx": {
     "mtime": 1780555907.5662487,
@@ -250,9 +250,9 @@
     "semantic_hash": "c6d85ec0522899c5da67ffdae8b4f3ea"
   },
   "/home/neo/clausbet/components/ui/avatar.tsx": {
-    "mtime": 1780544355.5980892,
-    "ast_hash": "b48244919ef33575fecf5509063b7310",
-    "semantic_hash": "b48244919ef33575fecf5509063b7310"
+    "mtime": 1780985303.832674,
+    "ast_hash": "996a766d89bedcd4c5de5966978757ed",
+    "semantic_hash": "996a766d89bedcd4c5de5966978757ed"
   },
   "/home/neo/clausbet/components/ui/badge.tsx": {
     "mtime": 1780544355.5948088,
@@ -505,9 +505,9 @@
     "semantic_hash": "b0b931c1a15ec3924fa5fecebaa15685"
   },
   "/home/neo/clausbet/drizzle.config.ts": {
-    "mtime": 1780902928.9546528,
-    "ast_hash": "716be7196651cba955e526279fbfc3dc",
-    "semantic_hash": "716be7196651cba955e526279fbfc3dc"
+    "mtime": 1781002521.489735,
+    "ast_hash": "b7b035c8a534c2235e428bd7e46f1956",
+    "semantic_hash": "b7b035c8a534c2235e428bd7e46f1956"
   },
   "/home/neo/clausbet/drizzle/fix-schema.sql": {
     "mtime": 1780914400.1677606,
@@ -519,20 +519,15 @@
     "ast_hash": "8754e067747b091b822d74e1b0327fd0",
     "semantic_hash": "8754e067747b091b822d74e1b0327fd0"
   },
-  "/home/neo/clausbet/drizzle/migrations/0000_far_the_executioner.sql": {
-    "mtime": 1780903315.802647,
-    "ast_hash": "33a7b77260f8a463b9e861c1856e64fe",
-    "semantic_hash": "33a7b77260f8a463b9e861c1856e64fe"
-  },
   "/home/neo/clausbet/drizzle/migrations/meta/0000_snapshot.json": {
-    "mtime": 1780903315.802647,
-    "ast_hash": "45953d4f46537e5fb4e26ac316e984fe",
-    "semantic_hash": "45953d4f46537e5fb4e26ac316e984fe"
+    "mtime": 1781002355.5623608,
+    "ast_hash": "58d070b5eadaa4feb1912e3cb90c4bf7",
+    "semantic_hash": "58d070b5eadaa4feb1912e3cb90c4bf7"
   },
   "/home/neo/clausbet/drizzle/migrations/meta/_journal.json": {
-    "mtime": 1780903315.802647,
-    "ast_hash": "c8ed3a86927fbed1a063b8eb20bdef6a",
-    "semantic_hash": "c8ed3a86927fbed1a063b8eb20bdef6a"
+    "mtime": 1781088754.7992232,
+    "ast_hash": "14587f9e6ea55a147aee5a904c713c55",
+    "semantic_hash": "14587f9e6ea55a147aee5a904c713c55"
   },
   "/home/neo/clausbet/drizzle/schema.generated.ts": {
     "mtime": 1780903276.6763306,
@@ -540,9 +535,9 @@
     "semantic_hash": "0a5fa6668999cc86ddcc5a57c21d30ae"
   },
   "/home/neo/clausbet/drizzle/schema.ts": {
-    "mtime": 1780903305.5853028,
-    "ast_hash": "5866b13f8e3c918865a615d213754f9e",
-    "semantic_hash": "5866b13f8e3c918865a615d213754f9e"
+    "mtime": 1781088737.420626,
+    "ast_hash": "59a63cfa057925d265886ba2318df5f2",
+    "semantic_hash": "59a63cfa057925d265886ba2318df5f2"
   },
   "/home/neo/clausbet/eslint.config.mjs": {
     "mtime": 1778990692.0524526,
@@ -550,9 +545,9 @@
     "semantic_hash": "dfa1f5f6a7037bf39dc510f30b180002"
   },
   "/home/neo/clausbet/hooks/use-auth.ts": {
-    "mtime": 1780919174.8666666,
-    "ast_hash": "9853fd14f7539d526c234d6b10e8e122",
-    "semantic_hash": "9853fd14f7539d526c234d6b10e8e122"
+    "mtime": 1781079634.6835806,
+    "ast_hash": "1a8305e601a5e4bcdf4a6b3a55a2c365",
+    "semantic_hash": "1a8305e601a5e4bcdf4a6b3a55a2c365"
   },
   "/home/neo/clausbet/hooks/use-auto-scroll.ts": {
     "mtime": 1780624218.8921552,
@@ -570,14 +565,14 @@
     "semantic_hash": "12ff9f1df76e29cf6ac15fa10ce30e86"
   },
   "/home/neo/clausbet/lib/auth-client.ts": {
-    "mtime": 1780917258.1972272,
-    "ast_hash": "58050b4e7db60120110b503900a09f67",
-    "semantic_hash": "58050b4e7db60120110b503900a09f67"
+    "mtime": 1780983410.7725346,
+    "ast_hash": "297033769972418da2295a0ca6d8b0a1",
+    "semantic_hash": "297033769972418da2295a0ca6d8b0a1"
   },
   "/home/neo/clausbet/lib/auth.ts": {
-    "mtime": 1780918840.5547714,
-    "ast_hash": "aa7588f8dc450b7dc0cac17a984c9e79",
-    "semantic_hash": "aa7588f8dc450b7dc0cac17a984c9e79"
+    "mtime": 1781002296.3977783,
+    "ast_hash": "2634a3e40fa4ddaec548fc0d21ff00c1",
+    "semantic_hash": "2634a3e40fa4ddaec548fc0d21ff00c1"
   },
   "/home/neo/clausbet/lib/config.ts": {
     "mtime": 1780625067.7243435,
@@ -590,9 +585,9 @@
     "semantic_hash": "fb74320e1331dfc9230e2046d7c7885c"
   },
   "/home/neo/clausbet/lib/trpc/client.ts": {
-    "mtime": 1780916498.2604022,
-    "ast_hash": "8a0bf8d31340a64f82d6b0249644040f",
-    "semantic_hash": "8a0bf8d31340a64f82d6b0249644040f"
+    "mtime": 1780973708.7567487,
+    "ast_hash": "cdde3abc0773766ced3a1309740fbc89",
+    "semantic_hash": "cdde3abc0773766ced3a1309740fbc89"
   },
   "/home/neo/clausbet/lib/trpc/hooks.ts": {
     "mtime": 1780908252.556722,
@@ -600,9 +595,9 @@
     "semantic_hash": "fa1ab962d7f93dc34de991cc84f88a64"
   },
   "/home/neo/clausbet/lib/trpc/index.ts": {
-    "mtime": 1780908605.813279,
-    "ast_hash": "e2201b4521698256f3c21456abe5eef2",
-    "semantic_hash": "e2201b4521698256f3c21456abe5eef2"
+    "mtime": 1781079755.2377949,
+    "ast_hash": "dabd70cc5457e5ff185f9a2e8a08bd26",
+    "semantic_hash": "dabd70cc5457e5ff185f9a2e8a08bd26"
   },
   "/home/neo/clausbet/lib/trpc/provider.tsx": {
     "mtime": 1780908432.3364973,
@@ -610,9 +605,9 @@
     "semantic_hash": "913ae067d4052ebc09b19ac51238d680"
   },
   "/home/neo/clausbet/lib/trpc/server.ts": {
-    "mtime": 1780908762.295719,
-    "ast_hash": "3c916ffdc8c8a6f5828b08cc63ef0a47",
-    "semantic_hash": "3c916ffdc8c8a6f5828b08cc63ef0a47"
+    "mtime": 1781079594.7979083,
+    "ast_hash": "adb2ccb411c4368c018354c9828009a1",
+    "semantic_hash": "adb2ccb411c4368c018354c9828009a1"
   },
   "/home/neo/clausbet/lib/trpc/types.ts": {
     "mtime": 1780908981.9710753,
@@ -650,34 +645,34 @@
     "semantic_hash": "52202102e69a4223c4058f8f4b2e8c9b"
   },
   "/home/neo/clausbet/server/context.ts": {
-    "mtime": 1780909351.0676038,
-    "ast_hash": "80c9dc89c5f5c938921499e39cf11137",
-    "semantic_hash": "80c9dc89c5f5c938921499e39cf11137"
+    "mtime": 1781079564.9151635,
+    "ast_hash": "d27033fe16ccb46ec6311fc8db47db8e",
+    "semantic_hash": "d27033fe16ccb46ec6311fc8db47db8e"
   },
   "/home/neo/clausbet/server/routers/auth.ts": {
-    "mtime": 1780918828.8905108,
-    "ast_hash": "5761f239450a6b6a294a974422e100ab",
-    "semantic_hash": "5761f239450a6b6a294a974422e100ab"
+    "mtime": 1781070469.0342247,
+    "ast_hash": "938cfceac9c3abf6b2fe0122b6c84c89",
+    "semantic_hash": "938cfceac9c3abf6b2fe0122b6c84c89"
   },
   "/home/neo/clausbet/server/routers/index.ts": {
-    "mtime": 1780902994.5561957,
-    "ast_hash": "094bb294e0cf590039b16fc32950ca87",
-    "semantic_hash": "094bb294e0cf590039b16fc32950ca87"
+    "mtime": 1781070668.8342447,
+    "ast_hash": "db07a5fb9bc2133a5807c04999dc8d72",
+    "semantic_hash": "db07a5fb9bc2133a5807c04999dc8d72"
   },
   "/home/neo/clausbet/server/routers/user.ts": {
-    "mtime": 1780910316.7623675,
-    "ast_hash": "04aabef287caf3ee0cf69b7a8e49538b",
-    "semantic_hash": "04aabef287caf3ee0cf69b7a8e49538b"
+    "mtime": 1781079551.4664874,
+    "ast_hash": "24826a5139c45ca5f23d405efd5edb92",
+    "semantic_hash": "24826a5139c45ca5f23d405efd5edb92"
   },
   "/home/neo/clausbet/server/trpc.ts": {
-    "mtime": 1780903092.7958555,
-    "ast_hash": "6d93eb31c5d9ec0a762696e1425007b3",
-    "semantic_hash": "6d93eb31c5d9ec0a762696e1425007b3"
+    "mtime": 1781079585.8757703,
+    "ast_hash": "a3c038b838c58fe38c9adae97e3873a4",
+    "semantic_hash": "a3c038b838c58fe38c9adae97e3873a4"
   },
   "/home/neo/clausbet/tsconfig.json": {
-    "mtime": 1778990692.0560477,
-    "ast_hash": "02fc19ad21338c2ab820a70136310db4",
-    "semantic_hash": "02fc19ad21338c2ab820a70136310db4"
+    "mtime": 1781079687.818166,
+    "ast_hash": "fc3ef41cacd2c01a1218da8d92ad9ff0",
+    "semantic_hash": "fc3ef41cacd2c01a1218da8d92ad9ff0"
   },
   "/home/neo/clausbet/AGENTS.md": {
     "mtime": 1780901179.4248133,
@@ -685,9 +680,9 @@
     "semantic_hash": "42446441be008d02e14d5e4931d5b120"
   },
   "/home/neo/clausbet/CLAUDE.md": {
-    "mtime": 1780902703.6531367,
-    "ast_hash": "8bf045720d6b160286373e6c0e862c2d",
-    "semantic_hash": "8bf045720d6b160286373e6c0e862c2d"
+    "mtime": 1781085113.092515,
+    "ast_hash": "ecdb4b33f9b500b8e8bfbb17cb21f7b0",
+    "semantic_hash": "ecdb4b33f9b500b8e8bfbb17cb21f7b0"
   },
   "/home/neo/clausbet/public/file.svg": {
     "mtime": 1778990692.0521493,
@@ -723,5 +718,390 @@
     "mtime": 1778990692.053132,
     "ast_hash": "a2760511c65806022ad20adf74370ff3",
     "semantic_hash": "a2760511c65806022ad20adf74370ff3"
+  },
+  "/home/neo/clausbet/app/(auth)/game-status/page.tsx": {
+    "mtime": 1781062831.0161386,
+    "ast_hash": "12ebae48b8183286f02d4947d2bd817e",
+    "semantic_hash": "12ebae48b8183286f02d4947d2bd817e"
+  },
+  "/home/neo/clausbet/app/(auth)/games/page.tsx": {
+    "mtime": 1781063293.8873289,
+    "ast_hash": "5168df5543aece4f23b64623bf2534e9",
+    "semantic_hash": "5168df5543aece4f23b64623bf2534e9"
+  },
+  "/home/neo/clausbet/app/api/webhook/game-api/route.ts": {
+    "mtime": 1781062227.5992796,
+    "ast_hash": "340991bf5d6adf7c62199f1fefef3406",
+    "semantic_hash": "340991bf5d6adf7c62199f1fefef3406"
+  },
+  "/home/neo/clausbet/app/api/webhook/okpay/__tests__/deposit.test.ts": {
+    "mtime": 1781067483.4143627,
+    "ast_hash": "21476560695bde6447c7d2869356ae19",
+    "semantic_hash": "21476560695bde6447c7d2869356ae19"
+  },
+  "/home/neo/clausbet/app/api/webhook/okpay/__tests__/withdrawal.test.ts": {
+    "mtime": 1781067518.0882635,
+    "ast_hash": "4564b704d74526542bfb3f7318bef20a",
+    "semantic_hash": "4564b704d74526542bfb3f7318bef20a"
+  },
+  "/home/neo/clausbet/app/api/webhook/okpay/deposit/route.ts": {
+    "mtime": 1781067440.5976007,
+    "ast_hash": "85722c9a4711e23d05c33ffa73ebefdb",
+    "semantic_hash": "85722c9a4711e23d05c33ffa73ebefdb"
+  },
+  "/home/neo/clausbet/app/api/webhook/okpay/withdrawal/route.ts": {
+    "mtime": 1781067526.819875,
+    "ast_hash": "d829d8d9137da652f3bb488bb1087939",
+    "semantic_hash": "d829d8d9137da652f3bb488bb1087939"
+  },
+  "/home/neo/clausbet/app/api/webhook/velopay/route.ts": {
+    "mtime": 1780998210.8668878,
+    "ast_hash": "c86e23fe61af5aae4be4eea7c7efdbcc",
+    "semantic_hash": "c86e23fe61af5aae4be4eea7c7efdbcc"
+  },
+  "/home/neo/clausbet/app/settings/change-password/page.tsx": {
+    "mtime": 1780983913.8714228,
+    "ast_hash": "8472cfb3eeb77640d48f2bf9a8b8afa8",
+    "semantic_hash": "8472cfb3eeb77640d48f2bf9a8b8afa8"
+  },
+  "/home/neo/clausbet/app/settings/page.tsx": {
+    "mtime": 1780993293.3600125,
+    "ast_hash": "41d134edaf40312b00d5baa5fbaea4e4",
+    "semantic_hash": "41d134edaf40312b00d5baa5fbaea4e4"
+  },
+  "/home/neo/clausbet/app/settings/set-password/page.tsx": {
+    "mtime": 1780992707.4159358,
+    "ast_hash": "e079ea87ed8e55e4d77f0ec20fea092b",
+    "semantic_hash": "e079ea87ed8e55e4d77f0ec20fea092b"
+  },
+  "/home/neo/clausbet/components/game/home/CategoryTabs.tsx": {
+    "mtime": 1781063210.059477,
+    "ast_hash": "a0499a32439390ba8773e8dd4bb257a8",
+    "semantic_hash": "a0499a32439390ba8773e8dd4bb257a8"
+  },
+  "/home/neo/clausbet/components/game/home/GameCard.tsx": {
+    "mtime": 1781063202.9185805,
+    "ast_hash": "76d0d529d44de279fa616e60fe871b9c",
+    "semantic_hash": "76d0d529d44de279fa616e60fe871b9c"
+  },
+  "/home/neo/clausbet/create-deposit-link-variants.ts": {
+    "mtime": 1780999078.0920522,
+    "ast_hash": "8bab48dfda0cc3b2feadf2a35f86bed4",
+    "semantic_hash": "8bab48dfda0cc3b2feadf2a35f86bed4"
+  },
+  "/home/neo/clausbet/create-deposit-link.ts": {
+    "mtime": 1780999035.0624058,
+    "ast_hash": "0dc43e84037c16056a907559f6d45502",
+    "semantic_hash": "0dc43e84037c16056a907559f6d45502"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0000_faulty_stryfe.sql": {
+    "mtime": 1781002355.563361,
+    "ast_hash": "f329432af1ec8bea5ff7c2aed190bd6d",
+    "semantic_hash": "f329432af1ec8bea5ff7c2aed190bd6d"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0001_tiresome_invaders.sql": {
+    "mtime": 1781070014.925833,
+    "ast_hash": "9a3b7df8188b995e1ff3f285c96868f1",
+    "semantic_hash": "9a3b7df8188b995e1ff3f285c96868f1"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0002_sleepy_retro_girl.sql": {
+    "mtime": 1781084694.903936,
+    "ast_hash": "e96c20b6c68a4acd3c3f95806e1486db",
+    "semantic_hash": "e96c20b6c68a4acd3c3f95806e1486db"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0003_minor_logan.sql": {
+    "mtime": 1781084712.7462676,
+    "ast_hash": "7938017f7aef85e9097c4838e10fe349",
+    "semantic_hash": "7938017f7aef85e9097c4838e10fe349"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0004_ancient_scourge.sql": {
+    "mtime": 1781085071.5126023,
+    "ast_hash": "cdee9a9624a18cfac676319629e41df8",
+    "semantic_hash": "cdee9a9624a18cfac676319629e41df8"
+  },
+  "/home/neo/clausbet/drizzle/migrations/0005_hot_firestar.sql": {
+    "mtime": 1781088754.7992232,
+    "ast_hash": "c92c1004b7ec07b7f7c7224af957807e",
+    "semantic_hash": "c92c1004b7ec07b7f7c7224af957807e"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/0001_snapshot.json": {
+    "mtime": 1781070014.924833,
+    "ast_hash": "cb137c7c6bdf1a037515cfe0d339a83b",
+    "semantic_hash": "cb137c7c6bdf1a037515cfe0d339a83b"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/0002_snapshot.json": {
+    "mtime": 1781084694.902936,
+    "ast_hash": "2b2703f85c94501017af8c07a12546cf",
+    "semantic_hash": "2b2703f85c94501017af8c07a12546cf"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/0003_snapshot.json": {
+    "mtime": 1781084712.7462676,
+    "ast_hash": "34b0a5c3488ceae8c72e46e2aeb32661",
+    "semantic_hash": "34b0a5c3488ceae8c72e46e2aeb32661"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/0004_snapshot.json": {
+    "mtime": 1781085071.5126023,
+    "ast_hash": "cd3963ca87ebda5a699de05e1018c236",
+    "semantic_hash": "cd3963ca87ebda5a699de05e1018c236"
+  },
+  "/home/neo/clausbet/drizzle/migrations/meta/0005_snapshot.json": {
+    "mtime": 1781088754.7982233,
+    "ast_hash": "ce02d28c754f9bd4d41f5382958562a5",
+    "semantic_hash": "ce02d28c754f9bd4d41f5382958562a5"
+  },
+  "/home/neo/clausbet/drizzle/seed/seed-bonus-templates.ts": {
+    "mtime": 1781070227.988565,
+    "ast_hash": "d9ec1f92f4541287c1a81b578c3a6049",
+    "semantic_hash": "d9ec1f92f4541287c1a81b578c3a6049"
+  },
+  "/home/neo/clausbet/lib/__tests__/okpay-gateway.test.ts": {
+    "mtime": 1781067359.3381472,
+    "ast_hash": "e1918c584938b0d3197d141cae653238",
+    "semantic_hash": "e1918c584938b0d3197d141cae653238"
+  },
+  "/home/neo/clausbet/lib/aggregator-adapter.ts": {
+    "mtime": 1781078923.9470809,
+    "ast_hash": "5bc637a25dde307c31a58f49aec0b825",
+    "semantic_hash": "5bc637a25dde307c31a58f49aec0b825"
+  },
+  "/home/neo/clausbet/lib/bonus-service.ts": {
+    "mtime": 1781078952.830466,
+    "ast_hash": "d4a88a1a5b1a08df2f7b33c170f0587f",
+    "semantic_hash": "d4a88a1a5b1a08df2f7b33c170f0587f"
+  },
+  "/home/neo/clausbet/lib/crypto-utils.ts": {
+    "mtime": 1781062035.5858417,
+    "ast_hash": "41a8d3399474272620f8d96e3588b773",
+    "semantic_hash": "41a8d3399474272620f8d96e3588b773"
+  },
+  "/home/neo/clausbet/lib/format-currency.ts": {
+    "mtime": 1781076421.289985,
+    "ast_hash": "16043da52a0a0031359b04e0d866d5dd",
+    "semantic_hash": "16043da52a0a0031359b04e0d866d5dd"
+  },
+  "/home/neo/clausbet/lib/fraud-detection.ts": {
+    "mtime": 1781078863.0644767,
+    "ast_hash": "65c5bdb1ec93a5dc44e29c65ee9681b9",
+    "semantic_hash": "65c5bdb1ec93a5dc44e29c65ee9681b9"
+  },
+  "/home/neo/clausbet/lib/game-adapter.ts": {
+    "mtime": 1781062283.6997473,
+    "ast_hash": "4fea0c1f3fa768b094780544e703e65c",
+    "semantic_hash": "4fea0c1f3fa768b094780544e703e65c"
+  },
+  "/home/neo/clausbet/lib/game-api-client.ts": {
+    "mtime": 1781088378.8437357,
+    "ast_hash": "af21b09770df4189a8604aea87c70c2b",
+    "semantic_hash": "af21b09770df4189a8604aea87c70c2b"
+  },
+  "/home/neo/clausbet/lib/game-api-config.ts": {
+    "mtime": 1781085692.3089578,
+    "ast_hash": "8c27648126c6e7b80e0228671baf7da1",
+    "semantic_hash": "8c27648126c6e7b80e0228671baf7da1"
+  },
+  "/home/neo/clausbet/lib/game-api-types.ts": {
+    "mtime": 1781062147.7902684,
+    "ast_hash": "3282c5d4d1c41bb5a49c914452c27176",
+    "semantic_hash": "3282c5d4d1c41bb5a49c914452c27176"
+  },
+  "/home/neo/clausbet/lib/game-repository.ts": {
+    "mtime": 1781062346.6902907,
+    "ast_hash": "5ddd4ed8f4ecf737f1feb74531320918",
+    "semantic_hash": "5ddd4ed8f4ecf737f1feb74531320918"
+  },
+  "/home/neo/clausbet/lib/game-service.ts": {
+    "mtime": 1781089829.2012055,
+    "ast_hash": "65951869d4f20b6815dda91b5d006599",
+    "semantic_hash": "65951869d4f20b6815dda91b5d006599"
+  },
+  "/home/neo/clausbet/lib/idempotency.ts": {
+    "mtime": 1781078880.9208465,
+    "ast_hash": "b65ba020960293da36676070f930cb7b",
+    "semantic_hash": "b65ba020960293da36676070f930cb7b"
+  },
+  "/home/neo/clausbet/lib/okpay-gateway.ts": {
+    "mtime": 1781067399.1344042,
+    "ast_hash": "bf542cc6274cea085c32224f36f440ee",
+    "semantic_hash": "bf542cc6274cea085c32224f36f440ee"
+  },
+  "/home/neo/clausbet/lib/referral-service.ts": {
+    "mtime": 1781078904.8024604,
+    "ast_hash": "87c1e0c0af38d63684604514a9e0438f",
+    "semantic_hash": "87c1e0c0af38d63684604514a9e0438f"
+  },
+  "/home/neo/clausbet/lib/velopay-gateway.test.ts": {
+    "mtime": 1780998419.8876457,
+    "ast_hash": "d6b536ea35dcc23936467bfacea0b9c3",
+    "semantic_hash": "d6b536ea35dcc23936467bfacea0b9c3"
+  },
+  "/home/neo/clausbet/lib/velopay-gateway.ts": {
+    "mtime": 1780998077.0678763,
+    "ast_hash": "d040992bd120a04aa936e85f85886be2",
+    "semantic_hash": "d040992bd120a04aa936e85f85886be2"
+  },
+  "/home/neo/clausbet/lib/vip-service.ts": {
+    "mtime": 1781075981.5050979,
+    "ast_hash": "c8a1f21d72c1514d262bf46086581ea9",
+    "semantic_hash": "c8a1f21d72c1514d262bf46086581ea9"
+  },
+  "/home/neo/clausbet/lib/wallet-service.ts": {
+    "mtime": 1781078914.3095853,
+    "ast_hash": "a248551f423597d88b1618a31a1f6c4b",
+    "semantic_hash": "a248551f423597d88b1618a31a1f6c4b"
+  },
+  "/home/neo/clausbet/scripts/generate-referral-codes.ts": {
+    "mtime": 1781070822.306644,
+    "ast_hash": "e5dc0444863fc200b024a7105a0178b2",
+    "semantic_hash": "e5dc0444863fc200b024a7105a0178b2"
+  },
+  "/home/neo/clausbet/scripts/proxy-game-api-test.ts": {
+    "mtime": 1781085792.0473592,
+    "ast_hash": "ad48567b1851277fd20cc55c8eb81dbb",
+    "semantic_hash": "ad48567b1851277fd20cc55c8eb81dbb"
+  },
+  "/home/neo/clausbet/scripts/reconcile-balances.ts": {
+    "mtime": 1781084678.7186387,
+    "ast_hash": "be918c0efa0491dcca9a4b8833013503",
+    "semantic_hash": "be918c0efa0491dcca9a4b8833013503"
+  },
+  "/home/neo/clausbet/scripts/seed-games-v2.sql": {
+    "mtime": 1781089540.2160604,
+    "ast_hash": "515c202a05e2a5df5915283d9c7f1875",
+    "semantic_hash": "515c202a05e2a5df5915283d9c7f1875"
+  },
+  "/home/neo/clausbet/scripts/seed-games.sql": {
+    "mtime": 1781089488.2358823,
+    "ast_hash": "1d5e4653ecadbce590489af5500e9440",
+    "semantic_hash": "1d5e4653ecadbce590489af5500e9440"
+  },
+  "/home/neo/clausbet/scripts/sync-games.ts": {
+    "mtime": 1781088990.332176,
+    "ast_hash": "1f246c057b6fd69a9d22ee7d982f2b16",
+    "semantic_hash": "1f246c057b6fd69a9d22ee7d982f2b16"
+  },
+  "/home/neo/clausbet/scripts/test-game-launch.ts": {
+    "mtime": 1781090011.2870033,
+    "ast_hash": "bf81ee5dc8724303bef7cf06854d758e",
+    "semantic_hash": "bf81ee5dc8724303bef7cf06854d758e"
+  },
+  "/home/neo/clausbet/server/routers/bonus.ts": {
+    "mtime": 1781070563.5337615,
+    "ast_hash": "f28ad91cf953ad61f141e162473e0d15",
+    "semantic_hash": "f28ad91cf953ad61f141e162473e0d15"
+  },
+  "/home/neo/clausbet/server/routers/game.ts": {
+    "mtime": 1781089613.5890236,
+    "ast_hash": "f703fb82e52ae8d2c1cebf135f130ad6",
+    "semantic_hash": "f703fb82e52ae8d2c1cebf135f130ad6"
+  },
+  "/home/neo/clausbet/server/routers/referral.ts": {
+    "mtime": 1781070340.5282192,
+    "ast_hash": "880fa054d4163b9e4bb3e714add02aee",
+    "semantic_hash": "880fa054d4163b9e4bb3e714add02aee"
+  },
+  "/home/neo/clausbet/server/routers/transaction.ts": {
+    "mtime": 1781079865.5089328,
+    "ast_hash": "91485e7d6e7025458fde477617101579",
+    "semantic_hash": "91485e7d6e7025458fde477617101579"
+  },
+  "/home/neo/clausbet/server/routers/vip.ts": {
+    "mtime": 1781079269.6802773,
+    "ast_hash": "d1f7d369c6071fc9d5790c02bba20f56",
+    "semantic_hash": "d1f7d369c6071fc9d5790c02bba20f56"
+  },
+  "/home/neo/clausbet/server/routers/wallet.ts": {
+    "mtime": 1781079329.1135485,
+    "ast_hash": "c73ccf99b6de705db117df36c5da7ecd",
+    "semantic_hash": "c73ccf99b6de705db117df36c5da7ecd"
+  },
+  "/home/neo/clausbet/test-game-api-runner.ts": {
+    "mtime": 1781062690.3505828,
+    "ast_hash": "54d49f5136dfb144714ddccff064a1fa",
+    "semantic_hash": "54d49f5136dfb144714ddccff064a1fa"
+  },
+  "/home/neo/clausbet/test-game-api-verbose.ts": {
+    "mtime": 1781062762.7104027,
+    "ast_hash": "db4b54b21d4de76a91813d5393753419",
+    "semantic_hash": "db4b54b21d4de76a91813d5393753419"
+  },
+  "/home/neo/clausbet/test-game-api.ts": {
+    "mtime": 1781062680.5517058,
+    "ast_hash": "234881e065b7017e1718adf82a7df8b4",
+    "semantic_hash": "234881e065b7017e1718adf82a7df8b4"
+  },
+  "/home/neo/clausbet/test-games-structure.ts": {
+    "mtime": 1781088637.9622757,
+    "ast_hash": "80d95aeb20ba37544f6089cd42f6ba18",
+    "semantic_hash": "80d95aeb20ba37544f6089cd42f6ba18"
+  },
+  "/home/neo/clausbet/test-integration.ts": {
+    "mtime": 1780998918.643024,
+    "ast_hash": "59ade818de0ce548819b4cc38e7b118d",
+    "semantic_hash": "59ade818de0ce548819b4cc38e7b118d"
+  },
+  "/home/neo/clausbet/test-payment-flow.ts": {
+    "mtime": 1780998478.707514,
+    "ast_hash": "9a4d1ef80ac7835385e8751f4fca4078",
+    "semantic_hash": "9a4d1ef80ac7835385e8751f4fca4078"
+  },
+  "/home/neo/clausbet/utils/id.ts": {
+    "mtime": 1781079557.0362325,
+    "ast_hash": "86b36a5868e8ad8a439b6aeb26d2d88f",
+    "semantic_hash": "86b36a5868e8ad8a439b6aeb26d2d88f"
+  },
+  "/home/neo/clausbet/vitest.config.ts": {
+    "mtime": 1780998353.3090403,
+    "ast_hash": "54dd5439dd2ada5356e6d37a51740938",
+    "semantic_hash": "54dd5439dd2ada5356e6d37a51740938"
+  },
+  "/home/neo/clausbet/GameApi_Doc_EN.md": {
+    "mtime": 1781084724.2779791,
+    "ast_hash": "983f334769a9d6baae3a43e27403d824",
+    "semantic_hash": "983f334769a9d6baae3a43e27403d824"
+  },
+  "/home/neo/clausbet/docs/okpay-integration.md": {
+    "mtime": 1781067761.9886606,
+    "ast_hash": "a56a06034922acd7e7150211078165d7",
+    "semantic_hash": "a56a06034922acd7e7150211078165d7"
+  },
+  "/home/neo/clausbet/docs/payment-quick-reference.md": {
+    "mtime": 1780998597.4047353,
+    "ast_hash": "e2b90506e99bb7e68342342ea2a0ad99",
+    "semantic_hash": "e2b90506e99bb7e68342342ea2a0ad99"
+  },
+  "/home/neo/clausbet/docs/payment-test-results.md": {
+    "mtime": 1780998965.8973894,
+    "ast_hash": "1b2cae8339d7be15cdb589a1aa780a64",
+    "semantic_hash": "1b2cae8339d7be15cdb589a1aa780a64"
+  },
+  "/home/neo/clausbet/docs/payment-testing-guide.md": {
+    "mtime": 1780998549.2056823,
+    "ast_hash": "7378c88fa6a0f0e423bc4ada486cbf0b",
+    "semantic_hash": "7378c88fa6a0f0e423bc4ada486cbf0b"
+  },
+  "/home/neo/clausbet/docs/superpowers/plans/2024-06-10-referral-vip-bonus-system-dynamic.md": {
+    "mtime": 1781069854.9205427,
+    "ast_hash": "5f8eb326bdff1b3d5aa61a781ff2d211",
+    "semantic_hash": "5f8eb326bdff1b3d5aa61a781ff2d211"
+  },
+  "/home/neo/clausbet/docs/superpowers/plans/2025-06-18-okpay-india-integration.md": {
+    "mtime": 1781066941.082277,
+    "ast_hash": "f3ea48249bc0786982aee79a5cbe647d",
+    "semantic_hash": "f3ea48249bc0786982aee79a5cbe647d"
+  },
+  "/home/neo/clausbet/docs/superpowers/specs/2024-06-10-referral-vip-bonus-system-design.md": {
+    "mtime": 1781069385.3116734,
+    "ast_hash": "f5fb42c94705c78e7fd413465399d5ab",
+    "semantic_hash": "f5fb42c94705c78e7fd413465399d5ab"
+  },
+  "/home/neo/clausbet/docs/superpowers/specs/2025-06-18-okpay-india-integration-design.md": {
+    "mtime": 1781066770.0404115,
+    "ast_hash": "54c4da3035afd2f208a7f1e643d72e48",
+    "semantic_hash": "54c4da3035afd2f208a7f1e643d72e48"
+  },
+  "/home/neo/clausbet/docs/velopay-integration.md": {
+    "mtime": 1780998297.262851,
+    "ast_hash": "42fe0c8dab726166667530bf7de65d14",
+    "semantic_hash": "42fe0c8dab726166667530bf7de65d14"
   }
 }

@@ -25,17 +25,33 @@ export class IdempotencyService {
    */
   async check(key: string): Promise<boolean> {
     const redisKey = `${this.PREFIX}:${key}`;
-    const exists = await redis.exists(redisKey);
-    if (exists) {
-      // Duplicate detected
+    // Atomic SET NX — eliminates the TOCTOU race between EXISTS and SETEX
+    const result = await redis.set(redisKey, 'processing', 'EX', this.TTL, 'NX');
+    if (result !== 'OK') {
       const existing = await redis.get(redisKey);
       console.log(`[IDEMPOTENCY] Duplicate request detected: ${key} (status: ${existing})`);
       return false;
     }
-
-    // Mark as processing
-    await redis.setex(redisKey, this.TTL, 'processing');
     return true;
+  }
+
+  /**
+   * Check if request is duplicate and return status atomically
+   * Prevents TOCTOU race condition between check() and getStatus()
+   *
+   * @param key - Unique identifier for this operation
+   * @returns Promise<{canProceed: boolean, status: string | null}>
+   */
+  async checkWithStatus(key: string): Promise<{ canProceed: boolean; status: string | null }> {
+    const redisKey = `${this.PREFIX}:${key}`;
+    // Atomic SET NX — eliminates the TOCTOU race between GET and SETEX
+    const result = await redis.set(redisKey, 'processing', 'EX', this.TTL, 'NX');
+    if (result !== 'OK') {
+      const existing = await redis.get(redisKey);
+      console.log(`[IDEMPOTENCY] Duplicate request detected: ${key} (status: ${existing})`);
+      return { canProceed: false, status: existing };
+    }
+    return { canProceed: true, status: 'processing' };
   }
 
   /**
@@ -123,28 +139,9 @@ export class IdempotencyService {
    * for explicit cleanup or maintenance
    */
   async cleanup(): Promise<number> {
-    // Redis handles TTL automatically, but we can scan for specific patterns
-    // This is useful for maintenance or if using custom TTL logic
-    let cursor = '0';
-    let count = 0;
-
-    do {
-      const result = await redis.scan(cursor, 'MATCH', `${this.PREFIX}:*`, 'COUNT', 100);
-      cursor = result[0];
-      const keys = result[1];
-
-      if (keys.length > 0) {
-        // Check TTL and remove if expired (shouldn't happen with Redis TTL, but safety check)
-        for (const key of keys) {
-          const ttl = await redis.ttl(key);
-          if (ttl === -2) { // Key doesn't exist or expired
-            count++;
-          }
-        }
-      }
-    } while (cursor !== '0');
-
-    return count;
+    // Redis expires idempotency keys automatically via TTL — no manual scan needed.
+    // SCAN only returns live keys, so ttl===-2 (evicted) can never be true for scanned keys.
+    return 0;
   }
 }
 

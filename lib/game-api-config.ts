@@ -17,37 +17,43 @@
  * - GAME_API_AES_KEY: 32-byte AES encryption key
  * - GAME_API_SERVER_URL: Game API server URL
  * - GAME_API_CALLBACK_URL: Callback URL for bet settlement
+ * - GAME_API_PLAYER_PREFIX: Prefix for all player accounts (e.g., "h5ab3a")
  * - GAME_API_IP_WHITELIST: Comma-separated list of allowed IPs (optional)
  *
  * Fixed configuration (based on requirements):
  * - mode: "seamless" - Industry standard seamless wallet mode
  * - currency: "INR" - INR currency support only
+ *
+ * NOTE: Configuration is evaluated on each access to ensure
+ * environment variables are loaded (e.g., after dotenv.config())
  */
 export const gameApiConfig = {
-  // Agency credentials
-  agencyUid: process.env.GAME_API_AGENCY_UID || "",
-  aesKey: process.env.GAME_API_AES_KEY || "",
-
-  // API endpoints
-  serverUrl: process.env.GAME_API_SERVER_URL || "https://jsgame.live",
-  callbackUrl: process.env.GAME_API_CALLBACK_URL || "",
-
-  // Game mode and currency (fixed based on requirements)
-  mode: "seamless" as const, // Industry standard seamless wallet mode
-  currency: "INR", // INR currency support only
-
-  // Security settings
-  ipWhitelist: parseIpWhitelist(process.env.GAME_API_IP_WHITELIST),
-
-  // Request settings
-  timeout: 30000, // 30 seconds
-  maxRetries: 3, // Exponential backoff retries
-
-  // Rate limiting (for fraud detection)
+  get agencyUid(): string {
+    return process.env.GAME_API_AGENCY_UID || "";
+  },
+  get aesKey(): string {
+    return process.env.GAME_API_AES_KEY || "";
+  },
+  get serverUrl(): string {
+    return process.env.GAME_API_SERVER_URL || "https://jsgame.live";
+  },
+  get callbackUrl(): string {
+    return process.env.GAME_API_CALLBACK_URL || "";
+  },
+  get playerPrefix(): string {
+    return process.env.GAME_API_PLAYER_PREFIX || "";
+  },
+  mode: "seamless" as const,
+  currency: "INR",
+  get ipWhitelist(): readonly string[] {
+    return parseIpWhitelist(process.env.GAME_API_IP_WHITELIST);
+  },
+  timeout: 30000,
+  maxRetries: 3,
   maxCallbacksPerMinute: 100,
-  maxBetAmount: 50000, // INR
-  maxHourlyBets: 500000, // INR
-} as const;
+  maxBetAmount: 50000,
+  maxHourlyBets: 500000,
+};
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -113,6 +119,13 @@ export function validateGameApiConfig(): true {
     !gameApiConfig.callbackUrl.startsWith("http://127.0.0.1")
   ) {
     errors.push("GAME_API_CALLBACK_URL must use HTTPS (or HTTP for localhost)");
+  }
+
+  // Validate player prefix
+  if (!gameApiConfig.playerPrefix) {
+    errors.push("GAME_API_PLAYER_PREFIX is required");
+  } else if (gameApiConfig.playerPrefix.length < 3) {
+    errors.push("GAME_API_PLAYER_PREFIX must be at least 3 characters");
   }
 
   // Validate IP whitelist (optional but recommended)

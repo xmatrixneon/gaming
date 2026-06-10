@@ -6,6 +6,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { type Context } from "./context";
 import superjson from "superjson";
+import { ZodError } from "zod";
 
 // ============================================================================
 // tRPC INITIALIZATION
@@ -22,8 +23,8 @@ const t = initTRPC.context<Context>().create({
       data: {
         ...shape.data,
         zodError:
-          error.cause instanceof Error && error.cause.message.includes("Zod")
-            ? error.cause.message
+          error.cause instanceof ZodError
+            ? error.cause.flatten()
             : null,
       },
     };
@@ -96,3 +97,4 @@ export const adminProcedure = t.procedure.use(({ ctx, next }) => {
 
 export const middleware = t.middleware;
 export const router = t.router;
+export const createCallerFactory = t.createCallerFactory;

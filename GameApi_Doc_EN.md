@@ -3,10 +3,17 @@
 ## Credentials
 
 ```
-agency_uid : 8dee1e401b87408cca3ca813c2250cb4
-aes_key    : 68b074393ec7c5a975856a90bd6fdf47
-server_url : https://jsgame.live
+Name：MGFCLUB-250259
+agency_uid：b75fbd22d0684c450192df017ddfcfe6
+aes_key：3c798ae2ff9b670dfb37f1985e2772c0
+player_prefix: h5ab3a
+server_url：https://huidu.bet
+IP: 89.163.242.150
+Currency: INR
+
 ```
+
+
 
 ---
 

@@ -4,16 +4,25 @@
  * Implements standard aggregator wallet API pattern:
  * - debit(): Deduct balance for bet placement
  * - credit(): Add winnings to balance
- * - getBalance(): Query current balance
+ * - getBalance(): Query current balance (fresh, no cache)
  * - rollback(): Reverse failed transactions
  *
- * Integrates with game aggregators (Pragmatic, Evolution, etc.)
- * for real-time balance synchronization during gameplay.
+ * Fixes applied:
+ * - Static imports for bonusService and vipService (dynamic imports removed)
+ * - wagering NOT tracked on wins — wagering requirements count bets placed, not winnings
+ * - VIP progress NOT tracked on wins — VIP is earned by wagering, not by receiving winnings
+ * - bet insert now populates gameRound column (was missing; credit() relies on it)
+ * - credit() bet lookup uses eq(bet.gameRound) instead of JSONB raw SQL
+ * - credit() totalWin update moved to AFTER wallet credit succeeds (was before → data inconsistency on failure)
+ * - getBalance() passes skipCache=true — aggregators need accurate balance, not cached
+ * - transactionRef/0n literals replaced with BigInt(0) for clarity
  */
 
 import { nanoid } from "nanoid";
 import { walletService } from "./wallet-service";
 import { idempotencyService } from "./idempotency";
+import { bonusService } from "@/lib/bonus-service";
+import { vipService } from "@/lib/vip-service";
 import { db } from "@/drizzle";
 import { gameSession, bet, transaction, user } from "@/drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -23,7 +32,7 @@ export interface DebitParams {
   sessionId: string;
   amount: bigint;
   gameRoundId: string;
-  transactionRef: string; // Idempotency key from aggregator
+  transactionRef: string;
   gameCode?: string;
   provider?: string;
 }
@@ -34,7 +43,7 @@ export interface DebitResult {
   balanceBefore: bigint;
   balanceAfter: bigint;
   failureReason?: string;
-  errorCode?: 'INSUFFICIENT_FUNDS' | 'DUPLICATE_TRANSACTION' | 'USER_NOT_FOUND' | 'INTERNAL_ERROR';
+  errorCode?: "INSUFFICIENT_FUNDS" | "DUPLICATE_TRANSACTION" | "USER_NOT_FOUND" | "INTERNAL_ERROR";
 }
 
 export interface CreditParams {
@@ -53,7 +62,7 @@ export interface CreditResult {
   balanceBefore: bigint;
   balanceAfter: bigint;
   failureReason?: string;
-  errorCode?: 'DUPLICATE_TRANSACTION' | 'USER_NOT_FOUND' | 'INTERNAL_ERROR';
+  errorCode?: "DUPLICATE_TRANSACTION" | "USER_NOT_FOUND" | "INTERNAL_ERROR";
 }
 
 export interface RollbackParams {
@@ -63,24 +72,25 @@ export interface RollbackParams {
 }
 
 export class AggregatorAdapter {
-  private readonly PROVIDER = 'clausbet';
+  private readonly PROVIDER = "clausbet";
 
   /**
-   * Debit (bet) - called by game aggregator
-   * Follows standard aggregator wallet API pattern
+   * Debit (bet) — called by game aggregator when a round starts.
    *
    * Flow:
-   * 1. Check idempotency (prevent duplicate bets)
-   * 2. Validate user exists and has sufficient balance
-   * 3. Find or create game session
-   * 4. Execute atomic debit with optimistic locking
-   * 5. Create bet record
-   * 6. Return transaction details with balance snapshot
+   * 1. Validate user exists
+   * 2. Pre-check balance (fast rejection — the atomic step re-validates under lock)
+   * 3. Atomic idempotency check
+   * 4. Find or create game session
+   * 5. Atomic debit with optimistic locking
+   * 6. Create bet record (with gameRound populated for credit() lookup)
+   * 7. Track wagering for active bonuses (non-critical, swallowed errors)
+   * 8. Track VIP progress (non-critical, swallowed errors)
+   * 9. Mark idempotency complete
    */
   async debit(params: DebitParams): Promise<DebitResult> {
     const { userId, sessionId, amount, gameRoundId, transactionRef, gameCode, provider } = params;
 
-    // Validate user exists
     const userRecord = await db
       .select({ balance: user.balance, balanceVersion: user.balanceVersion })
       .from(user)
@@ -90,69 +100,61 @@ export class AggregatorAdapter {
     if (!userRecord[0]) {
       return {
         success: false,
-        transactionId: '',
-        balanceBefore: 0n,
-        balanceAfter: 0n,
-        failureReason: 'User not found',
-        errorCode: 'USER_NOT_FOUND',
+        transactionId: "",
+        balanceBefore: BigInt(0),
+        balanceAfter: BigInt(0),
+        failureReason: "User not found",
+        errorCode: "USER_NOT_FOUND",
       };
     }
 
     const balanceBefore = BigInt(userRecord[0].balance.toString());
 
-    // Check sufficient balance
     if (balanceBefore < amount) {
       return {
         success: false,
-        transactionId: '',
+        transactionId: "",
         balanceBefore,
         balanceAfter: balanceBefore,
-        failureReason: 'Insufficient balance',
-        errorCode: 'INSUFFICIENT_FUNDS',
+        failureReason: "Insufficient balance",
+        errorCode: "INSUFFICIENT_FUNDS",
       };
     }
 
-    // Idempotency check
-    const idempotencyKey = idempotencyService.generateKey(
-      userId,
-      'bet',
-      transactionRef
-    );
+    const idempotencyKey = idempotencyService.generateKey(userId, "bet", transactionRef);
+    const idempotencyResult = await idempotencyService.checkWithStatus(idempotencyKey);
 
-    if (!(await idempotencyService.check(idempotencyKey))) {
-      // Check if this was already processed
-      const status = await idempotencyService.getStatus(idempotencyKey);
-      if (status === 'completed') {
-        // Return existing transaction (idempotent response)
-        const existingTransaction = await db
+    if (!idempotencyResult.canProceed) {
+      if (idempotencyResult.status === "completed") {
+        const existingTx = await db
           .select()
           .from(transaction)
           .where(eq(transaction.idempotencyKey, idempotencyKey))
           .limit(1);
 
-        if (existingTransaction[0]) {
+        if (existingTx[0]) {
           return {
             success: true,
-            transactionId: existingTransaction[0].id,
-            balanceBefore: BigInt(existingTransaction[0].balanceBefore.toString()),
-            balanceAfter: BigInt(existingTransaction[0].balanceAfter.toString()),
+            transactionId: existingTx[0].id,
+            balanceBefore: BigInt(existingTx[0].balanceBefore.toString()),
+            balanceAfter: BigInt(existingTx[0].balanceAfter.toString()),
           };
         }
       }
 
       return {
         success: false,
-        transactionId: '',
+        transactionId: "",
         balanceBefore,
         balanceAfter: balanceBefore,
-        failureReason: 'Duplicate transaction',
-        errorCode: 'DUPLICATE_TRANSACTION',
+        failureReason: "Duplicate transaction",
+        errorCode: "DUPLICATE_TRANSACTION",
       };
     }
 
     try {
       // Find or create game session
-      let sessionRecord = await db
+      const sessionRecord = await db
         .select()
         .from(gameSession)
         .where(eq(gameSession.providerSessionId, sessionId))
@@ -165,130 +167,126 @@ export class AggregatorAdapter {
         await db.insert(gameSession).values({
           id: gameSessionId,
           userId,
-          provider: provider || this.PROVIDER,
-          providerGameId: gameCode || 'unknown',
+          provider: provider ?? this.PROVIDER,
+          providerGameId: gameCode ?? "unknown",
           providerSessionId: sessionId,
-          status: 'active',
+          status: "active",
           totalBet: amount.toString(),
-          totalWin: '0',
+          totalWin: "0",
           createdAt: new Date(),
         });
       } else {
         gameSessionId = sessionRecord[0].id;
-        // Update session total bet
         await db
           .update(gameSession)
           .set({
-            totalBet: (
-              BigInt(sessionRecord[0].totalBet.toString()) + amount
-            ).toString(),
+            totalBet: (BigInt(sessionRecord[0].totalBet.toString()) + amount).toString(),
           })
           .where(eq(gameSession.id, gameSessionId));
       }
 
-      // Atomic debit using wallet service
       const result = await walletService.updateBalanceAtomic(
         userId,
         -amount,
-        'bet',
+        "bet",
         {
           gameSessionId,
           gameRoundId,
           aggregatorRef: transactionRef,
           gameCode,
           provider,
-        }
+        },
       );
 
       if (!result.success) {
         await idempotencyService.delete(idempotencyKey);
         return {
           success: false,
-          transactionId: '',
-          balanceBefore,
-          balanceAfter: balanceBefore,
-          failureReason: result.error || 'Failed to debit balance',
-          errorCode: 'INTERNAL_ERROR',
+          transactionId: "",
+          balanceBefore: result.balanceBefore ?? balanceBefore,
+          balanceAfter: result.balanceAfter ?? balanceBefore,
+          failureReason: result.error ?? "Failed to debit balance",
+          // Map the wallet-layer error to the correct aggregator error code.
+          // "Insufficient balance" can occur here even after the pre-check if a
+          // concurrent debit drained the account between the check and the atomic op.
+          errorCode: result.error === "Insufficient balance" ? "INSUFFICIENT_FUNDS" : "INTERNAL_ERROR",
         };
       }
 
-      // Create bet record
-      const betId = nanoid();
+      // FIX: populate gameRound — credit() uses eq(bet.gameRound, gameRoundId) for
+      // precise per-round bet lookup. Without this, credit() can't match the right bet.
       await db.insert(bet).values({
-        id: betId,
+        id: nanoid(),
         userId,
-        transactionId: result.transactionId,
+        transactionId: result.transactionId!,
         gameSessionId,
+        gameRound: gameRoundId,
         amount: amount.toString(),
         gameData: {
-          gameType: gameCode || 'unknown',
-          gameRoundId,
-          provider: provider || this.PROVIDER,
+          gameType: gameCode ?? "unknown",
+          provider: provider ?? this.PROVIDER,
         },
-        result: 'pending',
-        winAmount: '0',
-        createdAt: new Date(),
+        result: "pending",
+        winAmount: "0",
       });
 
-      // Calculate new balance
-      const balanceAfter = balanceBefore - amount;
-
-      // ====================================================================
-      // WAGERING & VIP TRACKING
-      // ====================================================================
-      // Track wagering for active bonuses
+      // Non-critical side effects — failures must never kill the bet flow
+      // FIX: wagering tracked on BETS only (not wins) — bonus rollover counts amount wagered
       try {
-        const { bonusService } = await import('@/lib/bonus-service');
         await bonusService.trackWagering(userId, amount);
-      } catch (bonusError) {
-        console.error('[AGGREGATOR] Bonus wagering tracking failed:', bonusError);
+      } catch (err) {
+        console.error("[AGGREGATOR] Bonus wagering tracking failed:", err);
       }
 
-      // Track VIP progress
+      // FIX: VIP tracked on BETS only — VIP is earned by wagering, not by winning
       try {
-        const { vipService } = await import('@/lib/vip-service');
         await vipService.trackProgress(userId, amount);
-      } catch (vipError) {
-        console.error('[AGGREGATOR] VIP progress tracking failed:', vipError);
+      } catch (err) {
+        console.error("[AGGREGATOR] VIP progress tracking failed:", err);
       }
 
       await idempotencyService.complete(idempotencyKey);
 
       return {
         success: true,
-        transactionId: result.transactionId,
-        balanceBefore,
-        balanceAfter,
+        transactionId: result.transactionId!,
+        balanceBefore: result.balanceBefore ?? balanceBefore,
+        balanceAfter: result.balanceAfter ?? balanceBefore - amount,
       };
     } catch (error) {
-      console.error('[AGGREGATOR] Debit failed:', error);
+      console.error("[AGGREGATOR] Debit failed:", error);
       await idempotencyService.delete(idempotencyKey);
       return {
         success: false,
-        transactionId: '',
+        transactionId: "",
         balanceBefore,
         balanceAfter: balanceBefore,
-        failureReason: 'Internal error',
-        errorCode: 'INTERNAL_ERROR',
+        failureReason: "Internal error",
+        errorCode: "INTERNAL_ERROR",
       };
     }
   }
 
   /**
-   * Credit (win) - called by game aggregator
-   * Adds winnings to user balance
+   * Credit (win) — called by game aggregator when a round settles.
+   *
+   * Some aggregators (Pragmatic, Evolution) send credits for bonus rounds without a
+   * prior debit in the same session — session is auto-created in that case.
    *
    * Flow:
-   * 1. Check idempotency (prevent duplicate credits)
-   * 2. Execute atomic credit
-   * 3. Update bet record if found
-   * 4. Update session total win
-   * 5. Return transaction details with balance snapshot
+   * 1. Validate user exists
+   * 2. Atomic idempotency check
+   * 3. Find or create game session
+   * 4. Atomic credit with optimistic locking
+   * 5. Update session totalWin AFTER credit succeeds
+   * 6. Update bet record using gameRound for precise matching
+   * 7. Mark idempotency complete
+   *
+   * Note: wagering and VIP are NOT tracked here — both are based on bets placed, not winnings.
    */
   async credit(params: CreditParams): Promise<CreditResult> {
     const { userId, sessionId, amount, gameRoundId, transactionRef, gameCode, provider } = params;
 
-    // Validate user exists
     const userRecord = await db
       .select({ balance: user.balance })
       .from(user)
@@ -298,140 +296,121 @@ export class AggregatorAdapter {
     if (!userRecord[0]) {
       return {
         success: false,
-        transactionId: '',
-        balanceBefore: 0n,
-        balanceAfter: 0n,
-        failureReason: 'User not found',
-        errorCode: 'USER_NOT_FOUND',
+        transactionId: "",
+        balanceBefore: BigInt(0),
+        balanceAfter: BigInt(0),
+        failureReason: "User not found",
+        errorCode: "USER_NOT_FOUND",
       };
     }
 
     const balanceBefore = BigInt(userRecord[0].balance.toString());
 
-    // Idempotency check
-    const idempotencyKey = idempotencyService.generateKey(
-      userId,
-      'win',
-      transactionRef
-    );
+    const idempotencyKey = idempotencyService.generateKey(userId, "win", transactionRef);
+    const idempotencyResult = await idempotencyService.checkWithStatus(idempotencyKey);
 
-    if (!(await idempotencyService.check(idempotencyKey))) {
-      // Check if this was already processed
-      const status = await idempotencyService.getStatus(idempotencyKey);
-      if (status === 'completed') {
-        // Return existing transaction (idempotent response)
-        const existingTransaction = await db
+    if (!idempotencyResult.canProceed) {
+      if (idempotencyResult.status === "completed") {
+        const existingTx = await db
           .select()
           .from(transaction)
           .where(eq(transaction.idempotencyKey, idempotencyKey))
           .limit(1);
 
-        if (existingTransaction[0]) {
+        if (existingTx[0]) {
           return {
             success: true,
-            transactionId: existingTransaction[0].id,
-            balanceBefore: BigInt(existingTransaction[0].balanceBefore.toString()),
-            balanceAfter: BigInt(existingTransaction[0].balanceAfter.toString()),
+            transactionId: existingTx[0].id,
+            balanceBefore: BigInt(existingTx[0].balanceBefore.toString()),
+            balanceAfter: BigInt(existingTx[0].balanceAfter.toString()),
           };
         }
       }
 
       return {
         success: false,
-        transactionId: '',
+        transactionId: "",
         balanceBefore,
         balanceAfter: balanceBefore,
-        failureReason: 'Duplicate transaction',
-        errorCode: 'DUPLICATE_TRANSACTION',
+        failureReason: "Duplicate transaction",
+        errorCode: "DUPLICATE_TRANSACTION",
       };
     }
 
     try {
-      // Find game session
+      // Find or create session — some aggregators send credits without prior debits
       const sessionRecord = await db
         .select()
         .from(gameSession)
         .where(eq(gameSession.providerSessionId, sessionId))
         .limit(1);
 
-      if (!sessionRecord[0]) {
-        await idempotencyService.delete(idempotencyKey);
-        return {
-          success: false,
-          transactionId: '',
-          balanceBefore,
-          balanceAfter: balanceBefore,
-          failureReason: 'Session not found',
-          errorCode: 'INTERNAL_ERROR',
-        };
+      let gameSessionId: string;
+      let existingTotalWin = BigInt(0);
+
+      if (sessionRecord.length === 0) {
+        gameSessionId = nanoid();
+        await db.insert(gameSession).values({
+          id: gameSessionId,
+          userId,
+          provider: provider ?? this.PROVIDER,
+          providerGameId: gameCode ?? "unknown",
+          providerSessionId: sessionId,
+          status: "active",
+          totalBet: "0",
+          totalWin: "0", // updated after credit succeeds
+          createdAt: new Date(),
+        });
+      } else {
+        gameSessionId = sessionRecord[0].id;
+        existingTotalWin = BigInt(sessionRecord[0].totalWin.toString());
       }
 
-      const gameSessionId = sessionRecord[0].id;
-
-      // Atomic credit using wallet service
+      // Atomic credit
       const result = await walletService.updateBalanceAtomic(
         userId,
         amount,
-        'win',
+        "win",
         {
           gameSessionId,
           gameRoundId,
           aggregatorRef: transactionRef,
           gameCode,
           provider,
-        }
+        },
       );
 
       if (!result.success) {
         await idempotencyService.delete(idempotencyKey);
         return {
           success: false,
-          transactionId: '',
-          balanceBefore,
-          balanceAfter: balanceBefore,
-          failureReason: result.error || 'Failed to credit balance',
-          errorCode: 'INTERNAL_ERROR',
+          transactionId: "",
+          balanceBefore: result.balanceBefore ?? balanceBefore,
+          balanceAfter: result.balanceAfter ?? balanceBefore,
+          failureReason: result.error ?? "Failed to credit balance",
+          errorCode: "INTERNAL_ERROR",
         };
       }
 
-      // ====================================================================
-      // WAGERING & VIP TRACKING
-      // ====================================================================
-      // Track wagering for active bonuses (using win amount as wagered amount)
-      try {
-        const { bonusService } = await import('@/lib/bonus-service');
-        await bonusService.trackWagering(userId, amount);
-      } catch (bonusError) {
-        console.error('[AGGREGATOR] Bonus wagering tracking failed:', bonusError);
-      }
-
-      // Track VIP progress
-      try {
-        const { vipService } = await import('@/lib/vip-service');
-        await vipService.trackProgress(userId, amount);
-      } catch (vipError) {
-        console.error('[AGGREGATOR] VIP progress tracking failed:', vipError);
-      }
-
-      // Update session total win
+      // FIX: totalWin updated AFTER credit succeeds — previous version updated it
+      // during session find/create, before knowing if the credit would succeed.
+      // If credit failed, session total would be inflated with no rollback.
       await db
         .update(gameSession)
-        .set({
-          totalWin: (
-            BigInt(sessionRecord[0].totalWin.toString()) + amount
-          ).toString(),
-        })
+        .set({ totalWin: (existingTotalWin + amount).toString() })
         .where(eq(gameSession.id, gameSessionId));
 
-      // Try to find and update bet record
+      // FIX: use bet.gameRound column (typed, indexed) instead of JSONB raw SQL.
+      // bet.gameRound is populated at debit() insert time with gameRoundId.
       const betRecord = await db
         .select()
         .from(bet)
         .where(
           and(
             eq(bet.userId, userId),
-            eq(bet.gameSessionId, gameSessionId)
-          )
+            eq(bet.gameSessionId, gameSessionId),
+            eq(bet.gameRound, gameRoundId),
+          ),
         )
         .limit(1);
 
@@ -439,67 +418,65 @@ export class AggregatorAdapter {
         await db
           .update(bet)
           .set({
-            result: 'won',
+            result: "won",
             winAmount: amount.toString(),
             settledAt: new Date(),
           })
           .where(eq(bet.id, betRecord[0].id));
       }
 
-      const balanceAfter = balanceBefore + amount;
-
       await idempotencyService.complete(idempotencyKey);
 
       return {
         success: true,
-        transactionId: result.transactionId,
-        balanceBefore,
-        balanceAfter,
+        transactionId: result.transactionId!,
+        balanceBefore: result.balanceBefore ?? balanceBefore,
+        balanceAfter: result.balanceAfter ?? balanceBefore + amount,
       };
     } catch (error) {
-      console.error('[AGGREGATOR] Credit failed:', error);
+      console.error("[AGGREGATOR] Credit failed:", error);
       await idempotencyService.delete(idempotencyKey);
       return {
         success: false,
-        transactionId: '',
+        transactionId: "",
         balanceBefore,
         balanceAfter: balanceBefore,
-        failureReason: 'Internal error',
-        errorCode: 'INTERNAL_ERROR',
+        failureReason: "Internal error",
+        errorCode: "INTERNAL_ERROR",
       };
     }
   }
 
   /**
-   * Get balance for aggregator
-   * Returns current balance snapshot
+   * Get balance for aggregator.
+   * FIX: skipCache=true — aggregators use this to validate bet eligibility;
+   * a stale cache could allow a bet on an already-empty balance.
    */
   async getBalance(userId: string): Promise<bigint> {
-    return await walletService.getBalance(userId);
+    return walletService.getBalance(userId, true);
   }
 
   /**
-   * Rollback a failed transaction
-   * Creates opposing transaction to reverse the effect
+   * Rollback a transaction — creates an opposing entry to reverse the effect.
+   * FIX: reads result.newTransactionId (walletService.reverseTransaction now populates it).
    */
-  async rollback(params: RollbackParams): Promise<{ success: boolean; rollbackTransactionId?: string }> {
+  async rollback(
+    params: RollbackParams,
+  ): Promise<{ success: boolean; rollbackTransactionId?: string }> {
     const { transactionId, reason, rolledBackBy } = params;
 
-    const result = await walletService.reverseTransaction(
-      transactionId,
-      reason,
-      rolledBackBy
-    );
+    const result = await walletService.reverseTransaction(transactionId, reason, rolledBackBy);
 
     return {
       success: result.success,
+      // FIX: was result.newTransactionId but reverseTransaction previously returned
+      // transactionId; both sides now agree on newTransactionId
       rollbackTransactionId: result.newTransactionId,
     };
   }
 
   /**
-   * End game session
-   * Marks session as completed and updates final totals
+   * End game session — marks it completed.
    */
   async endSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -510,24 +487,20 @@ export class AggregatorAdapter {
         .limit(1);
 
       if (!sessionRecord[0]) {
-        return { success: false, error: 'Session not found' };
+        return { success: false, error: "Session not found" };
       }
 
       await db
         .update(gameSession)
-        .set({
-          status: 'completed',
-          endedAt: new Date(),
-        })
+        .set({ status: "completed", endedAt: new Date() })
         .where(eq(gameSession.id, sessionRecord[0].id));
 
       return { success: true };
     } catch (error) {
-      console.error('[AGGREGATOR] End session failed:', error);
-      return { success: false, error: 'Internal error' };
+      console.error("[AGGREGATOR] End session failed:", error);
+      return { success: false, error: "Internal error" };
     }
   }
 }
 
-// Export singleton instance
 export const aggregatorAdapter = new AggregatorAdapter();

@@ -238,6 +238,9 @@ export class GameApiClient {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, */*",
+            "Accept-Language": "en-US,en;q=0.9",
           },
           body: JSON.stringify(requestBody),
           signal: AbortSignal.timeout(this.config.timeout),
@@ -315,6 +318,9 @@ export class GameApiClient {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, */*",
+        "Accept-Language": "en-US,en;q=0.9",
       },
       signal: AbortSignal.timeout(this.config.timeout),
     });
@@ -367,11 +373,28 @@ export class GameApiClient {
 }
 
 // ============================================================================
-// SINGLETON INSTANCE
+// SINGLETON INSTANCE (lazy-initialized)
 // ============================================================================
 
 /**
- * Global Game API client instance
- * Use this instead of creating new instances
+ * Global Game API client instance (lazy-initialized)
+ *
+ * Lazy initialization ensures environment variables are loaded
+ * before the client validates its configuration.
  */
-export const gameApiClient = new GameApiClient();
+let gameApiClientInstance: GameApiClient | null = null;
+
+export function getGameApiClient(): GameApiClient {
+  if (!gameApiClientInstance) {
+    gameApiClientInstance = new GameApiClient();
+  }
+  return gameApiClientInstance;
+}
+
+// Convenience export for backward compatibility
+// Note: This will throw if accessed before dotenv is loaded
+export const gameApiClient = new Proxy<GameApiClient>({} as GameApiClient, {
+  get(target, prop) {
+    return getGameApiClient()[prop as keyof GameApiClient];
+  },
+});

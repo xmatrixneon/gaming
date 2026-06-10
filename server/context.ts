@@ -3,7 +3,6 @@
  * Provides authentication context for all tRPC procedures
  */
 
-import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 

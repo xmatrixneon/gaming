@@ -31,7 +31,8 @@ export const transactionRouter = router({
    */
   initiateDeposit: protectedProcedure
     .input(z.object({
-      amount: z.string().regex(/^\d+(\.\d{1,8})?$/, "Invalid amount format"),
+      // Integer-only: amounts are in paisa (smallest unit). BigInt() cannot parse decimals.
+      amount: z.string().regex(/^\d+$/, "Invalid amount format — must be a whole number (paisa)"),
       method: z.enum(['upi', 'paytm', 'phonepe', 'okpay-upi', 'okpay-intent', 'bank_transfer', 'crypto']),
       phone: z.string().optional(), // Required for okpay-intent
       clientProvidedKey: z.string().optional(), // For idempotency
@@ -97,12 +98,19 @@ export const transactionRouter = router({
           updatedAt: new Date(),
         });
 
+        // Map gateway-specific methods to the DB enum values.
+        // okpay-upi / okpay-intent are UPI wrappers; crypto routes as bank_transfer.
+        const dbDepositMethod =
+          input.method === 'okpay-upi' || input.method === 'okpay-intent' ? 'upi' :
+          input.method === 'crypto' ? 'bank_transfer' :
+          input.method as 'upi' | 'paytm' | 'phonepe' | 'bank_transfer';
+
         await db.insert(deposit).values({
           id: depositId,
           userId,
           transactionId,
           amount: amount.toString(),
-          method: input.method,
+          method: dbDepositMethod,
           status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -227,7 +235,7 @@ export const transactionRouter = router({
       depositId: z.string(),
       gatewayReference: z.string(),
       status: z.enum(['completed', 'failed']),
-      gatewayMetadata: z.record(z.any()).optional(),
+      gatewayMetadata: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input }) => {
       // Get deposit record with FOR UPDATE lock
@@ -374,8 +382,8 @@ export const transactionRouter = router({
    */
   requestWithdrawal: protectedProcedure
     .input(z.object({
-      amount: z.string().regex(/^\d+(\.\d{1,8})?$/, "Invalid amount format"),
-      method: z.enum(['upi', 'okpay-bank', 'bank_transfer']),
+      amount: z.string().regex(/^\d+$/, "Invalid amount format — must be a whole number (paisa)"),
+      method: z.enum(['upi', 'okpay-bank', 'bank_transfer'] as const),
       details: z.object({
         upiId: z.string().optional(),
         accountNumber: z.string().optional(),
@@ -472,12 +480,15 @@ export const transactionRouter = router({
           updatedAt: new Date(),
         });
 
+        // Map okpay-bank to the DB enum value 'bank_transfer'
+        const dbWithdrawalMethod = input.method === 'okpay-bank' ? 'bank_transfer' : input.method as 'upi' | 'bank_transfer';
+
         await db.insert(withdrawal).values({
           id: withdrawalId,
           userId,
           transactionId,
           amount: amount.toString(),
-          method: input.method,
+          method: dbWithdrawalMethod,
           status: 'pending',
           upiId: input.details.upiId,
           accountNumber: input.details.accountNumber,
@@ -501,6 +512,19 @@ export const transactionRouter = router({
             code: 'INTERNAL_SERVER_ERROR',
             message: result.error || 'Failed to debit balance',
           });
+        }
+
+        // Update the pre-inserted transaction with the real CAS-validated balances.
+        // The atomic update runs under a DB lock so result.balanceBefore/After are authoritative.
+        if (result.balanceBefore !== undefined && result.balanceAfter !== undefined) {
+          await db.update(transaction)
+            .set({
+              status: 'completed',
+              balanceBefore: result.balanceBefore.toString(),
+              balanceAfter: result.balanceAfter.toString(),
+              updatedAt: new Date(),
+            })
+            .where(eq(transaction.id, transactionId));
         }
 
         // Process withdrawal with VeloPay for UPI method
