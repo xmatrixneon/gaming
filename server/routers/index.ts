@@ -12,6 +12,7 @@ import { gameRouter } from "./game";
 import { referralRouter } from "./referral";
 import { bonusRouter } from "./bonus";
 import { vipRouter } from "./vip";
+import { depositRouter } from "./deposit";
 import { z } from "zod";
 
 // ============================================================================
@@ -52,6 +53,9 @@ export const appRouter = router({
 
   // VIP procedures
   vip: vipRouter,
+
+  // Deposit procedures
+  deposit: depositRouter,
 });
 
 // ============================================================================
