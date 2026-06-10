@@ -103,8 +103,29 @@ export default function DepositPage() {
       });
 
       if (result.success && result.paymentUrl) {
-        // Redirect to payment gateway
-        window.location.href = result.paymentUrl;
+        // Validate payment URL against trusted gateway domains
+        const allowedDomains = [
+          process.env.NEXT_PUBLIC_VELOPAY_DOMAIN || 'velopay.ptasm.online',
+          process.env.NEXT_PUBLIC_OKPAY_DOMAIN || 'wpay.one',
+        ];
+
+        try {
+          const url = new URL(result.paymentUrl);
+          const isValidDomain = allowedDomains.some(domain =>
+            url.hostname === domain || url.hostname.endsWith(`.${domain}`)
+          );
+
+          if (!isValidDomain || url.protocol !== 'https:') {
+            toast.error('Invalid payment gateway URL');
+            return;
+          }
+
+          // Safe to redirect
+          window.location.href = result.paymentUrl;
+        } catch {
+          toast.error('Invalid payment URL format');
+          return;
+        }
       } else {
         toast.error(result.message || "Failed to initiate deposit");
       }
@@ -206,19 +227,22 @@ export default function DepositPage() {
             </div>
           ) : gateways && gateways.length > 0 ? (
             <div className="grid gap-3">
-              {gateways.map((gateway, index) => (
-                <MethodCard
-                  key={gateway.id}
-                  name={gateway.displayName}
-                  icon={<IoQrCodeOutline className="text-2xl text-green-500" />}
-                  fee="0"
-                  estimatedTime="Instant"
-                  selected={selectedGateway === index + 1}
-                  onClick={() => setSelectedGateway(index + 1)}
-                  badge={gateway.status === "active" ? "Available" : undefined}
-                  disabled={gateway.status !== "active"}
-                />
-              ))}
+              {gateways.map((gateway) => {
+                const priority = parseInt(gateway.id, 10) as 1 | 2;
+                return (
+                  <MethodCard
+                    key={gateway.id}
+                    name={gateway.displayName}
+                    icon={<IoQrCodeOutline className="text-2xl text-green-500" />}
+                    fee="0"
+                    estimatedTime="Instant"
+                    selected={selectedGateway === priority}
+                    onClick={() => setSelectedGateway(priority)}
+                    badge={gateway.status === "active" ? "Available" : undefined}
+                    disabled={gateway.status !== "active"}
+                  />
+                );
+              })}
             </div>
           ) : (
             <Card className="p-6 text-center">

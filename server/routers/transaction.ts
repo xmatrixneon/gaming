@@ -43,11 +43,21 @@ export const transactionRouter = router({
       const userId = ctx.user.id;
       const amount = BigInt(input.amount);
 
-      // Validate minimum deposit
-      if (amount < 100n) { // Minimum 100 in smallest currency unit
+      // Validate deposit amount bounds (in paisa)
+      const MIN_DEPOSIT = 100n; // ₹1.00
+      const MAX_DEPOSIT = 10000000n; // ₹100,000.00
+
+      if (amount < MIN_DEPOSIT) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Minimum deposit amount is 100',
+          message: 'Minimum deposit amount is ₹1.00',
+        });
+      }
+
+      if (amount > MAX_DEPOSIT) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Maximum deposit amount is ₹100,000.00',
         });
       }
 
