@@ -327,6 +327,7 @@ export const authRouter = router({
       password: z.string().min(6, "Password must be at least 6 characters"),
       name: z.string().min(2, "Name must be at least 2 characters").optional(),
       username: z.string().min(3, "Username must be at least 3 characters").optional(),
+      referralCode: z.string().optional(), // ADD REFERRAL CODE
     }))
     .mutation(async ({ input }) => {
       try {
@@ -349,6 +350,39 @@ export const authRouter = router({
             name,
           },
         });
+
+        // POST-SIGNUP: Generate referral code and handle referral relationship
+        if (result?.user) {
+          try {
+            const { referralService } = await import('@/lib/referral-service');
+
+            // Generate referral code for the new user
+            const newReferralCode = await referralService.generateCode();
+
+            // Update user with referral code
+            await db.update(user)
+              .set({ referralCode: newReferralCode })
+              .where(eq(user.id, result.user.id));
+
+            // Handle referral relationship if code was provided
+            if (input.referralCode) {
+              try {
+                await referralService.createReferralOnSignup(
+                  result.user.id,
+                  input.referralCode,
+                  '127.0.0.1', // Would come from request context
+                  input.email
+                );
+              } catch (referralError) {
+                console.error('[AUTH] Referral creation failed:', referralError);
+                // Don't fail signup if referral creation fails
+              }
+            }
+          } catch (codeError) {
+            console.error('[AUTH] Failed to generate referral code:', codeError);
+            // Don't fail signup if code generation fails
+          }
+        }
 
         return { success: true, data: result };
       } catch (error) {
