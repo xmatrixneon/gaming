@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OkpayGateway } from '../okpay-gateway';
+
+// Mock fetch globally
+global.fetch = vi.fn();
 
 describe('OkpayGateway', () => {
   let gateway: OkpayGateway;
@@ -185,6 +188,100 @@ describe('OkpayGateway', () => {
       expect(gateway.inrToPaisa(100.999)).toBe('10100'); // Rounds up
       expect(gateway.inrToPaisa(100.494)).toBe('10049'); // Rounds down
       expect(gateway.inrToPaisa(100.495)).toBe('10050'); // Rounds up (half-up)
+    });
+  });
+
+  describe('createDeposit', () => {
+    beforeEach(() => {
+      // Reset fetch mock
+      vi.clearAllMocks();
+    });
+
+    it('should create UPI deposit request successfully', async () => {
+      const mockResponse = {
+        code: 0,
+        msg: 'success',
+        data: {
+          url: 'https://domain/Cashier/Index/test123',
+          transaction_Id: 'f9292301eeb64a3eacd19bdc45ab3f37',
+        },
+      };
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await gateway.createDeposit({
+        out_trade_no: '12345',
+        pay_type: 'UPI',
+        money: '100',
+        returnUrl: 'https://example.com/success',
+      });
+
+      expect(result.code).toBe(0);
+      expect(result.data.url).toBe(mockResponse.data.url);
+      expect(result.data.transaction_Id).toBe(mockResponse.data.transaction_Id);
+    });
+
+    it('should create UPI_INTENT deposit request with phone', async () => {
+      const mockResponse = {
+        code: 0,
+        msg: 'success',
+        data: {
+          url: 'https://domain/Cashier/Index/test123',
+          transaction_Id: 'f9292301eeb64a3eacd19bdc45ab3f37',
+        },
+      };
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await gateway.createDeposit({
+        out_trade_no: '12345',
+        pay_type: 'UPI_INTENT',
+        money: '100',
+        phone: '9876543210',
+        returnUrl: 'https://example.com/success',
+      });
+
+      expect(result.code).toBe(0);
+      expect(result.data.url).toBeDefined();
+    });
+
+    it('should include signature in request', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ code: 0, msg: 'success', data: { url: 'test', transaction_Id: 'abc' } }),
+      });
+
+      await gateway.createDeposit({
+        out_trade_no: '12345',
+        pay_type: 'UPI',
+        money: '100',
+        returnUrl: 'https://example.com/success',
+      });
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const requestBody = fetchCall[1].body;
+
+      expect(requestBody).toContain('sign=');
+    });
+
+    it('should throw error on non-OK response', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: false,
+        statusText: 'Bad Request',
+      });
+
+      await expect(gateway.createDeposit({
+        out_trade_no: '12345',
+        pay_type: 'UPI',
+        money: '100',
+        returnUrl: 'https://example.com/success',
+      })).rejects.toThrow();
     });
   });
 });

@@ -165,4 +165,52 @@ export class OkpayGateway {
     const amount = parseInt(amountInPaisa, 10);
     return amount / 100;
   }
+
+  /**
+   * Create deposit request (payin)
+   * @param depositRequest - Deposit parameters
+   * @returns Deposit response with payment URL
+   */
+  async createDeposit(
+    depositRequest: OkpayDepositRequest
+  ): Promise<OkpayDepositResponse> {
+    const params = {
+      mchId: this.config.mchId,
+      currency: this.config.currency,
+      out_trade_no: depositRequest.out_trade_no,
+      pay_type: depositRequest.pay_type,
+      money: depositRequest.money,
+      attach: depositRequest.attach || '',
+      notify_url: depositRequest.notify_url || `${this.config.callbackUrl}/deposit`,
+      returnUrl: depositRequest.returnUrl,
+      phone: depositRequest.phone || '',
+    };
+
+    const sign = this.generateSignature(params);
+
+    try {
+      const response = await fetch(`${this.config.host}/v1/Collect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ ...params, sign }).toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OKPay deposit failed: ${response.statusText}`);
+      }
+
+      const data: OkpayDepositResponse = await response.json();
+
+      if (data.code !== 0) {
+        throw new Error(`OKPay deposit error ${data.code}: ${data.msg}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[OKPAY] Deposit request failed:', error);
+      throw error;
+    }
+  }
 }
