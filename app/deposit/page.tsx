@@ -33,7 +33,8 @@ export default function DepositPage() {
   const { isAuthenticated, user } = useAuth();
 
   // Fetch available gateways
-  const { data: gateways, isLoading: gatewaysLoading } = api.deposit.getAvailableGateways.useQuery();
+  const { data: gatewaysResponse, isLoading: gatewaysLoading } = api.deposit.getAvailableGateways.useQuery();
+  const gateways = gatewaysResponse?.gateways ?? [];
 
   // Deposit initiation mutation
   const initiateDeposit = api.transaction.initiateDeposit.useMutation();
