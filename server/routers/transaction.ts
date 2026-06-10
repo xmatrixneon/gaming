@@ -311,6 +311,36 @@ export const transactionRouter = router({
           })
           .where(eq(transaction.id, depositRec.transactionId));
 
+        // ====================================================================
+        // REFERRAL & BONUS INTEGRATION
+        // ====================================================================
+
+        // Handle referral qualification
+        try {
+          const { referralService } = await import('@/lib/referral-service');
+          await referralService.qualifyReferral(
+            depositRec.userId,
+            amount,
+            input.depositId
+          );
+        } catch (referralError) {
+          console.error('[TRANSACTION] Referral qualification failed:', referralError);
+          // Don't fail deposit if referral qualification fails
+        }
+
+        // Handle welcome bonus awarding
+        try {
+          const { bonusService } = await import('@/lib/bonus-service');
+          await bonusService.awardWelcomeBonus(
+            depositRec.userId,
+            amount,
+            input.depositId
+          );
+        } catch (bonusError) {
+          console.error('[TRANSACTION] Welcome bonus failed:', bonusError);
+          // Don't fail deposit if bonus awarding fails
+        }
+
         return { success: true, message: 'Deposit confirmed and balance credited' };
       } else {
         // Mark deposit as failed
