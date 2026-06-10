@@ -158,11 +158,10 @@ export const transactionRouter = router({
           // VeloPay integration
           if (gatewayConfig.gatewayName === 'velopay') {
             const velopayGateway = gateway;
-            const amountInPaisa = velopayGateway.inrToPaisa(input.amount);
-
+            // input.amount is already in paisa, pass directly
             const gatewayResponse = await velopayGateway.createDeposit({
               txn_id: depositId,
-              amount: amountInPaisa,
+              amount: input.amount,
               type: 1, // H5 payment link
               currency: 'INR',
             });
