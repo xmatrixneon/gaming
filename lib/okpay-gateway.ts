@@ -213,4 +213,53 @@ export class OkpayGateway {
       throw error;
     }
   }
+
+  /**
+   * Create withdrawal request (payout)
+   * @param withdrawalRequest - Withdrawal parameters
+   * @returns Withdrawal response with transaction ID
+   */
+  async createWithdrawal(
+    withdrawalRequest: OkpayWithdrawalRequest
+  ): Promise<OkpayWithdrawalResponse> {
+    const params = {
+      mchId: this.config.mchId,
+      currency: this.config.currency,
+      out_trade_no: withdrawalRequest.out_trade_no,
+      pay_type: withdrawalRequest.pay_type,
+      account: withdrawalRequest.account,
+      userName: withdrawalRequest.userName,
+      money: withdrawalRequest.money,
+      attach: withdrawalRequest.attach || '',
+      notify_url: withdrawalRequest.notify_url || `${this.config.callbackUrl}/withdrawal`,
+      reserve1: withdrawalRequest.reserve1,
+    };
+
+    const sign = this.generateSignature(params);
+
+    try {
+      const response = await fetch(`${this.config.host}/v1/Payout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ ...params, sign }).toString(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OKPay withdrawal failed: ${response.statusText}`);
+      }
+
+      const data: OkpayWithdrawalResponse = await response.json();
+
+      if (data.code !== 0) {
+        throw new Error(`OKPay withdrawal error ${data.code}: ${data.msg}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('[OKPAY] Withdrawal request failed:', error);
+      throw error;
+    }
+  }
 }

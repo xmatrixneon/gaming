@@ -284,4 +284,74 @@ describe('OkpayGateway', () => {
       })).rejects.toThrow();
     });
   });
+
+  describe('createWithdrawal', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should create withdrawal request successfully', async () => {
+      const mockResponse = {
+        code: 0,
+        msg: 'success',
+        data: {
+          transaction_Id: 'aca1ce79d1f64d29ac9d7f3b964d88fb',
+        },
+      };
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await gateway.createWithdrawal({
+        out_trade_no: '12345',
+        pay_type: 'BANK',
+        account: '0235456782',
+        userName: 'Zhang San',
+        money: '100',
+        reserve1: 'IFSC0000000',
+      });
+
+      expect(result.code).toBe(0);
+      expect(result.data.transaction_Id).toBe(mockResponse.data.transaction_Id);
+    });
+
+    it('should include signature in withdrawal request', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ code: 0, msg: 'success', data: { transaction_Id: 'abc' } }),
+      });
+
+      await gateway.createWithdrawal({
+        out_trade_no: '12345',
+        pay_type: 'BANK',
+        account: '0235456782',
+        userName: 'Zhang San',
+        money: '100',
+        reserve1: 'IFSC0000000',
+      });
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const requestBody = fetchCall[1].body;
+
+      expect(requestBody).toContain('sign=');
+    });
+
+    it('should throw error on failed response', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ code: 9, msg: 'Insufficient balance' }),
+      });
+
+      await expect(gateway.createWithdrawal({
+        out_trade_no: '12345',
+        pay_type: 'BANK',
+        account: '0235456782',
+        userName: 'Zhang San',
+        money: '100',
+        reserve1: 'IFSC0000000',
+      })).rejects.toThrow('Insufficient balance');
+    });
+  });
 });
