@@ -27,6 +27,11 @@ export interface GameGridProps {
   gap?: number;
 
   /**
+   * Game click handler (optional, overrides individual onClick)
+   */
+  onGameClick?: (game: GameCardProps) => void;
+
+  /**
    * Container class name
    */
   className?: string;
@@ -50,16 +55,28 @@ export interface GameGridProps {
  * <GameGrid
  *   games={games}
  *   columns={{ mobile: 2, tablet: 4, desktop: 6 }}
+ *   onGameClick={(game) => navigate(`/games/${game.id}`)}
  * />
  * ```
  */
 const GameGrid = React.forwardRef<HTMLDivElement, GameGridProps>(
-  ({ games, columns = {}, gap = 2, className }, ref) => {
+  ({ games, columns = {}, gap = 2, onGameClick, className }, ref) => {
     const {
       mobile: mobileCols = 3,
       tablet: tabletCols = 4,
       desktop: desktopCols = 6,
     } = columns;
+
+    const handleGameClick = React.useCallback(
+      (game: GameCardProps) => {
+        if (onGameClick) {
+          onGameClick(game);
+        } else if (game.onClick) {
+          game.onClick();
+        }
+      },
+      [onGameClick]
+    );
 
     return (
       <div
@@ -74,7 +91,11 @@ const GameGrid = React.forwardRef<HTMLDivElement, GameGridProps>(
         )}
       >
         {games.map((game, index) => (
-          <GameCard key={game.name + index} {...game} />
+          <GameCard
+            key={game.id || game.gameUid || game.name + index}
+            {...game}
+            onClick={() => handleGameClick(game)}
+          />
         ))}
       </div>
     );

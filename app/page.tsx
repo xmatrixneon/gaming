@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   IoSearchOutline,
@@ -21,6 +21,8 @@ import { PromoCarousel, CategoryTabs, BottomNav, GameGrid, GradientCard, WinsTic
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV_ITEMS } from "@/lib/config";
 import { useAuth } from "@/hooks/use-auth";
+import { useFeaturedGames, useHotGames, type Game } from "@/hooks/use-games";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const GAME_CATEGORIES = [
   { id: "casino", label: "Casino", icon: GiRollingDices },
@@ -66,14 +68,62 @@ const BIG_WINS = [
   { user: "Plex***", game: "Gold Olympics", amount: "5,953 USDT", color: "#26A17B", emoji: "$" },
 ];
 
-const FEATURED_GAMES = [
-  { name: "Aviator", provider: "Spribe", tag: "HOT", tagColor: "#FF4444", players: "12.4K", emoji: "🛩️", background: "#1a0a2e" },
-  { name: "Limbo", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "8.2K", emoji: "🎯", background: "#0a1a2e" },
-  { name: "Crash", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "15.1K", emoji: "📈", background: "#1a2e0a" },
-  { name: "Plinko", provider: "BC.Game", tag: "NEW", tagColor: "#FFB800", players: "6.8K", emoji: "🎪", background: "#2e1a0a" },
-  { name: "Mines", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "9.3K", emoji: "💣", background: "#1a0a0a" },
-  { name: "Hash Dice", provider: "BC.Game", tag: "ORIGINAL", tagColor: "#00C851", players: "4.1K", emoji: "🎲", background: "#0a2e1a" },
-];
+// Convert API game to grid format
+function gameToGridFormat(game: Game) {
+  // Determine tag based on flags
+  let tag = undefined;
+  let tagColor = undefined;
+  if (game.isHot) {
+    tag = "HOT";
+    tagColor = "#FF4444";
+  } else if (game.isNew) {
+    tag = "NEW";
+    tagColor = "#FFB800";
+  } else if (game.isFeatured) {
+    tag = "FEATURED";
+    tagColor = "#00C851";
+  }
+
+  // Get emoji based on game type (fallback for no image)
+  const emoji = getGameEmoji(game.gameType);
+
+  return {
+    id: game.id,
+    gameUid: game.gameUid,
+    name: game.gameName,
+    provider: game.provider.name,
+    imageUrl: game.imageUrl,
+    thumbnailUrl: game.thumbnailUrl,
+    imageAlt: game.imageAlt || game.gameName,
+    tag,
+    tagColor,
+    players: "1.2K", // TODO: Track player count
+    emoji,
+    background: getGameBackground(game.gameType),
+  };
+}
+
+function getGameEmoji(gameType: string): string {
+  const type = gameType.toLowerCase();
+  if (type.includes("live")) return "🎥";
+  if (type.includes("slot")) return "🎰";
+  if (type.includes("card")) return "🃏";
+  if (type.includes("table")) return "🎲";
+  if (type.includes("sport")) return "⚽";
+  if (type.includes("fish")) return "🐟";
+  if (type.includes("crash") || type.includes("aviator")) return "🛩️";
+  return "🎮";
+}
+
+function getGameBackground(gameType: string): string {
+  const type = gameType.toLowerCase();
+  if (type.includes("live")) return "#1a0a2e";
+  if (type.includes("slot")) return "#0a1a2e";
+  if (type.includes("card")) return "#1a2e0a";
+  if (type.includes("sport")) return "#1a1a0d";
+  if (type.includes("fish")) return "#0a2e1a";
+  return "#0a0a0a";
+}
 
 // Map icon names to actual icon components for bottom nav
 const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -97,6 +147,10 @@ export default function CasinoHomePage() {
   const [activeTab, setActiveTab] = useState("casino");
   const [mobileNav, setMobileNav] = useState("home");
 
+  // Fetch games from database
+  const { games: featuredGames, isLoading: isLoadingFeatured } = useFeaturedGames(12);
+  const { games: hotGames, isLoading: isLoadingHot } = useHotGames(12);
+
   // Handle bottom navigation
   const handleNavigate = (itemId: string) => {
     const navItem = BOTTOM_NAV_ITEMS.find((item) => item.id === itemId);
@@ -104,6 +158,20 @@ export default function CasinoHomePage() {
       router.push(navItem.route);
     }
   };
+
+  // Handle game launch - navigate to full-page game play
+  const handleGameClick = (game: ReturnType<typeof gameToGridFormat>) => {
+    if (!isAuthenticated) {
+      router.push("/signin");
+      return;
+    }
+    // Navigate to full-page game play
+    router.push(`/play/${game.gameUid}`);
+  };
+
+  // Convert games to grid format
+  const featuredGridGames = featuredGames.map(gameToGridFormat);
+  const hotGridGames = hotGames.map(gameToGridFormat);
 
   return (
     <div
@@ -198,16 +266,32 @@ export default function CasinoHomePage() {
               Popular Games
             </span>
           </div>
-          <span className={cn("text-primary text-xs font-semibold cursor-pointer")}>
+          <span
+            className={cn("text-primary text-xs font-semibold cursor-pointer")}
+            onClick={() => router.push("/games")}
+          >
             See All
           </span>
         </div>
 
-        <GameGrid
-          games={FEATURED_GAMES}
-          columns={{ mobile: 3, tablet: 3, desktop: 3 }}
-          gap={2}
-        />
+        {isLoadingFeatured ? (
+          <div className={cn("grid grid-cols-3 gap-2")}>
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="aspect-square rounded-lg" />
+            ))}
+          </div>
+        ) : featuredGridGames.length > 0 ? (
+          <GameGrid
+            games={featuredGridGames}
+            columns={{ mobile: 3, tablet: 3, desktop: 3 }}
+            gap={2}
+            onGameClick={handleGameClick}
+          />
+        ) : (
+          <div className={cn("text-center py-8 text-muted-foreground")}>
+            No games available
+          </div>
+        )}
       </div>
 
       {/* BOTTOM NAV */}

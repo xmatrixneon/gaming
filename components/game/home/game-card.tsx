@@ -9,6 +9,16 @@ import { hoverScale, hoverTransition } from "@/components/lib/game-animations";
 
 export interface GameCardProps {
   /**
+   * Game ID
+   */
+  id?: string;
+
+  /**
+   * Game UID (unique identifier from API)
+   */
+  gameUid?: string;
+
+  /**
    * Game name
    */
   name: string;
@@ -34,14 +44,29 @@ export interface GameCardProps {
   players?: string;
 
   /**
-   * Emoji or icon for the game
+   * Emoji or icon for the game (fallback when no image)
    */
-  emoji: string;
+  emoji?: string;
 
   /**
-   * Background color for the card
+   * Background color for the card (fallback when no image)
    */
-  background: string;
+  background?: string;
+
+  /**
+   * Image URL for the game card
+   */
+  imageUrl?: string;
+
+  /**
+   * Thumbnail URL for the game card
+   */
+  thumbnailUrl?: string;
+
+  /**
+   * Image alt text
+   */
+  imageAlt?: string;
 
   /**
    * Click handler
@@ -75,6 +100,8 @@ export interface GameCardProps {
 const GameCard = React.forwardRef<HTMLDivElement, GameCardProps>(
   (
     {
+      id,
+      gameUid,
       name,
       provider,
       tag,
@@ -82,12 +109,16 @@ const GameCard = React.forwardRef<HTMLDivElement, GameCardProps>(
       players,
       emoji,
       background,
+      imageUrl,
+      thumbnailUrl,
+      imageAlt,
       onClick,
       className,
     },
     ref
   ) => {
     const isDarkTag = tagColor === "#FFB800";
+    const hasImage = Boolean(imageUrl || thumbnailUrl);
 
     return (
       <motion.div
@@ -104,23 +135,40 @@ const GameCard = React.forwardRef<HTMLDivElement, GameCardProps>(
             "overflow-hidden cursor-pointer",
             "border border rounded-xl",
             "transition-colors duration-200",
-            "hover:border-border/80"
+            "hover:border-border/80",
+            !hasImage && "bg-card"
           )}
-          style={{ background }}
+          style={hasImage ? undefined : { background: background || "#0a0a0a" }}
         >
-          {/* Game icon/emoji area */}
-          <div
-            className={cn(
-              "relative h-20 flex items-center justify-center text-9xl"
+          {/* Game image area */}
+          <div className={cn("relative h-20")}>
+            {hasImage ? (
+              <img
+                src={thumbnailUrl || imageUrl}
+                alt={imageAlt || name}
+                className={cn(
+                  "w-full h-full object-cover",
+                  "transition-transform duration-300",
+                  "group-hover:scale-105"
+                )}
+                loading="lazy"
+              />
+            ) : (
+              <div
+                className={cn(
+                  "flex items-center justify-center text-9xl"
+                )}
+              >
+                {emoji || "🎮"}
+              </div>
             )}
-          >
-            {emoji}
             {tag && (
               <div
                 className={cn(
                   "absolute top-1 right-1",
-                  "px-1 py-0.5 rounded text-[8px] font-bold",
-                  "tracking-wider uppercase"
+                  "px-1.5 py-0.5 rounded text-[8px] font-bold",
+                  "tracking-wider uppercase",
+                  "shadow-sm"
                 )}
                 style={{
                   background: tagColor,
@@ -136,12 +184,13 @@ const GameCard = React.forwardRef<HTMLDivElement, GameCardProps>(
           <div className={cn("px-2 pb-2 pt-1.5")}>
             <div
               className={cn(
-                "text-xs font-bold text-white leading-tight mb-0.5"
+                "text-xs font-bold text-white leading-tight mb-0.5",
+                "line-clamp-1"
               )}
             >
               {name}
             </div>
-            <div className={cn("text-[10px] text-muted-foreground mb-1")}>
+            <div className={cn("text-[10px] text-muted-foreground mb-1 line-clamp-1")}>
               {provider}
             </div>
             {players && (
