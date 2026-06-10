@@ -160,7 +160,7 @@ export const transactionRouter = router({
             const velopayGateway = gateway;
             const amountInPaisa = velopayGateway.inrToPaisa(input.amount);
 
-            gatewayResponse = await velopayGateway.createDeposit({
+            const gatewayResponse = await velopayGateway.createDeposit({
               txn_id: depositId,
               amount: amountInPaisa,
               type: 1, // H5 payment link
@@ -192,7 +192,7 @@ export const transactionRouter = router({
             const okpayGateway = gateway;
             const amountInRupees = (BigInt(input.amount) / 100n).toString();
 
-            gatewayResponse = await okpayGateway.createDeposit({
+            const gatewayResponse = await okpayGateway.createDeposit({
               out_trade_no: depositId,
               pay_type: 'UPI',
               money: amountInRupees,
