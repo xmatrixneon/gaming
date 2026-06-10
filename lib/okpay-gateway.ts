@@ -8,6 +8,16 @@ export interface OkpayConfig {
   callbackUrl: string;
 }
 
+export interface OkpayCallbackPayload {
+  mchId: string;
+  out_trade_no: string;
+  transaction_Id: string;
+  status: string;
+  money: string;
+  attach?: string;
+  sign: string;
+}
+
 export class OkpayGateway {
   private readonly config: OkpayConfig;
 
@@ -73,5 +83,16 @@ export class OkpayGateway {
 
     // Generate MD5 hash and convert to lowercase
     return createHash('md5').update(signatureString).digest('hex').toLowerCase();
+  }
+
+  /**
+   * Verify callback signature
+   * @param payload - Callback payload with sign
+   * @returns True if signature is valid
+   */
+  verifyCallbackSignature(payload: OkpayCallbackPayload): boolean {
+    const { sign: receivedSign, ...paramsToVerify } = payload;
+    const calculatedSign = this.generateSignature(paramsToVerify);
+    return receivedSign === calculatedSign;
   }
 }

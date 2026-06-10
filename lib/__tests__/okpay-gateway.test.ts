@@ -107,4 +107,57 @@ describe('OkpayGateway', () => {
       expect(signature).toMatch(/^[a-f0-9]{32}$/);
     });
   });
+
+  describe('verifyCallbackSignature', () => {
+    it('should verify valid callback signature', () => {
+      const payload = {
+        mchId: '1000',
+        out_trade_no: '12345',
+        transaction_Id: 'abc123',
+        status: '1',
+        money: '100',
+        sign: '', // Will be generated
+      };
+
+      // Generate valid signature
+      (payload as any).sign = gateway.generateSignature(payload);
+
+      const isValid = gateway.verifyCallbackSignature(payload);
+      expect(isValid).toBe(true);
+    });
+
+    it('should reject invalid callback signature', () => {
+      const payload = {
+        mchId: '1000',
+        out_trade_no: '12345',
+        transaction_Id: 'abc123',
+        status: '1',
+        money: '100',
+        sign: 'invalid_signature_0123456789abcdef',
+      };
+
+      const isValid = gateway.verifyCallbackSignature(payload);
+      expect(isValid).toBe(false);
+    });
+
+    it('should reject signature with different parameters', () => {
+      const payload1 = {
+        mchId: '1000',
+        out_trade_no: '12345',
+        transaction_Id: 'abc123',
+        status: '1',
+        money: '100',
+      };
+      (payload1 as any).sign = gateway.generateSignature(payload1);
+
+      const payload2 = {
+        ...payload1,
+        money: '200', // Different amount
+        sign: (payload1 as any).sign, // Original signature
+      };
+
+      const isValid = gateway.verifyCallbackSignature(payload2);
+      expect(isValid).toBe(false);
+    });
+  });
 });
