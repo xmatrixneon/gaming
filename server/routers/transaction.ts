@@ -14,6 +14,7 @@ import { walletService } from "@/lib/wallet-service";
 import { idempotencyService } from "@/lib/idempotency";
 import { fraudDetection } from "@/lib/fraud-detection";
 import { gatewaySelector } from "@/lib/gateway-selector";
+import * as gatewayCache from "@/lib/gateway-cache";
 
 // ============================================================================
 // TRANSACTION ROUTER
@@ -77,11 +78,27 @@ export const transactionRouter = router({
       }
 
       try {
-        // Get gateway config once and derive both instance and metadata from it
-        // This prevents state drift between separate lookups
-        const gatewayConfig = await gatewaySelector.getGatewayConfig(
-          (input.gatewayPriority === 1 ? '1' : '2')
-        );
+        // Get gateway config by priority - returns full config with metadata
+        let gatewayConfig = await gatewayCache.getGatewayByPriority(input.gatewayPriority as 1 | 2);
+
+        // Fallback to database if cache is empty
+        if (!gatewayConfig) {
+          const { db } = await import('@/drizzle');
+          const { paymentGatewayConfig } = await import('@/drizzle/schema');
+          const { eq } = await import('drizzle-orm');
+
+          const dbConfigs = await db
+            .select()
+            .from(paymentGatewayConfig)
+            .where(eq(paymentGatewayConfig.priority, input.gatewayPriority))
+            .limit(1);
+
+          if (dbConfigs.length > 0) {
+            gatewayConfig = dbConfigs[0] as gatewayCache.CachedGatewayConfig;
+            // Warm cache
+            await gatewayCache.setGatewayConfig(gatewayConfig.id, gatewayConfig);
+          }
+        }
 
         if (!gatewayConfig) {
           await idempotencyService.delete(idempotencyKey);
@@ -99,10 +116,8 @@ export const transactionRouter = router({
           });
         }
 
-        // Derive gateway instance from the validated config
-        const gateway = gatewayConfig.gatewayName === 'velopay'
-          ? await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2)
-          : await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2);
+        // Get gateway instance by priority
+        const gateway = await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2);
 
         // Create deposit and transaction records
         const depositId = nanoid();
