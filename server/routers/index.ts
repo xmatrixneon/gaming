@@ -11,6 +11,7 @@ import { walletRouter } from "./wallet";
 import { gameRouter } from "./game";
 import { referralRouter } from "./referral";
 import { bonusRouter } from "./bonus";
+import { vipRouter } from "./vip";
 import { z } from "zod";
 
 // ============================================================================
@@ -48,6 +49,9 @@ export const appRouter = router({
 
   // Bonus procedures
   bonus: bonusRouter,
+
+  // VIP procedures
+  vip: vipRouter,
 });
 
 // ============================================================================
