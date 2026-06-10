@@ -100,35 +100,30 @@ export class OkpayGateway {
    * 1. Filter out null/undefined/empty values
    * 2. Remove 'sign' parameter if present
    * 3. Sort keys alphabetically (case-sensitive)
-   * 4. URL-encode each parameter
-   * 5. Join as key1=value1&key2=value2
-   * 6. Append &key={secretKey}
-   * 7. Generate MD5 hash
-   * 8. Convert to lowercase
+   * 4. Join as key1=value1&key2=value2 (NO URL encoding)
+   * 5. Append &key={secretKey}
+   * 6. Generate MD5 hash (uppercase for OKPay)
    */
-  generateSignature(params: Record<string, any>): string {
+  generateSignature(params: Record<string, string | number | boolean>): string {
     // Remove sign from params if present
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { sign, ...paramsToSign } = params;
 
     // Filter out null/undefined/empty values
     const filteredParams = Object.entries(paramsToSign)
-      .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
       .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
 
     // Sort keys alphabetically (case-sensitive)
     const sortedKeys = Object.keys(filteredParams).sort();
 
-    // URL-encode and build signature string
+    // Build signature string WITHOUT URL encoding
     const signatureString = sortedKeys
-      .map((key) => {
-        const encodedKey = encodeURIComponent(key);
-        const encodedValue = encodeURIComponent(filteredParams[key]);
-        return `${encodedKey}=${encodedValue}`;
-      })
+      .map((key) => `${key}=${filteredParams[key]}`)
       .join('&') + `&key=${this.config.key}`;
 
-    // Generate MD5 hash and convert to lowercase
-    return createHash('md5').update(signatureString).digest('hex').toLowerCase();
+    // Generate MD5 hash and convert to UPPERCASE (OKPay requirement)
+    return createHash('md5').update(signatureString).digest('hex').toUpperCase();
   }
 
   /**
