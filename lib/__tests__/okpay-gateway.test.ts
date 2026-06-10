@@ -160,4 +160,31 @@ describe('OkpayGateway', () => {
       expect(isValid).toBe(false);
     });
   });
+
+  describe('Amount Conversion', () => {
+    it('should convert INR to paisa correctly', () => {
+      expect(gateway.inrToPaisa(100)).toBe('10000');
+      expect(gateway.inrToPaisa(1)).toBe('100');
+      expect(gateway.inrToPaisa(0.5)).toBe('50');
+      expect(gateway.inrToPaisa(999.99)).toBe('99999');
+    });
+
+    it('should convert paisa to INR correctly', () => {
+      expect(gateway.paisaToINR('10000')).toBe(100);
+      expect(gateway.paisaToINR('100')).toBe(1);
+      expect(gateway.paisaToINR('50')).toBe(0.5);
+      expect(gateway.paisaToINR('99999')).toBe(999.99);
+    });
+
+    it('should handle string input for INR conversion', () => {
+      expect(gateway.inrToPaisa('100')).toBe('10000');
+      expect(gateway.inrToPaisa('99.99')).toBe('9999');
+    });
+
+    it('should round to nearest paisa', () => {
+      expect(gateway.inrToPaisa(100.999)).toBe('10100'); // Rounds up
+      expect(gateway.inrToPaisa(100.494)).toBe('10049'); // Rounds down
+      expect(gateway.inrToPaisa(100.495)).toBe('10050'); // Rounds up (half-up)
+    });
+  });
 });

@@ -95,4 +95,28 @@ export class OkpayGateway {
     const calculatedSign = this.generateSignature(paramsToVerify);
     return receivedSign === calculatedSign;
   }
+
+  /**
+   * Convert amount from INR to paisa (OKPay format to system format)
+   * OKPay uses rupees: 100 = ₹100
+   * System uses paisa: 10000 = ₹100
+   * @param amountInINR - Amount in INR (number or string)
+   * @returns Amount in paisa as string
+   */
+  inrToPaisa(amountInINR: number | string): string {
+    const amount = typeof amountInINR === 'string'
+      ? parseFloat(amountInINR)
+      : amountInINR;
+    return Math.round(amount * 100).toString();
+  }
+
+  /**
+   * Convert amount from paisa to INR (system format to OKPay format)
+   * @param amountInPaisa - Amount in paisa (string)
+   * @returns Amount in INR as number
+   */
+  paisaToINR(amountInPaisa: string): number {
+    const amount = parseInt(amountInPaisa, 10);
+    return amount / 100;
+  }
 }
