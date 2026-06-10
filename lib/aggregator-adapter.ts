@@ -233,6 +233,25 @@ export class AggregatorAdapter {
       // Calculate new balance
       const balanceAfter = balanceBefore - amount;
 
+      // ====================================================================
+      // WAGERING & VIP TRACKING
+      // ====================================================================
+      // Track wagering for active bonuses
+      try {
+        const { bonusService } = await import('@/lib/bonus-service');
+        await bonusService.trackWagering(userId, amount);
+      } catch (bonusError) {
+        console.error('[AGGREGATOR] Bonus wagering tracking failed:', bonusError);
+      }
+
+      // Track VIP progress
+      try {
+        const { vipService } = await import('@/lib/vip-service');
+        await vipService.trackProgress(userId, amount);
+      } catch (vipError) {
+        console.error('[AGGREGATOR] VIP progress tracking failed:', vipError);
+      }
+
       await idempotencyService.complete(idempotencyKey);
 
       return {
@@ -373,6 +392,25 @@ export class AggregatorAdapter {
           failureReason: result.error || 'Failed to credit balance',
           errorCode: 'INTERNAL_ERROR',
         };
+      }
+
+      // ====================================================================
+      // WAGERING & VIP TRACKING
+      // ====================================================================
+      // Track wagering for active bonuses (using win amount as wagered amount)
+      try {
+        const { bonusService } = await import('@/lib/bonus-service');
+        await bonusService.trackWagering(userId, amount);
+      } catch (bonusError) {
+        console.error('[AGGREGATOR] Bonus wagering tracking failed:', bonusError);
+      }
+
+      // Track VIP progress
+      try {
+        const { vipService } = await import('@/lib/vip-service');
+        await vipService.trackProgress(userId, amount);
+      } catch (vipError) {
+        console.error('[AGGREGATOR] VIP progress tracking failed:', vipError);
       }
 
       // Update session total win
