@@ -81,6 +81,7 @@ import {
   pgEnum,
   decimal,
   integer,
+  serial,
   jsonb,
   check,
 } from "drizzle-orm/pg-core";
@@ -197,6 +198,9 @@ export const auditActionEnum = pgEnum("audit_action", [
   "bonus_issued",
   "bonus_cancelled",
   "referral_cancelled",
+  "payment_method_added",
+  "payment_method_set_primary",
+  "payment_method_deleted",
   "admin_login",
   "permission_changed",
   "game_added",
@@ -547,6 +551,53 @@ export const withdrawal = pgTable(
       "withdrawal_payout_details",
       sql`(${table.method} = 'upi' AND ${table.upiId} IS NOT NULL)
           OR (${table.method} = 'bank_transfer' AND ${table.accountNumber} IS NOT NULL AND ${table.ifscCode} IS NOT NULL)`,
+    ),
+  ],
+);
+
+// ============================================================================
+// PAYMENT METHOD TABLE
+// ============================================================================
+
+export const paymentMethod = pgTable(
+  "payment_method",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: withdrawalMethodEnum("type").notNull(), // 'upi' or 'bank_transfer'
+    isPrimary: boolean("is_primary").default(false).notNull(),
+    label: text("label"), // Optional custom nickname (e.g., "My HDFC", "Personal UPI")
+
+    // UPI details
+    upiId: text("upi_id"),
+
+    // Bank details (stored plain text, masked in UI only)
+    accountNumber: text("account_number"),
+    accountHolder: text("account_holder"),
+    bankName: text("bank_name"),
+    ifscCode: text("ifsc_code"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("payment_method_userId_idx").on(table.userId),
+    // Note: One primary per user is enforced at application level in tRPC router
+    // PostgreSQL doesn't support filtered unique constraints in a simple way
+    // CHECK: UPI methods require upiId
+    check(
+      "payment_method_upi_requires_id",
+      sql`(${table.type} != 'upi' OR ${table.upiId} IS NOT NULL)`,
+    ),
+    // CHECK: Bank methods require account details
+    check(
+      "payment_method_bank_requires_details",
+      sql`(${table.type} != 'bank_transfer' OR (${table.accountNumber} IS NOT NULL AND ${table.ifscCode} IS NOT NULL))`,
     ),
   ],
 );
@@ -1178,6 +1229,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
   transactions: many(transaction),
   deposits: many(deposit),
   withdrawals: many(withdrawal),
+  paymentMethods: many(paymentMethod),
   gameSessions: many(gameSession),
   bets: many(bet),
   referralsMade: many(referral, { relationName: "referrer" }),
@@ -1227,6 +1279,13 @@ export const withdrawalRelations = relations(withdrawal, ({ one }) => ({
   transaction: one(transaction, {
     fields: [withdrawal.transactionId],
     references: [transaction.id],
+  }),
+}));
+
+export const paymentMethodRelations = relations(paymentMethod, ({ one }) => ({
+  user: one(user, {
+    fields: [paymentMethod.userId],
+    references: [user.id],
   }),
 }));
 

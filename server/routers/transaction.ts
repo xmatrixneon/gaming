@@ -7,14 +7,67 @@ import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
+import { auth } from "@/lib/auth";
 import { db } from "@/drizzle";
-import { transaction, deposit, withdrawal, user } from "@/drizzle/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { transaction, deposit, withdrawal, user, paymentMethod, account } from "@/drizzle/schema";
+import { eq, desc, and, ne } from "drizzle-orm";
 import { walletService } from "@/lib/wallet-service";
 import { idempotencyService } from "@/lib/idempotency";
 import { fraudDetection } from "@/lib/fraud-detection";
 import { gatewaySelector } from "@/lib/gateway-selector";
 import * as gatewayCache from "@/lib/gateway-cache";
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Check if user has a password set (credential account exists)
+ */
+async function checkUserHasPassword(userId: string): Promise<boolean> {
+  try {
+    const credentialAccount = await db
+      .select()
+      .from(account)
+      .where(
+        and(
+          eq(account.userId, userId),
+          eq(account.providerId, "credential")
+        )
+      )
+      .limit(1);
+
+    return credentialAccount.length > 0 && credentialAccount[0].password !== null;
+  } catch (error) {
+    console.error("[TRANSACTION] Failed to check user password:", error);
+    return false;
+  }
+}
+
+/**
+ * Verify user's password using Better Auth
+ * Returns true if password is correct, false otherwise
+ */
+async function verifyUserPassword(userId: string, password: string, userEmail: string): Promise<boolean> {
+  try {
+    // Import headers dynamically to avoid issues with Next.js headers()
+    const { headers } = await import("next/headers");
+
+    // Use Better Auth's signIn API to verify credentials
+    const result = await auth.api.signIn.email({
+      body: {
+        email: userEmail,
+        password,
+      },
+      headers: await headers(),
+    });
+
+    return result !== null && result.user !== null;
+  } catch (error) {
+    console.error("[TRANSACTION] Password verification failed:", error);
+    return false;
+  }
+}
 
 // ============================================================================
 // TRANSACTION ROUTER
@@ -421,13 +474,84 @@ export const transactionRouter = router({
         ifscCode: z.string().optional(),
       }),
       clientProvidedKey: z.string().optional(),
+      // NEW: Password verification for withdrawal
+      password: z.string().optional(),
+      // NEW: Use saved payment method
+      useSavedMethod: z.boolean().optional().default(false),
+      savedMethodId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.user.id;
       const amount = BigInt(input.amount);
 
+      // NEW: Password verification (required if user has password set)
+      const hasPassword = await checkUserHasPassword(userId);
+      if (hasPassword) {
+        if (!input.password) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Password required for withdrawal. Please set a password in your profile settings.',
+          });
+        }
+
+        const userEmail = ctx.user.email;
+        if (!userEmail) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Email required for password verification',
+          });
+        }
+
+        const passwordValid = await verifyUserPassword(userId, input.password, userEmail);
+        if (!passwordValid) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Incorrect password',
+          });
+        }
+      }
+
+      // NEW: Load saved payment method if useSavedMethod is true
+      let payoutDetails = {
+        upiId: input.details.upiId,
+        accountNumber: input.details.accountNumber,
+        accountHolder: input.details.accountHolder,
+        bankName: input.details.bankName,
+        ifscCode: input.details.ifscCode,
+      };
+
+      if (input.useSavedMethod && input.savedMethodId) {
+        const savedMethod = await db
+          .select()
+          .from(paymentMethod)
+          .where(
+            and(
+              eq(paymentMethod.id, input.savedMethodId),
+              eq(paymentMethod.userId, userId)
+            )
+          )
+          .limit(1);
+
+        if (savedMethod.length === 0) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Payment method not found',
+          });
+        }
+
+        // Load details from saved method
+        const method = savedMethod[0];
+        payoutDetails = {
+          upiId: method.upiId,
+          accountNumber: method.accountNumber,
+          accountHolder: method.accountHolder,
+          bankName: method.bankName,
+          ifscCode: method.ifscCode,
+        };
+      }
+
       // Validate withdrawal details based on method
-      if (input.method === 'upi' && !input.details.upiId) {
+      if (input.method === 'upi' && !payoutDetails.upiId) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'UPI ID is required for UPI withdrawals',
@@ -435,7 +559,7 @@ export const transactionRouter = router({
       }
 
       if (input.method === 'bank_transfer') {
-        if (!input.details.accountNumber || !input.details.ifscCode) {
+        if (!payoutDetails.accountNumber || !payoutDetails.ifscCode) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Account number and IFSC code are required for bank transfers',
@@ -503,7 +627,7 @@ export const transactionRouter = router({
           idempotencyKey,
           metadata: {
             method: input.method,
-            ...input.details,
+            ...payoutDetails,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -519,11 +643,11 @@ export const transactionRouter = router({
           amount: amount.toString(),
           method: dbWithdrawalMethod,
           status: 'pending',
-          upiId: input.details.upiId,
-          accountNumber: input.details.accountNumber,
-          accountHolder: input.details.accountHolder,
-          bankName: input.details.bankName,
-          ifscCode: input.details.ifscCode,
+          upiId: payoutDetails.upiId,
+          accountNumber: payoutDetails.accountNumber,
+          accountHolder: payoutDetails.accountHolder,
+          bankName: payoutDetails.bankName,
+          ifscCode: payoutDetails.ifscCode,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
@@ -560,7 +684,7 @@ export const transactionRouter = router({
         if (input.method === 'upi') {
           try {
             // Validate UPI ID
-            if (!input.details.upiId || !velopayGateway.validateUPIId(input.details.upiId)) {
+            if (!payoutDetails.upiId || !velopayGateway.validateUPIId(payoutDetails.upiId)) {
               throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'Invalid UPI ID format. Use format: username@bank',
@@ -572,15 +696,15 @@ export const transactionRouter = router({
 
             // For UPI withdrawals, VeloPay uses IFSC format with UPI as bank code
             // Format: UPI0 followed by the UPI ID
-            const ifsc = 'UPI0' + input.details.upiId.split('@')[0].slice(0, 6).padEnd(6, '0');
+            const ifsc = 'UPI0' + payoutDetails.upiId.split('@')[0].slice(0, 6).padEnd(6, '0');
 
             const velopayResponse = await velopayGateway.createWithdrawal({
               txn_id: withdrawalId,
               amount: amountInPaisa,
               type: '1',
               ifsc: ifsc,
-              card_num: input.details.upiId,
-              name: input.details.accountHolder || 'User',
+              card_num: payoutDetails.upiId,
+              name: payoutDetails.accountHolder || 'User',
               currency: 'INR',
             });
 
@@ -628,7 +752,7 @@ export const transactionRouter = router({
 
         // Process withdrawal with OKPay for bank transfer method
         if (input.method === 'okpay-bank') {
-          if (!input.details.accountNumber || !input.details.ifscCode || !input.details.accountHolder) {
+          if (!payoutDetails.accountNumber || !payoutDetails.ifscCode || !payoutDetails.accountHolder) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'Account number, IFSC code, and account holder name required for OKPay withdrawals',
@@ -642,10 +766,10 @@ export const transactionRouter = router({
             const okpayResponse = await okpayGateway.createWithdrawal({
               out_trade_no: withdrawalId,
               pay_type: 'BANK',
-              account: input.details.accountNumber,
-              userName: input.details.accountHolder,
+              account: payoutDetails.accountNumber,
+              userName: payoutDetails.accountHolder,
               money: amountInRupees,
-              reserve1: input.details.ifscCode,
+              reserve1: payoutDetails.ifscCode,
             });
 
             // Update withdrawal with gateway reference

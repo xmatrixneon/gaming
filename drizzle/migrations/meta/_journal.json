@@ -57,6 +57,20 @@
       "when": 1781112718131,
       "tag": "0007_concerned_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781115335812,
+      "tag": "0008_even_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781115399220,
+      "tag": "0009_massive_pixie",
+      "breakpoints": true
     }
   ]
 }

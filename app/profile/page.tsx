@@ -38,44 +38,10 @@ import {
   IoEyeOutline,
   IoEyeOffOutline,
   IoLockClosedOutline,
+  IoCardOutline,
 } from "react-icons/io5";
 import { cn } from "@/lib/utils";
 
-// Quick action items
-const QUICK_ACTIONS = [
-  {
-    id: "deposit",
-    label: "Deposit",
-    icon: IoArrowDownCircleOutline,
-    emoji: "📥",
-    color: "from-green-500/20 to-green-600/20",
-    glow: "#22c55e",
-  },
-  {
-    id: "withdraw",
-    label: "Withdraw",
-    icon: IoArrowUpCircleOutline,
-    emoji: "📤",
-    color: "from-red-500/20 to-red-600/20",
-    glow: "#ef4444",
-  },
-  {
-    id: "history",
-    label: "History",
-    icon: IoTimeOutline,
-    emoji: "📋",
-    color: "from-blue-500/20 to-blue-600/20",
-    glow: "#3b82f6",
-  },
-  {
-    id: "vip",
-    label: "VIP Club",
-    icon: IoTrophyOutline,
-    emoji: "👑",
-    color: "from-yellow-500/20 to-yellow-600/20",
-    glow: "#eab308",
-  },
-];
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -167,25 +133,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle quick action clicks
-  const handleQuickAction = (actionId: string) => {
-    switch (actionId) {
-      case "deposit":
-        router.push("/deposit");
-        break;
-      case "withdraw":
-        router.push("/withdraw");
-        break;
-      case "history":
-        router.push("/history");
-        break;
-      case "vip":
-        router.push("/vip");
-        break;
-      default:
-        break;
-    }
-  };
 
   // Handle copy referral code
   const handleCopyReferral = () => {
@@ -336,107 +283,11 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Balance Overview */}
-        <section className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3 px-1">
-            Your Balances
-          </h2>
-          <div className="space-y-2.5">
-            <BalanceCard
-              currency="USD"
-              balance={formatUserCurrency(parseFloat(userProfile.balance || "0"))}
-              icon="$"
-              subtitle="Total Balance"
-            />
-            <BalanceCard
-              currency="Bonus"
-              balance={formatUserCurrency(0)}
-              icon="🎁"
-              subtitle="Available Bonus"
-            />
-          </div>
-        </section>
 
-        <Separator className="mb-6" />
 
-        {/* Referral Section */}
-        <section className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3 px-1 flex items-center gap-2">
-            <IoGiftOutline className="text-primary" size={16} />
-            Refer & Earn
-          </h2>
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Your Referral Code</p>
-                  <p className="text-lg font-bold font-mono tracking-wider">
-                    {referralData?.referralCode || "Loading..."}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCopyReferral}
-                    className={copiedReferral ? "bg-green-500/20 border-green-500" : ""}
-                  >
-                    <IoCopyOutline size={16} />
-                    {copiedReferral ? "Copied!" : "Copy"}
-                  </Button>
-                  {navigator.share && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleShareReferral}
-                    >
-                      <IoShareOutline size={16} />
-                    </Button>
-                  )}
-                </div>
-              </div>
 
-              {/* Referral Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-background/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-primary">
-                    {referralStats?.totalReferrals || 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Total Referrals</p>
-                </div>
-                <div className="bg-background/50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-green-500">
-                    {formatUserCurrency(referralStats?.totalEarnings || 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Total Earned</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
 
-        <Separator className="mb-6" />
 
-        {/* Quick Actions */}
-        <section className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-3 px-1">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 gap-2.5">
-            {QUICK_ACTIONS.map((action) => (
-              <GradientCard
-                key={action.id}
-                label={action.label}
-                icon={action.icon}
-                emoji={action.emoji}
-                gradient={action.color}
-                glow={action.glow}
-                subtitle="Go"
-                onClick={() => handleQuickAction(action.id)}
-              />
-            ))}
-          </div>
-        </section>
 
         <Separator className="mb-6" />
 
@@ -522,6 +373,22 @@ export default function ProfilePage() {
                 </div>
               )}
             </Card>
+
+            {/* Payment Methods */}
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto p-4"
+              onClick={() => router.push("/payment-methods")}
+            >
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                <IoCardOutline size={18} />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium text-foreground">Payment Methods</p>
+                <p className="text-xs text-muted-foreground">Manage UPI & bank accounts</p>
+              </div>
+              <IoChevronForward className="text-muted-foreground flex-shrink-0" size={18} />
+            </Button>
 
             {/* Phone Verification */}
             <Button

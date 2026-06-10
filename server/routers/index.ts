@@ -13,6 +13,7 @@ import { referralRouter } from "./referral";
 import { bonusRouter } from "./bonus";
 import { vipRouter } from "./vip";
 import { depositRouter } from "./deposit";
+import { paymentMethodRouter } from "./payment-method";
 import { z } from "zod";
 
 // ============================================================================
@@ -56,6 +57,9 @@ export const appRouter = router({
 
   // Deposit procedures
   deposit: depositRouter,
+
+  // Payment method procedures
+  paymentMethod: paymentMethodRouter,
 });
 
 // ============================================================================
