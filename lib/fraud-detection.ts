@@ -31,6 +31,16 @@ export class FraudDetection {
 
   private readonly LOSS_LIMIT_DEFAULT = 10000n; // Default daily loss limit (in smallest currency unit)
 
+  // Game API specific limits
+  private readonly GAME_CALLBACK_RATE_LIMIT = 100; // Max 100 callbacks per minute per user
+  private readonly GAME_CALLBACK_WINDOW = 60; // 1 minute in seconds
+
+  private readonly GAME_MAX_BET_AMOUNT = 50000; // Max ₹50,000 per bet (in rupees)
+  private readonly GAME_HOURLY_BET_LIMIT = 500000; // Max ₹500,000 total bets per hour (in rupees)
+
+  private readonly GAME_WIN_PATTERN_COUNT = 5; // Check last 5 wins for pattern detection
+  private readonly GAME_WIN_PATTERN_THRESHOLD = 0.8; // 80% threshold for suspicious pattern detection
+
   /**
    * Check withdrawal velocity
    * Prevents rapid withdrawals that may indicate:
@@ -316,6 +326,185 @@ export class FraudDetection {
 
     return {
       allowed: true,
+    };
+  }
+
+  // ==========================================================================
+  // GAME API SPECIFIC CHECKS
+  // ==========================================================================
+
+  /**
+   * Check game callback rate
+   * Prevents excessive callbacks that may indicate:
+   * - Bot activity
+   * - API abuse
+   * - System malfunction
+   *
+   * @param userId - User identifier
+   * @returns Check result with remaining attempts if denied
+   */
+  async checkGameCallbackRate(userId: string): Promise<FraudCheckResult> {
+    const key = `game_callback_rate:${userId}`;
+    const count = await redisIncr(key);
+
+    if (count === 1) {
+      // First request, set expiry
+      await redisSetExpiry(key, this.GAME_CALLBACK_WINDOW);
+    }
+
+    if (count > this.GAME_CALLBACK_RATE_LIMIT) {
+      const ttl = await redis.ttl(key);
+      return {
+        allowed: false,
+        reason: 'Game callback rate limit exceeded. Maximum 100 callbacks per minute.',
+        retryAfter: ttl,
+      };
+    }
+
+    return {
+      allowed: true,
+      remainingAttempts: this.GAME_CALLBACK_RATE_LIMIT - count,
+    };
+  }
+
+  /**
+   * Check bet amount limits for Game API
+   * Enforces maximum bet amounts and hourly limits
+   *
+   * @param userId - User identifier
+   * @param amount - Bet amount in rupees
+   * @returns Check result
+   */
+  async checkGameBetAmount(userId: string, amount: number): Promise<FraudCheckResult> {
+    // Check per-bet limit
+    if (amount > this.GAME_MAX_BET_AMOUNT) {
+      return {
+        allowed: false,
+        reason: `Maximum bet amount exceeded. Maximum ₹${this.GAME_MAX_BET_AMOUNT.toLocaleString()} per bet.`,
+      };
+    }
+
+    // Check hourly limit
+    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`; // Hourly bucket
+    const hourlyTotal = await redis.get(hourlyKey);
+    const currentHourlyTotal = parseFloat(hourlyTotal || "0");
+
+    if (currentHourlyTotal + amount > this.GAME_HOURLY_BET_LIMIT) {
+      return {
+        allowed: false,
+        reason: `Hourly bet limit exceeded. Maximum ₹${this.GAME_HOURLY_BET_LIMIT.toLocaleString()} per hour.`,
+      };
+    }
+
+    return {
+      allowed: true,
+    };
+  }
+
+  /**
+   * Update hourly bet total for Game API
+   * Should be called after successful bet placement
+   *
+   * @param userId - User identifier
+   * @param amount - Bet amount in rupees
+   */
+  async updateGameHourlyBetTotal(userId: string, amount: number): Promise<void> {
+    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`; // Hourly bucket
+    const currentTotal = await redis.get(hourlyKey);
+    const newTotal = parseFloat(currentTotal || "0") + amount;
+
+    await redis.set(hourlyKey, newTotal.toString());
+    await redis.expire(hourlyKey, 3600); // 1 hour
+  }
+
+  /**
+   * Check win patterns for suspicious activity
+   * Detects patterns that may indicate:
+   * - Game manipulation
+   * - Collusion with providers
+   * - Exploiting bugs
+   *
+   * @param userId - User identifier
+   * @param winAmount - Current win amount in rupees
+   * @returns Check result with warning if pattern detected
+   */
+  async checkGameWinPattern(userId: string, winAmount: number): Promise<FraudCheckResult & { warning?: boolean }> {
+    // Store recent wins in Redis for pattern analysis
+    const winKey = `game_recent_wins:${userId}`;
+    const recentWins = await redis.get(winKey);
+    const wins = recentWins ? JSON.parse(recentWins) as number[] : [];
+
+    // Add current win
+    wins.push(winAmount);
+
+    // Keep only last GAME_WIN_PATTERN_COUNT wins
+    if (wins.length > this.GAME_WIN_PATTERN_COUNT) {
+      wins.shift();
+    }
+
+    // Store updated wins
+    await redis.set(winKey, JSON.stringify(wins));
+    await redis.expire(winKey, 3600); // 1 hour
+
+    // Check for suspicious pattern (wins within 80% of each other)
+    if (wins.length >= this.GAME_WIN_PATTERN_COUNT) {
+      const avgWin = wins.reduce((sum, win) => sum + win, 0) / wins.length;
+      const closeWins = wins.filter(win => Math.abs(win - avgWin) / avgWin < (1 - this.GAME_WIN_PATTERN_THRESHOLD));
+
+      if (closeWins.length >= this.GAME_WIN_PATTERN_COUNT) {
+        console.warn('[FraudDetection] Suspicious win pattern detected', {
+          userId,
+          wins,
+          avgWin,
+          closeWins: closeWins.length,
+        });
+
+        return {
+          allowed: true,
+          warning: true,
+          reason: 'Unusual win pattern detected. This session is being reviewed.',
+        };
+      }
+    }
+
+    return {
+      allowed: true,
+    };
+  }
+
+  /**
+   * Get game-specific counter values
+   * Useful for displaying remaining limits to users
+   *
+   * @param userId - User identifier
+   * @returns Current game counter values
+   */
+  async getGameCounters(userId: string): Promise<{
+    callbackCount: number;
+    callbackResetIn: number;
+    hourlyBetTotal: number;
+    hourlyBetLimit: number;
+    hourlyBetResetIn: number;
+  }> {
+    const callbackKey = `game_callback_rate:${userId}`;
+    const hourlyKey = `game_hourly_bet:${userId}:${Math.floor(Date.now() / 3600000)}`;
+
+    const [callbackCount, callbackTtl, hourlyTotal] = await Promise.all([
+      redis.get(callbackKey).then((v) => parseInt(v || '0')),
+      redis.ttl(callbackKey),
+      redis.get(hourlyKey).then((v) => parseFloat(v || '0')),
+    ]);
+
+    // Calculate when hourly bucket resets (next hour)
+    const nextHour = Math.ceil((Date.now() + 1) / 3600000) * 3600000;
+    const hourlyResetIn = Math.max(0, (nextHour - Date.now()) / 1000);
+
+    return {
+      callbackCount,
+      callbackResetIn: callbackTtl > 0 ? callbackTtl : 0,
+      hourlyBetTotal: Math.round(hourlyTotal),
+      hourlyBetLimit: this.GAME_HOURLY_BET_LIMIT,
+      hourlyBetResetIn: Math.round(hourlyResetIn),
     };
   }
 }

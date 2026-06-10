@@ -369,6 +369,9 @@ export const gameSession = pgTable(
     providerGameId: text("provider_game_id").notNull(),
     providerSessionId: text("provider_session_id").unique(), // aggregator sessions are 1:1
 
+    // Game API specific fields
+    gameApiSerial: text("game_api_serial").unique(), // Game API serial number for reconciliation
+
     status: gameSessionStatusEnum("status").notNull().default("active"),
     startedAt: timestamp("started_at").defaultNow().notNull(),
     endedAt: timestamp("ended_at"),
@@ -387,6 +390,8 @@ export const gameSession = pgTable(
     // Aggregator callbacks look up sessions by providerGameId + providerSessionId
     index("game_session_providerGameId_idx").on(table.providerGameId),
     index("game_session_providerSessionId_idx").on(table.providerSessionId),
+    // Game API callback lookup by serial number
+    index("game_session_gameApiSerial_idx").on(table.gameApiSerial),
     check("game_session_totals_non_negative", sql`${table.totalBet} >= 0 AND ${table.totalWin} >= 0`),
   ],
 );
@@ -411,6 +416,10 @@ export const bet = pgTable(
       onDelete: "restrict",
     }),
 
+    // Game API specific fields
+    gameApiSerial: text("game_api_serial"), // Game API serial number for reconciliation
+    gameRound: text("game_round"), // Game round ID from Game API
+
     amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
     odds: decimal("odds", { precision: 10, scale: 2 }),
 
@@ -418,6 +427,7 @@ export const bet = pgTable(
       gameType: string;
       selection?: string;
       market?: string;
+      gameApi?: Record<string, unknown>; // Game API specific data
       [key: string]: unknown;
     }>(),
 
@@ -435,6 +445,8 @@ export const bet = pgTable(
     index("bet_userId_idx").on(table.userId),
     index("bet_gameSessionId_idx").on(table.gameSessionId),
     index("bet_transactionId_idx").on(table.transactionId),
+    // Game API callback lookup by serial number
+    index("bet_gameApiSerial_idx").on(table.gameApiSerial),
     // Settlement worker filters by pending result constantly
     index("bet_result_idx").on(table.result),
     check("bet_amount_positive", sql`${table.amount} > 0`),

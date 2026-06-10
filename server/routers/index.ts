@@ -8,6 +8,7 @@ import { authRouter } from "./auth";
 import { userRouter } from "./user";
 import { transactionRouter } from "./transaction";
 import { walletRouter } from "./wallet";
+import { gameRouter } from "./game";
 import { z } from "zod";
 
 // ============================================================================
@@ -36,6 +37,9 @@ export const appRouter = router({
 
   // Wallet procedures
   wallet: walletRouter,
+
+  // Game procedures
+  game: gameRouter,
 });
 
 // ============================================================================
