@@ -100,6 +100,9 @@ export const user = pgTable("user", {
   // Casino-specific fields
   username: varchar("username", { length: 50 }).unique(),
 
+  // Referral system
+  referralCode: varchar("referral_code", { length: 12 }).unique().default(''),
+
   // Denormalized balance: must always equal sum of completed transactions.
   // Guarded by balanceVersion (optimistic locking) — always read + CAS update
   // in a transaction; never update balance directly without incrementing version.

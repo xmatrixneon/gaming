@@ -9,6 +9,7 @@ import { userRouter } from "./user";
 import { transactionRouter } from "./transaction";
 import { walletRouter } from "./wallet";
 import { gameRouter } from "./game";
+import { referralRouter } from "./referral";
 import { z } from "zod";
 
 // ============================================================================
@@ -40,6 +41,9 @@ export const appRouter = router({
 
   // Game procedures
   game: gameRouter,
+
+  // Referral procedures
+  referral: referralRouter,
 });
 
 // ============================================================================
