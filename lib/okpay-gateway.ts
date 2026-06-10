@@ -1,5 +1,9 @@
 import { createHash } from 'crypto';
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
 export interface OkpayConfig {
   host: string;
   mchId: string;
@@ -8,15 +12,57 @@ export interface OkpayConfig {
   callbackUrl: string;
 }
 
+export interface OkpayDepositRequest {
+  out_trade_no: string;      // Unique merchant order number
+  pay_type: 'UPI' | 'UPI_INTENT';  // Payment type
+  money: string;              // Amount in rupees (no decimals)
+  attach?: string;            // Additional data (returned as-is)
+  notify_url?: string;        // Callback URL (optional, uses default)
+  returnUrl: string;         // Success redirect URL
+  phone?: string;             // Phone number (required for UPI_INTENT)
+}
+
+export interface OkpayDepositResponse {
+  code: number;               // 0 = success
+  msg: string;                // "success"
+  data: {
+    url: string;              // Payment URL
+    transaction_Id: string;  // Platform transaction ID
+  };
+}
+
+export interface OkpayWithdrawalRequest {
+  out_trade_no: string;       // Unique merchant order number
+  pay_type: 'BANK';          // Payment type
+  account: string;            // Bank account number
+  userName: string;           // Account holder name
+  money: string;              // Amount in rupees
+  attach?: string;            // Additional data
+  notify_url?: string;        // Callback URL (optional, uses default)
+  reserve1: string;           // IFSC code
+}
+
+export interface OkpayWithdrawalResponse {
+  code: number;               // 0 = success
+  msg: string;                // "success"
+  data: {
+    transaction_Id: string;  // Platform transaction ID
+  };
+}
+
 export interface OkpayCallbackPayload {
   mchId: string;
   out_trade_no: string;
   transaction_Id: string;
-  status: string;
+  status: string;             // 0=pending, 1=success, 2=failed
   money: string;
   attach?: string;
   sign: string;
 }
+
+// ============================================================================
+// GATEWAY CLASS
+// ============================================================================
 
 export class OkpayGateway {
   private readonly config: OkpayConfig;
