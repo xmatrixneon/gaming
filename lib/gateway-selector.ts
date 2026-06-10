@@ -11,6 +11,7 @@ import { eq } from 'drizzle-orm';
 import { velopayGateway } from './velopay-gateway';
 import { okpayGateway } from './okpay-gateway';
 import * as gatewayCache from './gateway-cache';
+import type { CachedGatewayConfig } from './gateway-cache';
 
 export interface GatewayOption {
   id: '1' | '2';
@@ -31,7 +32,7 @@ class GatewaySelector {
 
     try {
       const configs = await db.select().from(paymentGatewayConfig);
-      await gatewayCache.warmGatewayCache(configs as any);
+      await gatewayCache.warmGatewayCache(configs as CachedGatewayConfig[]);
       this.initialized = true;
       console.log('[GATEWAY_SELECTOR] Initialized with', configs.length, 'gateways');
     } catch (error) {
@@ -43,14 +44,31 @@ class GatewaySelector {
   /**
    * Get available gateways for deposit page display
    * Returns enabled gateways sorted by priority
+   * Falls back to database if cache is empty
    */
   async getAvailableGateways(): Promise<GatewayOption[]> {
     await this.ensureInitialized();
 
-    const configs = await gatewayCache.getAllEnabledGateways();
+    let configs = await gatewayCache.getAllEnabledGateways();
 
-    // Filter out maintenance/disabled gateways
-    const activeConfigs = configs.filter(c => c.status === 'active');
+    // Fallback to database if cache is empty
+    if (configs.length === 0) {
+      console.log('[GATEWAY_SELECTOR] Cache empty, fetching from database');
+      const dbConfigs = await db.select().from(paymentGatewayConfig);
+      configs = dbConfigs as CachedGatewayConfig[];
+      // Warm cache for next time
+      await gatewayCache.warmGatewayCache(dbConfigs as CachedGatewayConfig[]);
+    }
+
+    // Filter for enabled and active gateways only
+    const activeConfigs = configs
+      .filter(c => c.enabled && c.status === 'active')
+      .sort((a, b) => a.priority - b.priority);
+
+    // If no active gateways, return empty array
+    if (activeConfigs.length === 0) {
+      return [];
+    }
 
     // If only one gateway, show as single "UPI" option
     if (activeConfigs.length === 1) {
@@ -75,11 +93,28 @@ class GatewaySelector {
 
   /**
    * Get gateway instance by priority selection (1 = UPI 1, 2 = UPI 2)
+   * Falls back to database if cache is empty
    */
   async getGatewayByPriority(priority: 1 | 2): Promise<typeof velopayGateway | typeof okpayGateway> {
     await this.ensureInitialized();
 
-    const config = await gatewayCache.getGatewayByPriority(priority);
+    let config = await gatewayCache.getGatewayByPriority(priority);
+
+    // Fallback to database if cache is empty
+    if (!config) {
+      console.log('[GATEWAY_SELECTOR] Cache miss for priority', priority);
+      const dbConfigs = await db
+        .select()
+        .from(paymentGatewayConfig)
+        .where(eq(paymentGatewayConfig.priority, priority))
+        .limit(1);
+
+      if (dbConfigs.length > 0) {
+        config = dbConfigs[0] as CachedGatewayConfig;
+        // Warm cache
+        await gatewayCache.setGatewayConfig(config.id, config);
+      }
+    }
 
     if (!config) {
       throw new Error(`No gateway configured for priority ${priority}`);
@@ -103,7 +138,7 @@ class GatewaySelector {
   /**
    * Get gateway config by ID
    */
-  async getGatewayConfig(id: string): Promise<any> {
+  async getGatewayConfig(id: string): Promise<CachedGatewayConfig | null> {
     await this.ensureInitialized();
 
     const config = await db
@@ -128,13 +163,13 @@ class GatewaySelector {
         .limit(1);
 
       if (config[0]) {
-        await gatewayCache.setGatewayConfig(id, config[0] as any);
+        await gatewayCache.setGatewayConfig(id, config[0] as CachedGatewayConfig);
       }
     } else {
       // Refresh all gateways
       const configs = await db.select().from(paymentGatewayConfig);
       await gatewayCache.invalidateAllGatewayCache();
-      await gatewayCache.warmGatewayCache(configs as any);
+      await gatewayCache.warmGatewayCache(configs as CachedGatewayConfig[]);
     }
   }
 
