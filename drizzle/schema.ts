@@ -135,6 +135,12 @@ export const withdrawalMethodEnum = pgEnum("withdrawal_method", [
   "bank_transfer",
 ]);
 
+export const gatewayStatusEnum = pgEnum("gateway_status", [
+  "active",
+  "maintenance",
+  "disabled",
+]);
+
 export const referralStatusEnum = pgEnum("referral_status", [
   "pending",
   "qualified",
@@ -208,6 +214,36 @@ export const gameStatusEnum = pgEnum("game_status", [
   "active",
   "disabled",
   "maintenance",
+]);
+
+// ============================================================================
+// PAYMENT GATEWAY CONFIG TABLE
+// ============================================================================
+
+export const paymentGatewayConfig = pgTable("payment_gateway_config", {
+  id: text("id").primaryKey(),
+  gatewayName: text("gateway_name").notNull(), // 'velopay' or 'okpay'
+  displayName: text("display_name").notNull(), // 'UPI 1' or 'UPI 2'
+  enabled: boolean("enabled").default(true).notNull(),
+  priority: integer("priority").notNull().default(1), // 1 = primary (UPI 1), 2 = secondary (UPI 2)
+  configMetadata: jsonb("config_metadata").$type<{
+    apiKey?: string;
+    secret?: string;
+    merchantId?: string;
+    host?: string;
+    callbackUrl?: string;
+    mode?: 'sandbox' | 'production';
+  }>(),
+  status: text("status").$type<'active' | 'maintenance' | 'disabled'>().default('active').notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+}, (table) => [
+  index("gateway_config_priority_idx").on(table.priority),
+  index("gateway_config_enabled_idx").on(table.enabled),
+  index("gateway_config_name_idx").on(table.gatewayName),
 ]);
 
 // ============================================================================
@@ -428,6 +464,7 @@ export const deposit = pgTable(
     method: depositMethodEnum("method").notNull(),
     status: transactionStatusEnum("status").notNull().default("pending"),
 
+    gatewayId: text("gateway_id").references(() => paymentGatewayConfig.id, { onDelete: "set null" }),
     gatewayReference: text("gateway_reference").unique(),
     gatewayMetadata: jsonb("gateway_metadata"),
 
@@ -1179,6 +1216,10 @@ export const depositRelations = relations(deposit, ({ one }) => ({
     fields: [deposit.transactionId],
     references: [transaction.id],
   }),
+  gatewayConfig: one(paymentGatewayConfig, {
+    fields: [deposit.gatewayId],
+    references: [paymentGatewayConfig.id],
+  }),
 }));
 
 export const withdrawalRelations = relations(withdrawal, ({ one }) => ({
@@ -1299,6 +1340,14 @@ export const gameCategoryRelationRelations = relations(gameCategoryRelation, ({ 
 }));
 
 // ============================================================================
+// PAYMENT GATEWAY CONFIG RELATIONS
+// ============================================================================
+
+export const paymentGatewayConfigRelations = relations(paymentGatewayConfig, ({ many }) => ({
+  deposits: many(deposit),
+}));
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -1339,6 +1388,8 @@ export type GameCategory = typeof gameCategory.$inferSelect;
 export type NewGameCategory = typeof gameCategory.$inferInsert;
 export type GameCategoryRelation = typeof gameCategoryRelation.$inferSelect;
 export type NewGameCategoryRelation = typeof gameCategoryRelation.$inferInsert;
+export type PaymentGatewayConfig = typeof paymentGatewayConfig.$inferSelect;
+export type NewPaymentGatewayConfig = typeof paymentGatewayConfig.$inferInsert;
 
 export type TransactionType = (typeof transactionTypeEnum.enumValues)[number];
 export type TransactionStatus = (typeof transactionStatusEnum.enumValues)[number];
