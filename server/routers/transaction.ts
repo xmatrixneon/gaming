@@ -345,7 +345,7 @@ export const transactionRouter = router({
   requestWithdrawal: protectedProcedure
     .input(z.object({
       amount: z.string().regex(/^\d+(\.\d{1,8})?$/, "Invalid amount format"),
-      method: z.enum(['upi', 'bank_transfer']),
+      method: z.enum(['upi', 'okpay-bank', 'bank_transfer']),
       details: z.object({
         upiId: z.string().optional(),
         accountNumber: z.string().optional(),
@@ -539,6 +539,68 @@ export const transactionRouter = router({
             throw new TRPCError({
               code: 'INTERNAL_SERVER_ERROR',
               message: 'Failed to process withdrawal with payment gateway',
+            });
+          }
+        }
+
+        // Process withdrawal with OKPay for bank transfer method
+        if (input.method === 'okpay-bank') {
+          if (!input.details.accountNumber || !input.details.ifscCode || !input.details.accountHolder) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Account number, IFSC code, and account holder name required for OKPay withdrawals',
+            });
+          }
+
+          try {
+            // OKPay expects amount in rupees
+            const amountInRupees = (BigInt(input.amount) / 100n).toString();
+
+            const okpayResponse = await okpayGateway.createWithdrawal({
+              out_trade_no: withdrawalId,
+              pay_type: 'BANK',
+              account: input.details.accountNumber,
+              userName: input.details.accountHolder,
+              money: amountInRupees,
+              reserve1: input.details.ifscCode,
+            });
+
+            // Update withdrawal with gateway reference
+            await db.update(withdrawal)
+              .set({
+                gatewayReference: okpayResponse.data.transaction_Id,
+                gatewayMetadata: okpayResponse,
+                updatedAt: new Date(),
+              })
+              .where(eq(withdrawal.id, withdrawalId));
+
+            await idempotencyService.complete(idempotencyKey);
+
+            return {
+              success: true,
+              withdrawalId,
+              transactionId,
+              message: 'Withdrawal submitted to OKPay for processing',
+              amount: input.amount,
+              gatewayStatus: 'pending',
+            };
+          } catch (error) {
+            // If OKPay fails, reverse the balance debit
+            await walletService.updateBalanceAtomic(
+              userId,
+              amount,
+              'refund',
+              {
+                withdrawalId,
+                reason: 'OKPay withdrawal failed',
+              }
+            );
+
+            await idempotencyService.delete(idempotencyKey);
+            console.error('[TRANSACTION] OKPay withdrawal failed:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to process withdrawal with OKPay',
             });
           }
         }
