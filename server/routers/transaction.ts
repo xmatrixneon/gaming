@@ -77,18 +77,32 @@ export const transactionRouter = router({
       }
 
       try {
-        // Get gateway instance based on priority selection
-        const gateway = await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2);
+        // Get gateway config once and derive both instance and metadata from it
+        // This prevents state drift between separate lookups
         const gatewayConfig = await gatewaySelector.getGatewayConfig(
           (input.gatewayPriority === 1 ? '1' : '2')
         );
 
         if (!gatewayConfig) {
+          await idempotencyService.delete(idempotencyKey);
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Selected gateway is not configured',
           });
         }
+
+        if (gatewayConfig.status !== 'active') {
+          await idempotencyService.delete(idempotencyKey);
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Selected gateway is currently ${gatewayConfig.status}`,
+          });
+        }
+
+        // Derive gateway instance from the validated config
+        const gateway = gatewayConfig.gatewayName === 'velopay'
+          ? await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2)
+          : await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2);
 
         // Create deposit and transaction records
         const depositId = nanoid();
@@ -192,12 +206,14 @@ export const transactionRouter = router({
           }
 
           // Unknown gateway
+          await idempotencyService.delete(idempotencyKey); // Permanent error - delete key
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: `Unsupported gateway: ${gatewayConfig.gatewayName}`,
           });
         } catch (error) {
-          await idempotencyService.delete(idempotencyKey);
+          // For transient errors (gateway timeout, network issues), keep the idempotency key
+          // to allow legitimate client retries. Only delete key for permanent errors above.
           console.error('[TRANSACTION] Gateway deposit failed:', error);
           if (error instanceof TRPCError) {
             throw error;
@@ -208,12 +224,10 @@ export const transactionRouter = router({
           });
         }
       } catch (error) {
-        await idempotencyService.delete(idempotencyKey);
+        // Outer catch handles validation errors (permanent)
+        // These already deleted the key before throwing, so no need to delete again
         console.error('[TRANSACTION] Deposit initiation failed:', error);
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to initiate deposit',
-        });
+        throw error;
       }
     }),
 

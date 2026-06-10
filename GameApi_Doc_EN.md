@@ -3,13 +3,7 @@
 ## Credentials
 
 ```
-Name：MGFCLUB-250259
-agency_uid：b75fbd22d0684c450192df017ddfcfe6
-aes_key：3c798ae2ff9b670dfb37f1985e2772c0
-player_prefix: h5ab3a
-server_url：https://huidu.bet
-IP: 89.163.242.150
-Currency: INR
+
 
 ```
 
