@@ -13,8 +13,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { walletService } from "@/lib/wallet-service";
 import { idempotencyService } from "@/lib/idempotency";
 import { fraudDetection } from "@/lib/fraud-detection";
-import { velopayGateway } from "@/lib/velopay-gateway";
-import { okpayGateway } from "@/lib/okpay-gateway";
+import { gatewaySelector } from "@/lib/gateway-selector";
 
 // ============================================================================
 // TRANSACTION ROUTER
@@ -33,8 +32,9 @@ export const transactionRouter = router({
     .input(z.object({
       // Integer-only: amounts are in paisa (smallest unit). BigInt() cannot parse decimals.
       amount: z.string().regex(/^\d+$/, "Invalid amount format — must be a whole number (paisa)"),
-      method: z.enum(['upi', 'paytm', 'phonepe', 'okpay-upi', 'okpay-intent', 'bank_transfer', 'crypto']),
-      phone: z.string().optional(), // Required for okpay-intent
+      // Gateway priority: 1 = UPI 1 (primary), 2 = UPI 2 (secondary)
+      gatewayPriority: z.number().int().min(1).max(2),
+      phone: z.string().optional(), // Required for some gateways' intent flow
       clientProvidedKey: z.string().optional(), // For idempotency
       currency: z.string().default('USD'),
     }))
@@ -77,6 +77,19 @@ export const transactionRouter = router({
       }
 
       try {
+        // Get gateway instance based on priority selection
+        const gateway = await gatewaySelector.getGatewayByPriority(input.gatewayPriority as 1 | 2);
+        const gatewayConfig = await gatewaySelector.getGatewayConfig(
+          (input.gatewayPriority === 1 ? '1' : '2')
+        );
+
+        if (!gatewayConfig) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Selected gateway is not configured',
+          });
+        }
+
         // Create deposit and transaction records
         const depositId = nanoid();
         const transactionId = nanoid();
@@ -91,49 +104,45 @@ export const transactionRouter = router({
           balanceAfter: '0', // Will be updated on confirmation
           idempotencyKey,
           metadata: {
-            method: input.method,
+            method: 'upi',
             currency: input.currency,
+            gatewayName: gatewayConfig.gatewayName,
           },
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-
-        // Map gateway-specific methods to the DB enum values.
-        // okpay-upi / okpay-intent are UPI wrappers; crypto routes as bank_transfer.
-        const dbDepositMethod =
-          input.method === 'okpay-upi' || input.method === 'okpay-intent' ? 'upi' :
-          input.method === 'crypto' ? 'bank_transfer' :
-          input.method as 'upi' | 'paytm' | 'phonepe' | 'bank_transfer';
 
         await db.insert(deposit).values({
           id: depositId,
           userId,
           transactionId,
           amount: amount.toString(),
-          method: dbDepositMethod,
+          method: 'upi',
+          gatewayId: gatewayConfig.id,
           status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
         });
 
-        // Integrate with VeloPay for UPI deposits
-        if (input.method === 'upi' || input.method === 'paytm' || input.method === 'phonepe') {
-          try {
-            // Convert amount to paisa (VeloPay format)
+        // Route to appropriate gateway
+        try {
+          // VeloPay integration
+          if (gatewayConfig.gatewayName === 'velopay') {
+            const velopayGateway = gateway;
             const amountInPaisa = velopayGateway.inrToPaisa(input.amount);
 
-            const velopayResponse = await velopayGateway.createDeposit({
-              txn_id: depositId, // Use deposit ID as merchant transaction ID
+            gatewayResponse = await velopayGateway.createDeposit({
+              txn_id: depositId,
               amount: amountInPaisa,
-              type: 1, // Return H5 payment link
+              type: 1, // H5 payment link
               currency: 'INR',
             });
 
             // Update deposit with gateway reference
             await db.update(deposit)
               .set({
-                gatewayReference: velopayResponse.id,
-                gatewayMetadata: velopayResponse,
+                gatewayReference: gatewayResponse.id,
+                gatewayMetadata: gatewayResponse,
                 updatedAt: new Date(),
               })
               .where(eq(deposit.id, depositId));
@@ -144,30 +153,19 @@ export const transactionRouter = router({
               success: true,
               depositId,
               transactionId,
-              paymentUrl: velopayResponse.pay_link,
+              paymentUrl: gatewayResponse.pay_link,
               message: 'Deposit initiated. Complete UPI payment to credit your balance.',
             };
-          } catch (error) {
-            await idempotencyService.delete(idempotencyKey);
-            console.error('[TRANSACTION] VeloPay deposit failed:', error);
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'Failed to initiate deposit with payment gateway',
-            });
           }
-        }
 
-        // Integrate with OKPay for UPI deposits
-        if (input.method === 'okpay-upi' || input.method === 'okpay-intent') {
-          try {
-            const payType = input.method === 'okpay-upi' ? 'UPI' : 'UPI_INTENT';
-
-            // OKPay expects amount in rupees (no decimals)
+          // OKPay integration
+          if (gatewayConfig.gatewayName === 'okpay') {
+            const okpayGateway = gateway;
             const amountInRupees = (BigInt(input.amount) / 100n).toString();
 
-            const okpayResponse = await okpayGateway.createDeposit({
+            gatewayResponse = await okpayGateway.createDeposit({
               out_trade_no: depositId,
-              pay_type: payType,
+              pay_type: 'UPI',
               money: amountInRupees,
               returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/deposit/success`,
               phone: input.phone,
@@ -176,8 +174,8 @@ export const transactionRouter = router({
             // Update deposit with gateway reference
             await db.update(deposit)
               .set({
-                gatewayReference: okpayResponse.data.transaction_Id,
-                gatewayMetadata: okpayResponse,
+                gatewayReference: gatewayResponse.data.transaction_Id,
+                gatewayMetadata: gatewayResponse,
                 updatedAt: new Date(),
               })
               .where(eq(deposit.id, depositId));
@@ -188,34 +186,27 @@ export const transactionRouter = router({
               success: true,
               depositId,
               transactionId,
-              paymentUrl: okpayResponse.data.url,
-              message: input.method === 'okpay-intent'
-                ? 'Open UPI app to complete payment'
-                : 'Complete UPI payment to credit your balance',
+              paymentUrl: gatewayResponse.data.url,
+              message: 'Complete UPI payment to credit your balance',
             };
-          } catch (error) {
-            await idempotencyService.delete(idempotencyKey);
-            console.error('[TRANSACTION] OKPay deposit failed:', error);
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'Failed to initiate deposit with OKPay gateway',
-            });
           }
+
+          // Unknown gateway
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Unsupported gateway: ${gatewayConfig.gatewayName}`,
+          });
+        } catch (error) {
+          await idempotencyService.delete(idempotencyKey);
+          console.error('[TRANSACTION] Gateway deposit failed:', error);
+          if (error instanceof TRPCError) {
+            throw error;
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to initiate deposit with payment gateway',
+          });
         }
-
-        // For other methods (crypto, bank_transfer), return mock response
-        const paymentBaseUrl = process.env.NEXT_PUBLIC_CRYPTO_GATEWAY_URL ||
-          'https://payment-gateway.example';
-
-        await idempotencyService.complete(idempotencyKey);
-
-        return {
-          success: true,
-          depositId,
-          transactionId,
-          paymentUrl: `${paymentBaseUrl}/pay?amount=${input.amount}&method=${input.method}&id=${depositId}`,
-          message: 'Deposit initiated. Complete payment to credit your balance.',
-        };
       } catch (error) {
         await idempotencyService.delete(idempotencyKey);
         console.error('[TRANSACTION] Deposit initiation failed:', error);
