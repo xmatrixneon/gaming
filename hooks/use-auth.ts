@@ -10,9 +10,13 @@
  * Features:
  * - Phone/SMS authentication
  * - Google OAuth
- * - Email authentication
+ * - Password management (for existing users who set password after signup)
  * - Reactive session management
  * - Password credential detection
+ *
+ * NOTE: Email/password sign-up is DISABLED. Users must sign up via:
+ * 1. Google OAuth
+ * 2. Phone number + OTP
  */
 
 import * as React from "react";
@@ -348,142 +352,10 @@ export function useAuth() {
   };
 
   // ============================================================================
-  // EMAIL AUTHENTICATION
+  // EMAIL AUTHENTICATION (DISABLED)
   // ============================================================================
-
-  /**
-   * Sign up with email and password
-   * Uses tRPC mutation for server-side validation
-   */
-  const signUp = async (params: {
-    email: string;
-    password: string;
-    name?: string;
-    username?: string;
-  }) => {
-    try {
-      // Use tRPC client for server-side validation
-      const result = await trpcClient.auth.signUp.mutate({
-        email: params.email,
-        password: params.password,
-        name: params.name,
-        username: params.username,
-      });
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || "Sign up failed",
-        };
-      }
-
-      return {
-        success: true,
-        data: result.data,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Sign up failed",
-      };
-    }
-  };
-
-  /**
-   * Sign in with email and password
-   * Uses tRPC mutation for server-side validation
-   */
-  const signIn = async (params: {
-    email: string;
-    password: string;
-    rememberMe?: boolean;
-  }) => {
-    try {
-      // Use tRPC client for server-side validation
-      const result = await trpcClient.auth.signIn.mutate({
-        email: params.email,
-        password: params.password,
-        rememberMe: params.rememberMe,
-      });
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || "Sign in failed",
-        };
-      }
-
-      return {
-        success: true,
-        data: result.data,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Sign in failed",
-      };
-    }
-  };
-
-  /**
-   * Send email verification
-   * Uses tRPC mutation for server-side validation
-   */
-  const sendVerificationEmail = async (email: string) => {
-    try {
-      // Use tRPC client for server-side validation
-      const result = await trpcClient.auth.sendVerificationEmail.mutate({
-        email,
-      });
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || "Failed to send verification email",
-        };
-      }
-
-      return {
-        success: true,
-        data: result.data,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Failed to send verification email",
-      };
-    }
-  };
-
-  /**
-   * Verify email with token
-   * Uses tRPC mutation for server-side validation
-   */
-  const verifyEmail = async (params: { token: string }) => {
-    try {
-      // Use tRPC client for server-side validation
-      const result = await trpcClient.auth.verifyEmail.mutate({
-        token: params.token,
-      });
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || "Failed to verify email",
-        };
-      }
-
-      return {
-        success: true,
-        data: result.data,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : "Failed to verify email",
-      };
-    }
-  };
+  // Email/password sign-up and sign-in removed.
+  // Users must sign up via Google OAuth or Phone + OTP.
 
   // ============================================================================
   // GOOGLE OAUTH
@@ -603,12 +475,6 @@ export function useAuth() {
     signInWithPhone,
     requestPasswordResetPhone,
     resetPasswordPhone,
-
-    // Email authentication
-    signUp,
-    signIn,
-    sendVerificationEmail,
-    verifyEmail,
 
     // Google OAuth
     signInWithGoogle,

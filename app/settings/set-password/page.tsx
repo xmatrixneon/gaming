@@ -116,7 +116,7 @@ export default function SetPasswordPage() {
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-1">Password Set!</h1>
             <p className="text-sm text-muted-foreground">
-              Your password has been set successfully. You can now sign in with your email and password.
+              Your password has been set successfully. You can now sign in with your phone number and password.
             </p>
           </motion.div>
 
@@ -160,7 +160,7 @@ export default function SetPasswordPage() {
           </div>
           <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <p className="text-xs text-blue-400">
-              After setting a password, you can sign in using either your current method (Google) or your email with this password.
+              After setting a password, you can sign in using your phone number and password for quicker access.
             </p>
           </div>
         </motion.div>
