@@ -1,6 +1,14 @@
 /**
  * Authentication Router
  * tRPC procedures for phone/SMS and Google OAuth authentication
+ *
+ * SIGN-UP METHODS:
+ * 1. Google OAuth (social login)
+ * 2. Phone number + OTP (SMS verification)
+ *
+ * NOTE: Email/password sign-up is DISABLED. Users cannot create new accounts
+ * using only email and password. Existing users can still set/change passwords
+ * for account security after signing up via Google or phone.
  */
 
 import { router, publicProcedure, protectedProcedure } from "../trpc";
@@ -315,165 +323,12 @@ export const authRouter = router({
     }),
 
   // ============================================================================
-  // EMAIL AUTHENTICATION
+  // EMAIL AUTHENTICATION (DISABLED - Only Google OAuth and Phone login allowed)
   // ============================================================================
-
-  /**
-   * Sign up with email and password
-   */
-  signUp: publicProcedure
-    .input(z.object({
-      email: z.string().email("Invalid email address"),
-      password: z.string().min(6, "Password must be at least 6 characters"),
-      name: z.string().min(2, "Name must be at least 2 characters").optional(),
-      username: z.string().min(3, "Username must be at least 3 characters").optional(),
-      referralCode: z.string().optional(), // ADD REFERRAL CODE
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        // Validate required fields for Better Auth
-        if (!input.email || !input.password) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Email and password are required",
-          });
-        }
-
-        // Better Auth requires name to be a string, not optional
-        // Generate default name if not provided
-        const name = input.name || input.email.split('@')[0];
-
-        const result = await auth.api.signUpEmail({
-          body: {
-            email: input.email,
-            password: input.password,
-            name,
-          },
-        });
-
-        // POST-SIGNUP: Generate referral code and handle referral relationship
-        if (result?.user) {
-          try {
-            const { referralService } = await import('@/lib/referral-service');
-
-            // Generate referral code for the new user
-            const newReferralCode = await referralService.generateCode();
-
-            // Update user with referral code
-            await db.update(user)
-              .set({ referralCode: newReferralCode })
-              .where(eq(user.id, result.user.id));
-
-            // Handle referral relationship if code was provided
-            if (input.referralCode) {
-              try {
-                await referralService.createReferralOnSignup(
-                  result.user.id,
-                  input.referralCode,
-                  '127.0.0.1', // Would come from request context
-                  input.email
-                );
-              } catch (referralError) {
-                console.error('[AUTH] Referral creation failed:', referralError);
-                // Don't fail signup if referral creation fails
-              }
-            }
-          } catch (codeError) {
-            console.error('[AUTH] Failed to generate referral code:', codeError);
-            // Don't fail signup if code generation fails
-          }
-        }
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to sign up:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to sign up",
-        };
-      }
-    }),
-
-  /**
-   * Sign in with email and password
-   */
-  signIn: publicProcedure
-    .input(z.object({
-      email: z.string().email("Invalid email address"),
-      password: z.string().min(1, "Password is required"),
-      rememberMe: z.boolean().optional().default(true),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.signInEmail({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to sign in:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to sign in",
-        };
-      }
-    }),
-
-  /**
-   * Send email verification
-   */
-  sendVerificationEmail: publicProcedure
-    .input(z.object({
-      email: z.string().email("Invalid email address"),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.sendVerificationEmail({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to send verification email:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to send verification email",
-        };
-      }
-    }),
-
-  /**
-   * Verify email with token
-   */
-  verifyEmail: publicProcedure
-    .input(z.object({
-      token: z.string().min(1, "Token is required"),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        // Validate required fields
-        if (!input.token) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Token is required",
-          });
-        }
-
-        const result = await auth.api.verifyEmail({
-          query: {
-            token: input.token,
-          },
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to verify email:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to verify email",
-        };
-      }
-    }),
+  // Email/password signup and signin removed - users must sign up via:
+  // 1. Google OAuth
+  // 2. Phone number + OTP
+  // Existing users can still set/change passwords for account security
 
   // ============================================================================
   // GOOGLE OAUTH
