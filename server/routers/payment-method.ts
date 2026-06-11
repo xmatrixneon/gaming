@@ -49,9 +49,9 @@ async function verifyUserPassword(userId: string, password: string, userEmail: s
     // Import headers dynamically to avoid issues with Next.js headers()
     const { headers } = await import("next/headers");
 
-    // Use Better Auth's signIn API to verify credentials
+    // Use Better Auth's signInEmail API to verify credentials
     // This will fail if password is incorrect
-    const result = await auth.api.signIn.email({
+    const result = await auth.api.signInEmail({
       body: {
         email: userEmail,
         password,
