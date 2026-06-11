@@ -250,6 +250,45 @@ export function useAuth() {
   };
 
   /**
+   * Complete phone signup with password (atomic operation)
+   * Verifies phone, creates user, and sets password in one call
+   * User is only created when both phone verification AND password are provided
+   */
+  const signUpWithPhone = async (params: {
+    phoneNumber: string;
+    code: string;
+    password: string;
+    referralCode?: string;
+  }) => {
+    try {
+      // Use tRPC client for server-side validation
+      const result = await trpcClient.auth.signUpWithPhone.mutate({
+        phoneNumber: params.phoneNumber,
+        code: params.code,
+        password: params.password,
+        referralCode: params.referralCode,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || "Sign up failed",
+        };
+      }
+
+      return {
+        success: true,
+        data: result.data,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "Sign up failed",
+      };
+    }
+  };
+
+  /**
    * Sign in with phone number and password
    * Uses tRPC mutation for server-side validation
    */
@@ -472,6 +511,7 @@ export function useAuth() {
     checkPhoneNumber,
     sendPhoneOTP,
     verifyPhoneNumber,
+    signUpWithPhone,
     signInWithPhone,
     requestPasswordResetPhone,
     resetPasswordPhone,

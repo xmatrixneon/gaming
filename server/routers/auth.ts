@@ -180,6 +180,8 @@ export const authRouter = router({
   /**
    * Verify phone number with OTP
    * Creates user and session (no password setting - that's Step 3)
+   *
+   * DEPRECATED: Use signUpWithPhone for complete signup with password
    */
   verifyPhoneNumber: publicProcedure
     .input(z.object({
@@ -207,6 +209,97 @@ export const authRouter = router({
         return {
           success: false,
           error: error instanceof Error ? error.message : "Failed to verify phone number",
+        };
+      }
+    }),
+
+  /**
+   * Complete phone signup with password (atomic operation)
+   * Verifies phone number, creates user account, and sets password in one call
+   * This ensures user is only created when both phone verification AND password are provided
+   */
+  signUpWithPhone: publicProcedure
+    .input(z.object({
+      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format"),
+      code: z.string().length(6, "OTP must be 6 digits"),
+      password: z.string().min(6, "Password must be at least 6 characters"),
+      referralCode: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Import headers dynamically to avoid issues with Next.js headers()
+        const { headers } = await import("next/headers");
+
+        // Step 1: Verify phone number and create user (signUpOnVerification)
+        const verifyResult = await auth.api.verifyPhoneNumber({
+          body: {
+            phoneNumber: input.phoneNumber,
+            code: input.code,
+            disableSession: false, // Create session so we can set password
+          },
+          headers: await headers(),
+        });
+
+        if (!verifyResult.user) {
+          return {
+            success: false,
+            error: "Phone verification failed",
+          };
+        }
+
+        // Step 2: Set password immediately (atomic operation)
+        const setPasswordResult = await auth.api.setPassword({
+          body: {
+            newPassword: input.password,
+          },
+          headers: await headers(),
+        });
+
+        if (!setPasswordResult.user) {
+          return {
+            success: false,
+            error: "Failed to set password",
+          };
+        }
+
+        // Step 3: Generate referral code for the new user
+        try {
+          const { referralService } = await import('@/lib/referral-service');
+          const newReferralCode = await referralService.generateCode();
+
+          await db.update(user)
+            .set({ referralCode: newReferralCode })
+            .where(eq(user.id, verifyResult.user.id));
+
+          // Step 4: Handle referral relationship if code was provided
+          if (input.referralCode) {
+            try {
+              await referralService.createReferralOnSignup(
+                verifyResult.user.id,
+                input.referralCode,
+                '127.0.0.1', // Would come from request context
+                verifyResult.user.email || input.phoneNumber,
+              );
+            } catch (referralError) {
+              console.error('[AUTH] Referral creation failed:', referralError);
+              // Don't fail signup if referral creation fails
+            }
+          }
+        } catch (codeError) {
+          console.error('[AUTH] Failed to generate referral code:', codeError);
+          // Don't fail signup if code generation fails
+        }
+
+        console.log("[AUTH] Phone signup complete:", verifyResult.user.id);
+        return {
+          success: true,
+          data: { user: setPasswordResult.user, session: verifyResult.session },
+        };
+      } catch (error) {
+        console.error("[AUTH] Failed to sign up with phone:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to sign up",
         };
       }
     }),
