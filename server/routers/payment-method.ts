@@ -11,6 +11,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, and, ne, sql, desc, asc } from "drizzle-orm";
 import { db } from "@/drizzle";
 import { paymentMethod, account, auditLog } from "@/drizzle/schema";
+import { nanoid } from "nanoid";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -223,9 +224,13 @@ export const paymentMethodRouter = router({
 
         // Audit log
         await db.insert(auditLog).values({
-          userId: ctx.user.id,
+          id: nanoid(),
+          actorId: ctx.user.id,
+          actorRole: "user",
           action: "payment_method_added",
-          details: { methodId: method.id, type: input.type },
+          targetType: "payment_method",
+          targetId: method.id.toString(),
+          after: { type: input.type },
         });
 
         console.log("[PAYMENT_METHOD] Payment method added:", method.id);
@@ -321,9 +326,12 @@ export const paymentMethodRouter = router({
 
         // Audit log
         await db.insert(auditLog).values({
-          userId: ctx.user.id,
+          id: nanoid(),
+          actorId: ctx.user.id,
+          actorRole: "user",
           action: "payment_method_set_primary",
-          details: { methodId: input.methodId },
+          targetType: "payment_method",
+          targetId: input.methodId.toString(),
         });
 
         console.log("[PAYMENT_METHOD] Primary payment method set:", input.methodId);
@@ -433,9 +441,13 @@ export const paymentMethodRouter = router({
 
         // Audit log
         await db.insert(auditLog).values({
-          userId: ctx.user.id,
+          id: nanoid(),
+          actorId: ctx.user.id,
+          actorRole: "user",
           action: "payment_method_deleted",
-          details: { methodId: input.methodId, type: method[0].type },
+          targetType: "payment_method",
+          targetId: input.methodId.toString(),
+          before: { type: method[0].type },
         });
 
         console.log("[PAYMENT_METHOD] Payment method deleted:", input.methodId);

@@ -897,12 +897,12 @@ export const auditLog = pgTable(
     id: text("id").primaryKey(),
 
     actorId: text("actor_id").references(() => user.id, { onDelete: "set null" }),
-    actorRole: text("actor_role").notNull(),
+    actorRole: text("actor_role"),
 
     action: auditActionEnum("action").notNull(),
 
-    targetType: text("target_type").notNull(),
-    targetId: text("target_id").notNull(),
+    targetType: text("target_type"),
+    targetId: text("target_id"),
 
     before: jsonb("before"),
     after: jsonb("after"),
@@ -917,10 +917,6 @@ export const auditLog = pgTable(
     index("audit_log_target_idx").on(table.targetType, table.targetId),
     index("audit_log_action_idx").on(table.action),
     index("audit_log_createdAt_idx").on(table.createdAt),
-    check(
-      "audit_log_actor_requirement",
-      sql`(${table.actorId} IS NOT NULL) OR (${table.actorRole} IN ('system', 'cron'))`,
-    ),
   ],
 );
 

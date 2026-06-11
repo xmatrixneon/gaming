@@ -103,7 +103,7 @@ export default function DepositPage() {
       });
 
       if (result.success && result.paymentUrl) {
-        // Validate payment URL against trusted gateway domains
+        // Validate payment URL against trusted gateway domains (exact match only)
         const allowedDomains = [
           process.env.NEXT_PUBLIC_VELOPAY_DOMAIN || 'velopay.ptasm.online',
           process.env.NEXT_PUBLIC_OKPAY_DOMAIN || 'wpay.one',
@@ -111,12 +111,19 @@ export default function DepositPage() {
 
         try {
           const url = new URL(result.paymentUrl);
-          const isValidDomain = allowedDomains.some(domain =>
-            url.hostname === domain || url.hostname.endsWith(`.${domain}`)
-          );
 
+          // Strict hostname validation - exact match only to prevent subdomain attacks
+          const isValidDomain = allowedDomains.includes(url.hostname);
+
+          // Only allow HTTPS protocol
           if (!isValidDomain || url.protocol !== 'https:') {
             toast.error('Invalid payment gateway URL');
+            return;
+          }
+
+          // Optional: Validate URL structure to prevent abuse
+          if (url.pathname.length > 200 || url.search.length > 100) {
+            toast.error('Invalid payment URL format');
             return;
           }
 

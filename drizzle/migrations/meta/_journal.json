@@ -71,6 +71,13 @@
       "when": 1781115399220,
       "tag": "0009_massive_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781149841787,
+      "tag": "0010_clear_tarantula",
+      "breakpoints": true
     }
   ]
 }
