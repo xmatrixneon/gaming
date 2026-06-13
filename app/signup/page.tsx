@@ -6,7 +6,6 @@ import * as React from "react";
 import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { FcGoogle } from "react-icons/fc";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +14,7 @@ import {
   PhoneInput,
   PasswordField,
   AuthButton,
-  SocialButtons,
   OTPInput,
-  Divider,
 } from "@/components/game";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
@@ -62,7 +59,7 @@ function SignUpPageInner() {
   const searchParams = useSearchParams();
   const referralCodeRef = React.useRef<string | null>(searchParams.get('ref'));
   const applyReferralCode = api.referral.applyReferralCode.useMutation();
-  const { checkPhoneNumber, sendPhoneOTP, signInWithGoogle, setUserPassword } = useAuth();
+  const { checkPhoneNumber, sendPhoneOTP, setUserPassword } = useAuth();
   const [state, setState] = useState<SignUpState>(initialState);
 
   const updateState = useCallback(<K extends keyof SignUpState>(
@@ -512,27 +509,6 @@ function SignUpPageInner() {
                 )}
               </AnimatePresence>
             </AuthButton>
-          </motion.div>
-
-          {/* ── Social ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-          >
-            <Divider text="Or continue with" />
-            <div className="mt-4">
-              <SocialButtons
-                layout="full"
-                providers={[
-                  {
-                    name: "Google",
-                    icon: <FcGoogle size={18} />,
-                    onClick: () => signInWithGoogle(),
-                  },
-                ]}
-              />
-            </div>
           </motion.div>
 
           {/* ── Already have an account ── */}

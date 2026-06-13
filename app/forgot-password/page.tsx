@@ -53,7 +53,7 @@ const initialState: ForgotPasswordState = {
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const { requestPasswordResetPhone, resetPasswordPhone, sendPhoneOTP } = useAuth();
+  const { requestPasswordResetPhone, resetPasswordPhone } = useAuth();
   const [state, setState] = useState<ForgotPasswordState>(initialState);
 
   const updateState = useCallback(<K extends keyof ForgotPasswordState>(
@@ -121,13 +121,12 @@ export default function ForgotPasswordPage() {
     }
   }, [state.otpValue, updateState]);
 
-  // Resend OTP (mirrors SignUp handleResendOTP)
   const handleResendOTP = useCallback(async () => {
     if (!state.canResendOTP) return;
     updateState("isLoading", true);
     updateState("error", null);
     try {
-      const result = await sendPhoneOTP(`+91${state.phoneNumber}`);
+      const result = await requestPasswordResetPhone(`+91${state.phoneNumber}`);
       if (result && !result.success) {
         updateState("error", result.error || "Failed to resend OTP");
         return;
@@ -139,7 +138,7 @@ export default function ForgotPasswordPage() {
     } finally {
       updateState("isLoading", false);
     }
-  }, [state.phoneNumber, state.canResendOTP, sendPhoneOTP, updateState, startCountdown]);
+  }, [state.phoneNumber, state.canResendOTP, requestPasswordResetPhone, updateState, startCountdown]);
 
   // Final submit — requires phone verified + new passwords
   const handleSubmit = useCallback(async () => {

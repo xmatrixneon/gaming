@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { FcGoogle } from "react-icons/fc";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +13,6 @@ import {
   PhoneInput,
   PasswordField,
   AuthButton,
-  SocialButtons,
-  Divider,
 } from "@/components/game";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -42,15 +39,12 @@ const initialState: SignInState = {
 /**
  * Sign In Page - Phone + Password Only
  *
- * Cost-optimized signin using only phone + password authentication:
- * - Phone number + password sign in (for users with password set)
- * - Google OAuth (alternative)
- *
- * Removed OTP-based signin to reduce SMS costs and encourage password reuse
+ * Signin via phone number + password.
+ * Removed OTP-based signin to reduce SMS costs and encourage password reuse.
  */
 export default function SignInPage() {
   const router = useRouter();
-  const { signInWithPhone, signInWithGoogle } = useAuth();
+  const { signInWithPhone } = useAuth();
   const [state, setState] = useState<SignInState>(initialState);
 
   const updateState = useCallback(<K extends keyof SignInState>(
@@ -226,27 +220,6 @@ export default function SignInPage() {
                 )}
               </AnimatePresence>
             </AuthButton>
-          </motion.div>
-
-          {/* Social — matches SignUp */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-          >
-            <Divider text="Or continue with" />
-            <div className="mt-4">
-              <SocialButtons
-                layout="full"
-                providers={[
-                  {
-                    name: "Google",
-                    icon: <FcGoogle size={18} />,
-                    onClick: () => signInWithGoogle(),
-                  },
-                ]}
-              />
-            </div>
           </motion.div>
 
           {/* Sign Up link */}

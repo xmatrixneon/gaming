@@ -1,7 +1,6 @@
 /**
  * Redis Client Configuration
- * Provides Redis connection for Better Auth secondary storage
- * Used for OTP storage, rate limiting, and session caching
+ * Provides Redis connection for Better Auth secondary storage and application caching.
  */
 
 import Redis from "ioredis";
@@ -12,7 +11,6 @@ import Redis from "ioredis";
 
 /**
  * Redis client instance
- * Used for OTP storage, rate limiting, and session caching
  */
 export const redis = new Redis({
   host: process.env.REDIS_HOST || "localhost",
@@ -133,46 +131,3 @@ export async function closeRedis(): Promise<void> {
   await redis.quit();
 }
 
-// ============================================================================
-// OTP STORAGE KEYS
-// ============================================================================
-
-/**
- * Generate OTP storage key for phone number
- * @param phoneNumber - Phone number in E.164 format
- * @returns Redis key for OTP
- */
-export function otpKey(phoneNumber: string): string {
-  return `otp:phone:${phoneNumber}`;
-}
-
-/**
- * Generate OTP attempts counter key
- * @param phoneNumber - Phone number in E.164 format
- * @returns Redis key for attempts counter
- */
-export function otpAttemptsKey(phoneNumber: string): string {
-  return `otp:attempts:${phoneNumber}`;
-}
-
-/**
- * Generate rate limit key for phone number
- * @param phoneNumber - Phone number in E.164 format
- * @param action - Action being rate limited
- * @returns Redis key for rate limit
- */
-export function rateLimitKey(
-  phoneNumber: string,
-  action: "send_otp" | "verify_otp" | "sign_in"
-): string {
-  return `ratelimit:${action}:${phoneNumber}`;
-}
-
-/**
- * Generate session cache key
- * @param sessionId - Session ID
- * @returns Redis key for session cache
- */
-export function sessionKey(sessionId: string): string {
-  return `session:${sessionId}`;
-}

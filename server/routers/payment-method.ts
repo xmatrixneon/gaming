@@ -5,66 +5,13 @@
  */
 
 import { router, protectedProcedure } from "../trpc";
-import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, ne, sql, desc, asc } from "drizzle-orm";
 import { db } from "@/drizzle";
-import { paymentMethod, account, auditLog } from "@/drizzle/schema";
+import { paymentMethod, auditLog } from "@/drizzle/schema";
 import { nanoid } from "nanoid";
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Check if user has a password set (credential account exists)
- */
-async function checkUserHasPassword(userId: string): Promise<boolean> {
-  try {
-    const credentialAccount = await db
-      .select()
-      .from(account)
-      .where(
-        and(
-          eq(account.userId, userId),
-          eq(account.providerId, "credential")
-        )
-      )
-      .limit(1);
-
-    return credentialAccount.length > 0 && credentialAccount[0].password !== null;
-  } catch (error) {
-    console.error("[PAYMENT_METHOD] Failed to check user password:", error);
-    return false;
-  }
-}
-
-/**
- * Verify user's password using Better Auth
- * Returns true if password is correct, false otherwise
- */
-async function verifyUserPassword(userId: string, password: string, userEmail: string): Promise<boolean> {
-  try {
-    // Import headers dynamically to avoid issues with Next.js headers()
-    const { headers } = await import("next/headers");
-
-    // Use Better Auth's signInEmail API to verify credentials
-    // This will fail if password is incorrect
-    const result = await auth.api.signInEmail({
-      body: {
-        email: userEmail,
-        password,
-      },
-      headers: await headers(),
-    });
-
-    return result !== null && result.user !== null;
-  } catch (error) {
-    console.error("[PAYMENT_METHOD] Password verification failed:", error);
-    return false;
-  }
-}
+import { checkUserHasPassword, verifyUserPassword } from "@/lib/auth-utils";
 
 /**
  * Mask account number showing only last 4 digits
@@ -278,7 +225,7 @@ export const paymentMethodRouter = router({
             });
           }
 
-          const passwordValid = await verifyUserPassword(ctx.user.id, input.password, userEmail);
+          const passwordValid = await verifyUserPassword(ctx.user.id, input.password);
           if (!passwordValid) {
             throw new TRPCError({
               code: "UNAUTHORIZED",
@@ -372,7 +319,7 @@ export const paymentMethodRouter = router({
             });
           }
 
-          const passwordValid = await verifyUserPassword(ctx.user.id, input.password, userEmail);
+          const passwordValid = await verifyUserPassword(ctx.user.id, input.password);
           if (!passwordValid) {
             throw new TRPCError({
               code: "UNAUTHORIZED",

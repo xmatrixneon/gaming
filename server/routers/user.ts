@@ -3,7 +3,7 @@
  * tRPC procedures for user profile and preferences management
  */
 
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { auth } from "@/lib/auth";
 import { db } from "@/drizzle";
 import { user } from "@/drizzle/schema";
@@ -53,20 +53,11 @@ export const userRouter = router({
       image: z.string().url().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      try {
-        // Update using Better Auth API
-        const result = await auth.api.updateUser({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[USER] Failed to update profile:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to update profile",
-        };
-      }
+      const result = await auth.api.updateUser({
+        body: input,
+        headers: ctx.headers,
+      });
+      return { success: true, data: result };
     }),
 
   /**
@@ -76,20 +67,12 @@ export const userRouter = router({
     .input(z.object({
       newEmail: z.string().email(),
     }))
-    .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.changeEmail({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[USER] Failed to update email:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to update email",
-        };
-      }
+    .mutation(async ({ input, ctx }) => {
+      const result = await auth.api.changeEmail({
+        body: input,
+        headers: ctx.headers,
+      });
+      return { success: true, data: result };
     }),
 
   /**
@@ -97,49 +80,27 @@ export const userRouter = router({
    */
   updatePhoneNumber: protectedProcedure
     .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format"),
+      phoneNumber: z.string().regex(/^\+91[6-9]\d{9}$/, "Invalid Indian mobile number"),
       code: z.string().length(6, "OTP must be 6 digits"),
     }))
-    .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.verifyPhoneNumber({
-          body: {
-            phoneNumber: input.phoneNumber,
-            code: input.code,
-            updatePhoneNumber: true,
-          },
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[USER] Failed to update phone:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to update phone number",
-        };
-      }
+    .mutation(async ({ input, ctx }) => {
+      const result = await auth.api.verifyPhoneNumber({
+        body: { phoneNumber: input.phoneNumber, code: input.code, updatePhoneNumber: true },
+        headers: ctx.headers,
+      });
+      return { success: true, data: result };
     }),
 
   /**
    * Remove phone number
    */
   removePhoneNumber: protectedProcedure
-    .mutation(async () => {
-      try {
-        const result = await auth.api.updateUser({
-          body: {
-            phoneNumber: null,
-          },
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[USER] Failed to remove phone:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to remove phone number",
-        };
-      }
+    .mutation(async ({ ctx }) => {
+      const result = await auth.api.updateUser({
+        body: { phoneNumber: null },
+        headers: ctx.headers,
+      });
+      return { success: true, data: result };
     }),
 
   // ============================================================================
@@ -147,11 +108,10 @@ export const userRouter = router({
   // ============================================================================
 
   /**
-   * Update user balance (admin only)
-   * Delegates to walletService to ensure atomicity, audit trail, and cache invalidation.
-   * TODO: restrict to adminProcedure once role checks are wired up.
+   * Update user balance — admin only.
+   * Delegates to walletService for atomicity, audit trail, and cache invalidation.
    */
-  updateBalance: protectedProcedure
+  updateBalance: adminProcedure
     .input(z.object({
       // Delta in paisa (positive = credit, negative = debit). Integer only.
       delta: z.string().regex(/^-?\d+$/, "Delta must be a whole number (paisa)"),
@@ -177,11 +137,9 @@ export const userRouter = router({
     }),
 
   /**
-   * Update VIP level for a target user (admin only).
-   * Requires targetUserId so this cannot be used for self-service VIP escalation.
-   * TODO: restrict to adminProcedure once role checks are wired up.
+   * Update VIP level for a target user — admin only.
    */
-  updateVipLevel: protectedProcedure
+  updateVipLevel: adminProcedure
     .input(z.object({
       targetUserId: z.string(),
       vipLevel: z.enum(["Bronze", "Silver", "Gold", "Platinum", "Diamond"]),
@@ -212,91 +170,40 @@ export const userRouter = router({
       password: z.string().min(1, "Password is required"),
     }))
     .mutation(async ({ input, ctx }) => {
-      try {
-        const result = await auth.api.deleteUser({
-          body: {
-            password: input.password,
-          },
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[USER] Failed to delete account:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to delete account",
-        };
-      }
+      await auth.api.deleteUser({
+        body: { password: input.password },
+        headers: ctx.headers,
+      });
+      return { success: true };
     }),
 
   /**
    * List user sessions
    */
-  listSessions: protectedProcedure.query(async () => {
-    try {
-      const sessions = await auth.api.listSessions();
-
-      return { success: true, data: sessions };
-    } catch (error) {
-      console.error("[USER] Failed to list sessions:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to list sessions",
-      };
-    }
+  listSessions: protectedProcedure.query(async ({ ctx }) => {
+    const sessions = await auth.api.listSessions({ headers: ctx.headers });
+    return { success: true, data: sessions };
   }),
 
   /**
-   * Revoke session
-   * Note: This requires headers context from the request
-   * For server-side usage, use the client-side API or direct database operations
+   * Revoke a specific session by token
    */
   revokeSession: protectedProcedure
-    .input(z.object({
-      token: z.string(),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        // TODO: Implement proper session revocation with headers
-        // For now, this is a placeholder
-        // The Better Auth API requires headers which aren't easily accessible in tRPC context
-        throw new TRPCError({
-          code: "NOT_IMPLEMENTED",
-          message: "Session revocation via tRPC is not yet implemented. Use client-side auth API instead.",
-        });
-
-        // return { success: true, data: result };
-      } catch (error) {
-        console.error("[USER] Failed to revoke session:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to revoke session",
-        };
-      }
+    .input(z.object({ token: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      await auth.api.revokeSession({
+        body: { token: input.token },
+        headers: ctx.headers,
+      });
+      return { success: true };
     }),
 
   /**
    * Revoke all sessions (sign out from all devices)
-   * Note: This requires headers context from the request
-   * For server-side usage, use the client-side API or direct database operations
    */
-  revokeAllSessions: protectedProcedure.mutation(async () => {
-    try {
-      // TODO: Implement proper session revocation with headers
-      // For now, this is a placeholder
-      throw new TRPCError({
-        code: "NOT_IMPLEMENTED",
-        message: "Revoking all sessions via tRPC is not yet implemented. Use client-side auth API instead.",
-      });
-
-      // return { success: true };
-    } catch (error) {
-      console.error("[USER] Failed to revoke all sessions:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to revoke all sessions",
-      };
-    }
+  revokeAllSessions: protectedProcedure.mutation(async ({ ctx }) => {
+    await auth.api.revokeOtherSessions({ headers: ctx.headers });
+    return { success: true };
   }),
 });
 

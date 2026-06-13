@@ -1,19 +1,19 @@
 /**
  * Authentication Router
- * tRPC procedures for phone/SMS and Google OAuth authentication
+ * tRPC procedures for phone/SMS authentication
  *
- * SIGN-UP METHODS:
- * 1. Google OAuth (social login)
- * 2. Phone number + OTP (SMS verification)
+ * SIGN-UP METHOD: Phone number + OTP (SMS verification)
  *
- * NOTE: Email/password sign-up is DISABLED. Users cannot create new accounts
- * using only email and password. Existing users can still set/change passwords
- * for account security after signing up via Google or phone.
+ * NOTE: Email/password sign-up is DISABLED. Existing users can still
+ * set/change passwords for account security after signing up via phone.
+ *
+ * Cookie-setting operations (verifyPhoneNumber, signInWithPhone) must call
+ * authClient directly from the browser — tRPC server responses cannot forward
+ * Set-Cookie headers back to the browser's cookie jar.
  */
 
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { auth } from "@/lib/auth";
-import { redis } from "@/lib/redis";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
@@ -26,337 +26,110 @@ import { user } from "@/drizzle/schema";
 
 export const authRouter = router({
   // ============================================================================
-  // SESSION MANAGEMENT
-  // ============================================================================
-
-  /**
-   * Get current session
-   */
-  getSession: publicProcedure.query(async ({ ctx }) => {
-    return {
-      session: ctx.session,
-      user: ctx.user,
-    };
-  }),
-
-  /**
-   * Sign out
-   */
-  signOut: publicProcedure.mutation(async () => {
-    // Note: Sign out is handled client-side by clearing cookies
-    // Better Auth handles this via POST to /api/auth/sign-out
-    return { success: true };
-  }),
-
-  /**
-   * Check if phone number is already registered
-   */
-  checkPhoneNumber: publicProcedure
-    .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format. Use E.164: +1234567890"),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        // Query database to check if phone number exists
-        const existingUser = await db
-          .select()
-          .from(user)
-          .where(eq(user.phoneNumber, input.phoneNumber))
-          .limit(1);
-
-        return {
-          exists: existingUser.length > 0,
-          message: existingUser.length > 0
-            ? "This phone number is already registered"
-            : "Phone number is available",
-        };
-      } catch (error) {
-        console.error("[AUTH] Failed to check phone number:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to check phone number availability",
-        });
-      }
-    }),
-
-  // ============================================================================
   // PHONE/SMS AUTHENTICATION
   // ============================================================================
 
   /**
-   * Send OTP to phone number
-   * Includes duplicate phone number prevention at the server level
-   * Supports both signup (new users) and signin (existing verified users)
+   * Check if phone number is already registered.
+   * Used in signup to prevent duplicate registrations before sending an OTP.
+   */
+  checkPhoneNumber: publicProcedure
+    .input(z.object({
+      phoneNumber: z.string().regex(/^\+91[6-9]\d{9}$/, "Invalid Indian mobile number. Use format: +91XXXXXXXXXX"),
+    }))
+    .mutation(async ({ input }) => {
+      const existingUser = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.phoneNumber, input.phoneNumber))
+        .limit(1);
+
+      return {
+        exists: existingUser.length > 0,
+        message: existingUser.length > 0
+          ? "This phone number is already registered"
+          : "Phone number is available",
+      };
+    }),
+
+  /**
+   * Send OTP to phone number for signup.
+   * Prevents re-registering a verified number. Cleans up abandoned unverified
+   * accounts so a user can retry signup with the same number.
    */
   sendPhoneOTP: publicProcedure
     .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format. Use E.164: +1234567890"),
-      password: z.string().min(6, "Password must be at least 6 characters").optional(),
-      isSignin: z.boolean().optional().default(false), // true for signin, false for signup
+      phoneNumber: z.string().regex(/^\+91[6-9]\d{9}$/, "Invalid Indian mobile number. Use format: +91XXXXXXXXXX"),
     }))
     .mutation(async ({ input }) => {
-      try {
-        // =====================================================================
-        // CHECK EXISTING USER
-        // =====================================================================
-        const existingUsers = await db
-          .select()
-          .from(user)
-          .where(eq(user.phoneNumber, input.phoneNumber))
-          .limit(1);
+      const existingUsers = await db
+        .select({ id: user.id, phoneNumberVerified: user.phoneNumberVerified })
+        .from(user)
+        .where(eq(user.phoneNumber, input.phoneNumber))
+        .limit(1);
 
-        const existingUser = existingUsers[0];
+      const existingUser = existingUsers[0];
 
-        // =====================================================================
-        // SIGNIN FLOW: Send OTP to existing verified users
-        // =====================================================================
-        if (input.isSignin) {
-          if (!existingUser || !existingUser.phoneNumberVerified) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Phone number not found. Please sign up first.",
-            });
-          }
-
-          // Send OTP for signin (Better Auth allows this for verified users)
-          const result = await auth.api.sendPhoneNumberOTP({
-            body: { phoneNumber: input.phoneNumber },
-          });
-
-          return { success: true, data: result, isSignin: true };
-        }
-
-        // =====================================================================
-        // SIGNUP FLOW: Prevent duplicate phone numbers
-        // =====================================================================
-        // If phone number is already verified for another user, block OTP
-        if (existingUser && existingUser.phoneNumberVerified) {
-          console.log(`[AUTH] Phone number ${input.phoneNumber} already verified for user ${existingUser.id}. Blocking OTP.`);
-
-          // Throw a user-friendly error that will be caught by client
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "This phone number is already registered. Please sign in instead.",
-          });
-        }
-
-        // If phone number exists but isn't verified, clean up the old unverified user
-        // This allows the user to restart the signup process
-        if (existingUser && !existingUser.phoneNumberVerified) {
-          console.log(`[AUTH] Phone number ${input.phoneNumber} exists but unverified. Cleaning up old unverified user: ${existingUser.id}`);
-
-          // Delete the unverified user to allow a fresh signup
-          await db.delete(user).where(eq(user.id, existingUser.id));
-          console.log(`[AUTH] Deleted unverified user to allow retry: ${existingUser.id}`);
-        }
-
-        // =====================================================================
-        // SEND OTP VIA BETTER AUTH (for signup)
-        // =====================================================================
-        const result = await auth.api.sendPhoneNumberOTP({
-          body: { phoneNumber: input.phoneNumber },
+      if (existingUser?.phoneNumberVerified) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This phone number is already registered. Please sign in instead.",
         });
-
-        return { success: true, data: result, isSignin: false };
-      } catch (error) {
-        console.error("[AUTH] Failed to send OTP:", error);
-
-        // If it's our custom TRPCError, re-throw it as-is
-        if (error instanceof TRPCError) {
-          return {
-            success: false,
-            error: error.message,
-          };
-        }
-
-        // Otherwise, return a generic error
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to send OTP",
-        };
       }
+
+      // Clean up abandoned unverified account so signup can restart cleanly.
+      if (existingUser && !existingUser.phoneNumberVerified) {
+        await db.delete(user).where(eq(user.id, existingUser.id));
+      }
+
+      await auth.api.sendPhoneNumberOTP({
+        body: { phoneNumber: input.phoneNumber },
+      });
+
+      return { success: true };
     }),
 
   /**
-   * Verify phone number with OTP
-   * Creates user and session (no password setting - that's Step 3)
-   */
-  verifyPhoneNumber: publicProcedure
-    .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format"),
-      code: z.string().length(6, "OTP must be 6 digits"),
-      disableSession: z.boolean().optional().default(false),
-      updatePhoneNumber: z.boolean().optional().default(false),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        // Verify phone number - creates user and session
-        // Session cookies will be set in the response
-        const result = await auth.api.verifyPhoneNumber({
-          body: {
-            phoneNumber: input.phoneNumber,
-            code: input.code,
-            disableSession: input.disableSession,
-            updatePhoneNumber: input.updatePhoneNumber,
-          },
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to verify phone:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to verify phone number",
-        };
-      }
-    }),
-
-  /**
-   * Sign in with phone number and password
-   */
-  signInWithPhone: publicProcedure
-    .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format"),
-      password: z.string().min(6, "Password must be at least 6 characters"),
-      rememberMe: z.boolean().optional().default(true),
-    }))
-    .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.signInPhoneNumber({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to sign in with phone:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to sign in",
-        };
-      }
-    }),
-
-  /**
-   * Set password for authenticated user
-   * Called after phone verification to create credential account
-   * This enables phone + password signin
-   *
-   * Uses protectedProcedure to ensure session context is available
-   * Better Auth's setPassword API requires an active session
+   * Set password for the authenticated user.
+   * Called after phone verification during signup to create the credential
+   * account needed for phone + password sign-in.
    */
   setUserPassword: protectedProcedure
     .input(z.object({
       newPassword: z.string().min(6, "Password must be at least 6 characters"),
     }))
-    .mutation(async ({ input }) => {
-      try {
-        // Import headers dynamically to avoid issues with Next.js headers()
-        const { headers } = await import("next/headers");
-
-        // Use Better Auth's internal API with session from request headers
-        // protectedProcedure ensures session context is available
-        const result = await auth.api.setPassword({
-          body: {
-            newPassword: input.newPassword,
-          },
-          // Pass the request headers which include session cookies
-          headers: await headers(),
-        });
-
-        console.log("[AUTH] Password set successfully via Better Auth API");
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to set password:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to set password",
-        };
-      }
+    .mutation(async ({ input, ctx }) => {
+      await auth.api.setPassword({
+        body: { newPassword: input.newPassword },
+        headers: ctx.headers,
+      });
+      return { success: true };
     }),
 
   /**
-   * Request password reset via phone
+   * Request a password-reset OTP sent to the user's phone.
    */
   requestPasswordResetPhone: publicProcedure
     .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format"),
+      phoneNumber: z.string().regex(/^\+91[6-9]\d{9}$/, "Invalid Indian mobile number. Use format: +91XXXXXXXXXX"),
     }))
     .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.requestPasswordResetPhoneNumber({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to request password reset:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to request password reset",
-        };
-      }
+      await auth.api.requestPasswordResetPhoneNumber({ body: input });
+      return { success: true };
     }),
 
   /**
-   * Reset password with OTP
+   * Reset password using the OTP received on the user's phone.
    */
   resetPasswordPhone: publicProcedure
     .input(z.object({
-      phoneNumber: z.string().regex(/^\+\d{1,15}$/, "Invalid phone number format"),
+      phoneNumber: z.string().regex(/^\+91[6-9]\d{9}$/, "Invalid Indian mobile number. Use format: +91XXXXXXXXXX"),
       otp: z.string().length(6, "OTP must be 6 digits"),
       newPassword: z.string().min(6, "Password must be at least 6 characters"),
     }))
     .mutation(async ({ input }) => {
-      try {
-        const result = await auth.api.resetPasswordPhoneNumber({
-          body: input,
-        });
-
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to reset password:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to reset password",
-        };
-      }
-    }),
-
-  // ============================================================================
-  // EMAIL AUTHENTICATION (DISABLED - Only Google OAuth and Phone login allowed)
-  // ============================================================================
-  // Email/password signup and signin removed - users must sign up via:
-  // 1. Google OAuth
-  // 2. Phone number + OTP
-  // Existing users can still set/change passwords for account security
-
-  // ============================================================================
-  // GOOGLE OAUTH
-  // ============================================================================
-
-  /**
-   * Generate Google OAuth URL
-   */
-  getGoogleOAuthURL: publicProcedure
-    .input(z.object({
-      redirectURI: z.string().optional(),
-    }).optional())
-    .query(async ({ input }) => {
-      const baseURL = process.env.BETTER_AUTH_URL || "http://localhost:3000";
-      const redirectURI = input?.redirectURI || `${baseURL}`;
-
-      // Better Auth generates the OAuth URL
-      // The client should call: await authClient.signIn.social({ provider: "google" })
-      // This procedure provides metadata for UI
-      return {
-        provider: "google",
-        callbackURL: `${baseURL}/api/auth/callback/google`,
-        scopes: [
-          "openid",
-          "profile",
-          "email",
-        ],
-      };
+      await auth.api.resetPasswordPhoneNumber({ body: input });
+      return { success: true };
     }),
 
   // ============================================================================
@@ -364,120 +137,20 @@ export const authRouter = router({
   // ============================================================================
 
   /**
-   * Change password (authenticated)
+   * Change password for the authenticated user.
    */
   changePassword: protectedProcedure
     .input(z.object({
       currentPassword: z.string().min(1, "Current password is required"),
       newPassword: z.string().min(6, "New password must be at least 6 characters"),
     }))
-    .mutation(async ({ input }) => {
-      try {
-        // Import headers dynamically to avoid issues with Next.js headers()
-        const { headers } = await import("next/headers");
-
-        // Use Better Auth's internal API with session from request headers
-        // protectedProcedure ensures session context is available
-        const result = await auth.api.changePassword({
-          body: input,
-          // Pass the request headers which include session cookies
-          headers: await headers(),
-        });
-
-        console.log("[AUTH] Password changed successfully via Better Auth API");
-        return { success: true, data: result };
-      } catch (error) {
-        console.error("[AUTH] Failed to change password:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "Failed to change password",
-        };
-      }
+    .mutation(async ({ input, ctx }) => {
+      await auth.api.changePassword({
+        body: input,
+        headers: ctx.headers,
+      });
+      return { success: true };
     }),
-
-  // ============================================================================
-  // 2FA (Two-Factor Authentication)
-  // ============================================================================
-  // NOTE: 2FA features require the @better-auth/two-factor plugin
-  // Uncomment these procedures when the plugin is installed and configured
-
-  // /**
-  //  * Enable 2FA
-  //  */
-  // enable2FA: protectedProcedure
-  //   .mutation(async ({ ctx }) => {
-  //     try {
-  //       const result = await auth.api.enable2FA({
-  //         body: {
-  //           userId: ctx.user.id,
-  //         },
-  //       });
-  //
-  //       return { success: true, data: result };
-  //     } catch (error) {
-  //       console.error("[AUTH] Failed to enable 2FA:", error);
-  //       return {
-  //         success: false,
-  //         error: error instanceof Error ? error.message : "Failed to enable 2FA",
-  //       };
-  //     }
-  //   }),
-  //
-  // /**
-  //  * Verify 2FA
-  //  */
-  // verify2FA: protectedProcedure
-  //   .input(z.object({
-  //     code: z.string().min(1, "Code is required"),
-  //   }))
-  //   .mutation(async ({ input, ctx }) => {
-  //     try {
-  //       const result = await auth.api.verify2FA({
-  //         body: {
-  //           ...input,
-  //           userId: ctx.user.id,
-  //         },
-  //       });
-  //
-  //       return { success: true, data: result };
-  //     } catch (error) {
-  //       console.error("[AUTH] Failed to verify 2FA:", error);
-  //       return {
-  //         success: false,
-  //         error: error instanceof Error ? error.message : "Failed to verify 2FA",
-  //       };
-  //     }
-  //   }),
-  //
-  // /**
-  //  * Disable 2FA
-  //  */
-  // disable2FA: protectedProcedure
-  //   .input(z.object({
-  //     password: z.string().min(1, "Password is required"),
-  //   }))
-  //   .mutation(async ({ input, ctx }) => {
-  //     try {
-  //       const result = await auth.api.disable2FA({
-  //         body: {
-  //           ...input,
-  //           userId: ctx.user.id,
-  //         },
-  //       });
-  //
-  //       return { success: true, data: result };
-  //     } catch (error) {
-  //       console.error("[AUTH] Failed to disable 2FA:", error);
-  //       return {
-  //         success: false,
-  //         error: error instanceof Error ? error.message : "Failed to disable 2FA",
-  //       };
-  //     }
-  //   }),
 });
-
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
 
 export type AuthRouter = typeof authRouter;

@@ -10,7 +10,6 @@ import { toNextJsHandler } from "better-auth/next-js";
  * Better Auth API route handler
  * All Better Auth requests are routed through this endpoint
  * including:
- * - OAuth callbacks (Google)
  * - Sign in / Sign out
  * - Session management
  * - Email verification

@@ -3,71 +3,19 @@
  * tRPC procedures for deposits, withdrawals, and transaction history
  */
 
-import { router, publicProcedure, protectedProcedure } from "../trpc";
+import { router, publicProcedure, protectedProcedure, adminProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
-import { auth } from "@/lib/auth";
 import { db } from "@/drizzle";
 import { transaction, deposit, withdrawal, user, paymentMethod, account } from "@/drizzle/schema";
+import { checkUserHasPassword, verifyUserPassword } from "@/lib/auth-utils";
 import { eq, desc, and, ne } from "drizzle-orm";
 import { walletService } from "@/lib/wallet-service";
 import { idempotencyService } from "@/lib/idempotency";
 import { fraudDetection } from "@/lib/fraud-detection";
 import { gatewaySelector } from "@/lib/gateway-selector";
 import * as gatewayCache from "@/lib/gateway-cache";
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Check if user has a password set (credential account exists)
- */
-async function checkUserHasPassword(userId: string): Promise<boolean> {
-  try {
-    const credentialAccount = await db
-      .select()
-      .from(account)
-      .where(
-        and(
-          eq(account.userId, userId),
-          eq(account.providerId, "credential")
-        )
-      )
-      .limit(1);
-
-    return credentialAccount.length > 0 && credentialAccount[0].password !== null;
-  } catch (error) {
-    console.error("[TRANSACTION] Failed to check user password:", error);
-    return false;
-  }
-}
-
-/**
- * Verify user's password using Better Auth
- * Returns true if password is correct, false otherwise
- */
-async function verifyUserPassword(userId: string, password: string, userEmail: string): Promise<boolean> {
-  try {
-    // Import headers dynamically to avoid issues with Next.js headers()
-    const { headers } = await import("next/headers");
-
-    // Use Better Auth's signIn API to verify credentials
-    const result = await auth.api.signIn.email({
-      body: {
-        email: userEmail,
-        password,
-      },
-      headers: await headers(),
-    });
-
-    return result !== null && result.user !== null;
-  } catch (error) {
-    console.error("[TRANSACTION] Password verification failed:", error);
-    return false;
-  }
-}
 
 // ============================================================================
 // TRANSACTION ROUTER
@@ -309,10 +257,12 @@ export const transactionRouter = router({
     }),
 
   /**
-   * Confirm deposit (webhook from payment gateway)
-   * Normally called by payment gateway, but made public for testing
+   * Confirm deposit — admin only.
+   * Real payment gateway confirmations arrive via the webhook handlers at
+   * app/api/webhook/velopay/ and app/api/webhook/okpay/deposit/.
+   * This tRPC endpoint exists for admin-triggered testing only.
    */
-  confirmDeposit: publicProcedure
+  confirmDeposit: adminProcedure
     .input(z.object({
       depositId: z.string(),
       gatewayReference: z.string(),
@@ -502,7 +452,7 @@ export const transactionRouter = router({
           });
         }
 
-        const passwordValid = await verifyUserPassword(userId, input.password, userEmail);
+        const passwordValid = await verifyUserPassword(userId, input.password);
         if (!passwordValid) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',

@@ -63,8 +63,9 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 /**
- * Admin procedure - requires admin role
- * TODO: Implement role-based access control
+ * Admin procedure — requires the caller's user ID to be in ADMIN_USER_IDS env var.
+ * Set ADMIN_USER_IDS=id1,id2 in .env.local. Until a role column is added to the
+ * schema this is the authoritative admin check for all sensitive operations.
  */
 export const adminProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session || !ctx.user) {
@@ -74,13 +75,17 @@ export const adminProcedure = t.procedure.use(({ ctx, next }) => {
     });
   }
 
-  // TODO: Check admin role
-  // if (ctx.user.role !== "admin") {
-  //   throw new TRPCError({
-  //     code: "FORBIDDEN",
-  //     message: "You must be an admin to access this resource",
-  //   });
-  // }
+  const adminIds = (process.env.ADMIN_USER_IDS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  if (!adminIds.includes(ctx.user.id)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
+  }
 
   return next({
     ctx: {

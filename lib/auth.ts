@@ -13,9 +13,9 @@
 
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
+import { nextCookies } from "better-auth/next-js";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { phoneNumber } from "better-auth/plugins";
-import { twoFactor } from "better-auth/plugins";
 import { redisStorage } from "@better-auth/redis-storage";
 import { db } from "@/drizzle";
 import { redis } from "@/lib/redis";
@@ -53,8 +53,9 @@ export const auth = betterAuth({
   // ──────────────────────────────────────────────────────────────────────────
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   trustedOrigins: [
-    "http://localhost:3000",
-    "http://localhost:*",
+    ...(process.env.NODE_ENV !== "production"
+      ? ["http://localhost:3000", "http://localhost:*"]
+      : []),
     ...(process.env.NEXT_PUBLIC_APP_URL
       ? [process.env.NEXT_PUBLIC_APP_URL]
       : []),
@@ -69,10 +70,6 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60,                // 5 min client-side cache
-    },
-    // 🔒 Require same IP for sensitive operations (withdrawals, admin, bonus claims)
-    ipAddress: {
-      strictSecurity: ["withdrawal", "admin", "bonus-claim", "deposit"],
     },
   },
 
@@ -89,28 +86,10 @@ export const auth = betterAuth({
   // ACCOUNT & SECURITY
   // ──────────────────────────────────────────────────────────────────────────
   account: {
-    // 🔒 Encrypt OAuth tokens before storing in database
-    encryptOAuthTokens: true,
-    // Store OAuth state in database for security
-    storeStateStrategy: "database",
     accountLinking: {
       enabled: true,
-      trustedProviders: ["google", "phone"],
-      // Require same email for account linking (prevents hijacking)
+      trustedProviders: ["phone"],
       allowDifferentEmails: false,
-    },
-  },
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // SOCIAL PROVIDERS
-  // ──────────────────────────────────────────────────────────────────────────
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      enabled: true,
-      prompt: "select_account",
-      accessType: "offline",
     },
   },
 
@@ -118,24 +97,19 @@ export const auth = betterAuth({
   // PLUGINS
   // ──────────────────────────────────────────────────────────────────────────
   plugins: [
-    // Two-Factor Authentication (TOTP)
-    twoFactor({
-      totp: {
-        enabled: true,
-        issuer: "ClausBet",
-        algorithm: "SHA256",
-        digits: 6,
-        period: 30,
-      },
-    }),
     phoneNumber({
-      sendOTP: async ({ phoneNumber, code }, _ctx) => {
+      // Not awaited — per Better Auth docs, awaiting sendOTP slows the request
+      // and opens timing attack vectors.
+      sendOTP: ({ phoneNumber, code }, _ctx) => {
         // TODO: wire up SMS provider (Twilio / AWS SNS / MSG91)
         console.log(`[SMS] OTP ${code} → ${phoneNumber}`);
       },
 
+      sendPasswordResetOTP: ({ phoneNumber, code }, _ctx) => {
+        console.log(`[SMS] Reset OTP ${code} → ${phoneNumber}`);
+      },
+
       signUpOnVerification: {
-        // Better Auth requires email on all users — generate a temp one from phone
         getTempEmail: (phoneNumber) => {
           const clean = phoneNumber.replace(/^\+/, "");
           return `${clean}@clausbet.temp`;
@@ -143,19 +117,21 @@ export const auth = betterAuth({
         getTempName: (phoneNumber) => `User_${phoneNumber.slice(-6)}`,
       },
 
+      // Only accept Indian mobile numbers (+91 6–9 XXXXXXXXX)
+      phoneNumberValidator: (phone) => /^\+91[6-9]\d{9}$/.test(phone),
+
       otpLength: 6,
-      expiresIn: 300,          // 5 minutes
+      expiresIn: 300,
       requireVerification: true,
       allowedAttempts: 3,
-
-      sendPasswordResetOTP: async ({ phoneNumber, code }, _ctx) => {
-        console.log(`[SMS] Reset OTP ${code} → ${phoneNumber}`);
-      },
 
       callbackOnVerification: async ({ phoneNumber, user }) => {
         console.log(`[AUTH] Verified: ${phoneNumber} → ${user.id}`);
       },
     }),
+    // Must be last — automatically forwards Set-Cookie from auth.api.*
+    // calls made inside Next.js Server Actions and tRPC handlers.
+    nextCookies(),
   ],
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -175,11 +151,6 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "Bronze",
       },
-      twoFactorEnabled: {
-        type: "boolean",
-        required: false,
-        defaultValue: false,
-      },
     },
   },
 
@@ -194,8 +165,6 @@ export const auth = betterAuth({
     database: {
       generateId: () => crypto.randomUUID(),
     },
-    // Enable CSRF protection
-    csrfProtection: true,
   },
 
   // ──────────────────────────────────────────────────────────────────────────

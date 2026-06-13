@@ -3,52 +3,36 @@
  * Provides authentication context for all tRPC procedures
  */
 
+import { type ReadonlyHeaders } from "next/dist/server/web/spec-extension/adapters/headers";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
-// ============================================================================
-// CONTEXT TYPES
-// ============================================================================
-
-/**
- * Infer Session type from Better Auth
- * This type includes both `session` and `user` properties
- */
 type Session = typeof auth.$Infer.Session;
 
-/**
- * Authentication context passed to all procedures
- */
 export interface AuthContext {
   session: Session | null;
   user: Session["user"] | null;
+  /** Raw request headers — pass to auth.api.* calls that need session context */
+  headers: ReadonlyHeaders;
 }
 
-/**
- * tRPC Context creation function
- * Extracts session from Better Auth cookies
- */
 export async function createContext(): Promise<AuthContext> {
+  const requestHeaders = await headers();
   try {
-    // Get the session from Better Auth
-    const sessionData = await auth.api.getSession({
-      headers: await headers(),
-    });
-
+    const sessionData = await auth.api.getSession({ headers: requestHeaders });
     return {
       session: sessionData || null,
       user: sessionData?.user || null,
+      headers: requestHeaders,
     };
   } catch (error) {
     console.error("[tRPC] Failed to create context:", error);
     return {
       session: null,
       user: null,
+      headers: requestHeaders,
     };
   }
 }
 
-/**
- * Context type for tRPC procedures
- */
 export type Context = Awaited<ReturnType<typeof createContext>>;

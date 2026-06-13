@@ -3,7 +3,7 @@
  * tRPC procedures for wallet operations and balance management
  */
 
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, desc } from "drizzle-orm";
@@ -79,20 +79,15 @@ export const walletRouter = router({
   // =========================================================================
 
   /**
-   * Manual balance adjustment (admin only)
-   * Allows manual addition/subtraction of funds
-   * TODO: Add admin role check
+   * Manual balance adjustment — admin only.
    */
-  adjustBalance: protectedProcedure
+  adjustBalance: adminProcedure
     .input(z.object({
       userId: z.string(),
       amount: z.string().regex(/^-?\d+$/, "Amount must be a whole number (paisa)"),
       reason: z.string().min(1).max(500),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: Verify admin role
-      // For now, allow any authenticated user (for testing)
-
       const delta = BigInt(input.amount);
 
       if (delta === 0n) {
@@ -151,18 +146,13 @@ export const walletRouter = router({
     }),
 
   /**
-   * Get user balance (admin only)
-   * Allows admins to check any user's balance
-   * TODO: Add admin role check
+   * Get any user's balance — admin only.
    */
-  getUserBalance: protectedProcedure
+  getUserBalance: adminProcedure
     .input(z.object({
       userId: z.string(),
     }))
     .query(async ({ input }) => {
-      // TODO: Verify admin role
-      // For now, allow any authenticated user (for testing)
-
       const userRecord = await db
         .select({
           id: user.id,
