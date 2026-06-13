@@ -9,6 +9,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db } from '@/drizzle';
 import { user, referral } from '@/drizzle/schema';
 import { referralService } from '@/lib/referral-service';
+import { headers } from 'next/headers';
 
 export const referralRouter = router({
   /**
@@ -57,8 +58,11 @@ export const referralRouter = router({
               username: true,
               email: true,
               createdAt: true,
-            }
-          }
+            },
+          },
+          bonusTransaction: {
+            columns: { amount: true },
+          },
         },
         orderBy: [desc(referral.createdAt)],
         limit: input.limit,
@@ -66,5 +70,40 @@ export const referralRouter = router({
       });
 
       return referrals;
+    }),
+
+  /**
+   * Apply a referral code after signup.
+   * Never throws — referral errors must not surface to the user.
+   */
+  applyReferralCode: protectedProcedure
+    .input(z.object({ referralCode: z.string().min(1).max(20) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const headersList = await headers();
+        const ip =
+          headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+          headersList.get('x-real-ip') ||
+          '127.0.0.1';
+
+        const userData = await db.query.user.findFirst({
+          where: eq(user.id, ctx.user.id),
+          columns: { email: true },
+        });
+
+        await referralService.createReferralOnSignup(
+          ctx.user.id,
+          input.referralCode,
+          ip,
+          userData?.email || '',
+        );
+
+        return { success: true as const };
+      } catch (error) {
+        return {
+          success: false as const,
+          error: error instanceof Error ? error.message : 'Failed to apply referral code',
+        };
+      }
     }),
 });
