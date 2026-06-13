@@ -3,9 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import * as React from "react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { FcGoogle } from "react-icons/fc";
 import { Loader2, CheckCircle2 } from "lucide-react";
