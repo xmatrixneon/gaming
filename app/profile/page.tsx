@@ -349,7 +349,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="bg-muted rounded-md p-2 text-center border border-border">
                     <p className="text-base font-bold">
-                      {formatPaisa(BigInt(referralStats.totalEarnings))}
+                      {formatPaisa(BigInt(String(referralStats.totalEarnings).split('.')[0]))}
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
                       Earned
