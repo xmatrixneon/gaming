@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AuthInput } from "@/components/game/auth/auth-input";
 import { BOTTOM_NAV_ITEMS, formatUserCurrency } from "@/lib/config";
+import { formatPaisa } from "@/lib/format-currency";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/trpc/client";
 import { toast } from "sonner";
@@ -283,11 +284,88 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Refer & Earn Card */}
+        {referralData?.referralCode && (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center">
+                    <IoGiftOutline className="text-foreground" size={15} />
+                  </div>
+                  <span className="text-sm font-semibold">Refer &amp; Earn</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto py-0 px-1 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => router.push("/referral")}
+                >
+                  View All →
+                </Button>
+              </div>
 
+              {/* Code row */}
+              <div className="flex items-center justify-between bg-muted rounded-md px-3 py-2.5 mb-3 border border-border">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">
+                    Your Code
+                  </p>
+                  <p className="text-base font-bold tracking-[0.2em]">
+                    {referralData.referralCode}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={handleCopyReferral}
+                  >
+                    <IoCopyOutline size={13} className="mr-1" />
+                    {copiedReferral ? "Copied!" : "Copy"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={handleShareReferral}
+                  >
+                    <IoShareOutline size={13} className="mr-1" />
+                    Share
+                  </Button>
+                </div>
+              </div>
 
-
-
-
+              {/* Stats row */}
+              {referralStats && (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-muted rounded-md p-2 text-center border border-border">
+                    <p className="text-base font-bold">{referralStats.rewarded}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                      Referrals
+                    </p>
+                  </div>
+                  <div className="bg-muted rounded-md p-2 text-center border border-border">
+                    <p className="text-base font-bold">
+                      {formatPaisa(BigInt(referralStats.totalEarnings))}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                      Earned
+                    </p>
+                  </div>
+                  <div className="bg-muted rounded-md p-2 text-center border border-border">
+                    <p className="text-base font-bold">{referralStats.pending}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                      Pending
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Separator className="mb-6" />
 
