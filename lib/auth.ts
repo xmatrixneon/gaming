@@ -12,6 +12,7 @@
  */
 
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { phoneNumber } from "better-auth/plugins";
 import { twoFactor } from "better-auth/plugins";
@@ -19,6 +20,9 @@ import { redisStorage } from "@better-auth/redis-storage";
 import { db } from "@/drizzle";
 import { redis } from "@/lib/redis";
 import * as schema from "@/drizzle/schema";
+import { user } from "@/drizzle/schema";
+import { eq, isNull, and } from "drizzle-orm";
+import { referralService } from "@/lib/referral-service";
 
 // ============================================================================
 // BETTER AUTH CONFIGURATION
@@ -202,6 +206,29 @@ export const auth = betterAuth({
   // ──────────────────────────────────────────────────────────────────────────
   experimental: {
     joins: true,
+  },
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // HOOKS — post-signup referral code assignment
+  // ──────────────────────────────────────────────────────────────────────────
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      const newSession = ctx.context.newSession;
+      if (!newSession) return;
+
+      const userId = newSession.user.id;
+      try {
+        const code = await referralService.generateCode();
+        // WHERE referralCode IS NULL — idempotent, safe to call on every new session
+        await db
+          .update(user)
+          .set({ referralCode: code })
+          .where(and(eq(user.id, userId), isNull(user.referralCode)));
+      } catch (err) {
+        // Never block auth for referral code generation failures
+        console.error("[AUTH] Failed to assign referral code:", err);
+      }
+    }),
   },
 });
 
