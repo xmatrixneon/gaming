@@ -55,6 +55,13 @@ const MENU_SECTIONS = [
         description: "View your transactions",
         route: "/history",
       },
+      {
+        id: "referral",
+        label: "Refer & Earn",
+        icon: <IoGiftOutline size={20} />,
+        description: "Invite friends and earn bonuses",
+        route: "/referral",
+      },
     ],
   },
   {
