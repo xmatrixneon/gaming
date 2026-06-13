@@ -7,7 +7,7 @@ import { router, protectedProcedure } from '../trpc';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/drizzle';
-import { user, referral } from '@/drizzle/schema';
+import { referral } from '@/drizzle/schema';
 import { referralService } from '@/lib/referral-service';
 import { headers } from 'next/headers';
 
@@ -86,16 +86,11 @@ export const referralRouter = router({
           headersList.get('x-real-ip') ||
           '127.0.0.1';
 
-        const userData = await db.query.user.findFirst({
-          where: eq(user.id, ctx.user.id),
-          columns: { email: true },
-        });
-
         await referralService.createReferralOnSignup(
           ctx.user.id,
           input.referralCode,
           ip,
-          userData?.email || '',
+          ctx.user.email ?? '',
         );
 
         return { success: true as const };
