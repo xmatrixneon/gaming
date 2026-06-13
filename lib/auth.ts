@@ -20,7 +20,6 @@ import { redisStorage } from "@better-auth/redis-storage";
 import { db } from "@/drizzle";
 import { redis } from "@/lib/redis";
 import * as schema from "@/drizzle/schema";
-import { user } from "@/drizzle/schema";
 import { eq, isNull, and } from "drizzle-orm";
 import { referralService } from "@/lib/referral-service";
 
@@ -218,14 +217,19 @@ export const auth = betterAuth({
 
       const userId = newSession.user.id;
       try {
+        // Check first — skip code generation for returning users
+        const existingUser = await db.query.user.findFirst({
+          where: eq(schema.user.id, userId),
+          columns: { referralCode: true },
+        });
+        if (existingUser?.referralCode) return;
+
         const code = await referralService.generateCode();
-        // WHERE referralCode IS NULL — idempotent, safe to call on every new session
         await db
-          .update(user)
+          .update(schema.user)
           .set({ referralCode: code })
-          .where(and(eq(user.id, userId), isNull(user.referralCode)));
+          .where(and(eq(schema.user.id, userId), isNull(schema.user.referralCode)));
       } catch (err) {
-        // Never block auth for referral code generation failures
         console.error("[AUTH] Failed to assign referral code:", err);
       }
     }),
