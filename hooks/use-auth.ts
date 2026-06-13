@@ -251,7 +251,8 @@ export function useAuth() {
 
   /**
    * Sign in with phone number and password
-   * Uses tRPC mutation for server-side validation
+   * Calls Better Auth directly so the session cookie is set on the browser.
+   * (tRPC is server-side; cookies set there never reach the client.)
    */
   const signInWithPhone = async (params: {
     phoneNumber: string;
@@ -259,24 +260,20 @@ export function useAuth() {
     rememberMe?: boolean;
   }) => {
     try {
-      // Use tRPC client for server-side validation
-      const result = await trpcClient.auth.signInWithPhone.mutate({
+      const result = await authClient.signIn.phoneNumber({
         phoneNumber: params.phoneNumber,
         password: params.password,
-        rememberMe: params.rememberMe,
+        rememberMe: params.rememberMe ?? true,
       });
 
-      if (!result.success) {
+      if (result.error) {
         return {
           success: false,
-          error: result.error || "Sign in failed",
+          error: result.error.message || "Sign in failed",
         };
       }
 
-      return {
-        success: true,
-        data: result.data,
-      };
+      return { success: true, data: result.data };
     } catch (err) {
       return {
         success: false,
