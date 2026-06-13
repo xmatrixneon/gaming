@@ -18,8 +18,8 @@ export const referralRouter = router({
   getReferralCode: protectedProcedure
     .query(async ({ ctx }) => {
       const userData = await db.query.user.findFirst({
-        where: eq(user.id, ctx.user.id),
-        columns: { referralCode: true }
+        where: (u, { eq }) => eq(u.id, ctx.user.id),
+        columns: { referralCode: true },
       });
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://clausbet.com';
