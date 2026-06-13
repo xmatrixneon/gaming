@@ -25,7 +25,6 @@ import {
   IoArrowUpCircleOutline,
   IoPersonOutline,
   IoMenuOutline,
-  IoChevronBack,
 } from "react-icons/io5";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +135,7 @@ export default function ReferralPage() {
   return (
     <div className={cn("min-h-screen bg-background text-foreground max-w-md mx-auto pb-safe-nav")}>
       <AppHeader
+        showBackButton
         isAuthenticated={isAuthenticated}
         user={authUser ? {
           username: authUser.username || authUser.email?.split("@")[0] || "Player",
@@ -148,16 +148,6 @@ export default function ReferralPage() {
       />
 
       <div className="px-4 py-5 space-y-4 sm:px-5">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-auto p-0 text-muted-foreground hover:text-foreground -ml-1"
-          onClick={() => router.back()}
-        >
-          <IoChevronBack size={16} className="mr-1" />
-          Back
-        </Button>
-
         {/* Code card */}
         <Card>
           <CardContent className="p-4">
