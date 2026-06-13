@@ -2,8 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
+import * as React from "react";
 import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { FcGoogle } from "react-icons/fc";
 import { Loader2, CheckCircle2 } from "lucide-react";
@@ -20,6 +22,7 @@ import {
 } from "@/components/game";
 import { useAuth } from "@/hooks/use-auth";
 import { authClient } from "@/lib/auth-client";
+import { api } from "@/lib/trpc/client";
 
 type TabValue = "signin" | "signup";
 
@@ -55,8 +58,11 @@ const initialState: SignUpState = {
   phoneVerified: false,
 };
 
-export default function SignUpPage() {
+function SignUpPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCodeRef = React.useRef<string | null>(searchParams.get('ref'));
+  const applyReferralCode = api.referral.applyReferralCode.useMutation();
   const { checkPhoneNumber, sendPhoneOTP, signInWithGoogle, setUserPassword } = useAuth();
   const [state, setState] = useState<SignUpState>(initialState);
 
@@ -185,13 +191,23 @@ export default function SignUpPage() {
         updateState("error", result.error || "Failed to set password");
         return;
       }
+
+      // Apply referral code silently — never block signup
+      if (referralCodeRef.current) {
+        try {
+          await applyReferralCode.mutateAsync({ referralCode: referralCodeRef.current });
+        } catch {
+          // swallow — referral errors must never block account creation
+        }
+      }
+
       router.push("/");
     } catch (err) {
       updateState("error", err instanceof Error ? err.message : "Failed to create account");
     } finally {
       updateState("isLoading", false);
     }
-  }, [state.phoneVerified, state.passwordValue, state.agreed, setUserPassword, router, updateState]);
+  }, [state.phoneVerified, state.passwordValue, state.agreed, setUserPassword, router, updateState, applyReferralCode]);
 
   const formatCountdown = (s: number) =>
     `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -541,5 +557,13 @@ export default function SignUpPage() {
         </div>
       </AuthTabs>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpPageInner />
+    </Suspense>
   );
 }
