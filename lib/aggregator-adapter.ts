@@ -21,8 +21,7 @@
 import { nanoid } from "nanoid";
 import { walletService } from "./wallet-service";
 import { idempotencyService } from "./idempotency";
-import { bonusService } from "@/lib/bonus-service";
-import { vipService } from "@/lib/vip-service";
+import { enqueueGameEvent } from "@/lib/queue";
 import { db } from "@/drizzle";
 import { gameSession, bet, transaction, user } from "@/drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -230,20 +229,10 @@ export class AggregatorAdapter {
         winAmount: "0",
       });
 
-      // Non-critical side effects — failures must never kill the bet flow
-      // FIX: wagering tracked on BETS only (not wins) — bonus rollover counts amount wagered
-      try {
-        await bonusService.trackWagering(userId, amount);
-      } catch (err) {
-        console.error("[AGGREGATOR] Bonus wagering tracking failed:", err);
-      }
-
-      // FIX: VIP tracked on BETS only — VIP is earned by wagering, not by winning
-      try {
-        await vipService.trackProgress(userId, amount);
-      } catch (err) {
-        console.error("[AGGREGATOR] VIP progress tracking failed:", err);
-      }
+      // Non-critical side effects — enqueued so failures retry automatically.
+      // Wagering + VIP are tracked on BETS only (not wins).
+      await enqueueGameEvent({ kind: "bonus_wagering", userId, betAmountPaisa: amount.toString() });
+      await enqueueGameEvent({ kind: "vip_progress",   userId, betAmountPaisa: amount.toString() });
 
       await idempotencyService.complete(idempotencyKey);
 
