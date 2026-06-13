@@ -23,13 +23,14 @@ export default function GamesPage() {
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
 
-  // Get initial filter from URL
+  // Get initial filters from URL
   const initialGame = searchParams.get("game");
   const initialProvider = searchParams.get("provider");
+  const initialSearch = searchParams.get("search") ?? "";
 
   // State
   const [activeCategory, setActiveCategory] = useState("All Games");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   // Fetch providers
@@ -86,15 +87,15 @@ export default function GamesPage() {
     }
   }, [initialProvider, providers]);
 
-  // Convert games to the format expected by GameCard
+  // Convert games to the format expected by GameCard (coerce null → undefined for optional fields)
   const gameCards = games.map((game) => ({
     id: game.id,
     gameUid: game.gameUid,
     gameName: game.gameName,
     gameType: game.gameType,
     imageUrl: game.imageUrl,
-    thumbnailUrl: game.thumbnailUrl,
-    imageAlt: game.imageAlt,
+    thumbnailUrl: game.thumbnailUrl ?? undefined,
+    imageAlt: game.imageAlt ?? undefined,
     status: game.status,
     provider: game.provider,
     isHot: game.isHot,

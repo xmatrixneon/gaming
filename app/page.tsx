@@ -2,34 +2,31 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   IoSearchOutline,
-  IoMenuOutline,
-  IoGameControllerOutline,
-  IoFlashOutline,
-  IoPeopleOutline,
   IoFlameOutline,
+  IoArrowForward,
   IoHomeOutline,
   IoArrowDownCircleOutline,
   IoArrowUpCircleOutline,
   IoPersonOutline,
+  IoMenuOutline,
+  IoCloseOutline,
 } from "react-icons/io5";
-import { GiTrophy, GiRollingDices } from "react-icons/gi";
-import { PromoCarousel, CategoryTabs, BottomNav, GameGrid, GradientCard, WinsTicker, AppHeader } from "@/components/game";
+import { PromoCarousel, BottomNav, WinsTicker, AppHeader } from "@/components/game";
+import { GameCard, GameCardSkeleton } from "@/components/game/home/GameCard";
+import { CategoryTabs } from "@/components/game/home/CategoryTabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { BOTTOM_NAV_ITEMS } from "@/lib/config";
 import { useAuth } from "@/hooks/use-auth";
-import { useFeaturedGames, useHotGames, type Game } from "@/hooks/use-games";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useGames, useProviders } from "@/hooks/use-games";
 
-const GAME_CATEGORIES = [
-  { id: "casino", label: "Casino", icon: GiRollingDices },
-  { id: "sports", label: "Sports", icon: GiTrophy },
-  { id: "slots", label: "Slots", icon: IoGameControllerOutline },
-  { id: "live", label: "Live", icon: IoFlashOutline },
-];
+// ── Static content ──────────────────────────────────────────────────────────
 
 const PROMO_BANNERS = [
   {
@@ -68,64 +65,6 @@ const BIG_WINS = [
   { user: "Plex***", game: "Gold Olympics", amount: "5,953 USDT", color: "#26A17B", emoji: "$" },
 ];
 
-// Convert API game to grid format
-function gameToGridFormat(game: Game) {
-  // Determine tag based on flags
-  let tag = undefined;
-  let tagColor = undefined;
-  if (game.isHot) {
-    tag = "HOT";
-    tagColor = "#FF4444";
-  } else if (game.isNew) {
-    tag = "NEW";
-    tagColor = "#FFB800";
-  } else if (game.isFeatured) {
-    tag = "FEATURED";
-    tagColor = "#00C851";
-  }
-
-  // Get emoji based on game type (fallback for no image)
-  const emoji = getGameEmoji(game.gameType);
-
-  return {
-    id: game.id,
-    gameUid: game.gameUid,
-    name: game.gameName,
-    provider: game.provider.name,
-    imageUrl: game.imageUrl,
-    thumbnailUrl: game.thumbnailUrl,
-    imageAlt: game.imageAlt || game.gameName,
-    tag,
-    tagColor,
-    players: "1.2K", // TODO: Track player count
-    emoji,
-    background: getGameBackground(game.gameType),
-  };
-}
-
-function getGameEmoji(gameType: string): string {
-  const type = gameType.toLowerCase();
-  if (type.includes("live")) return "🎥";
-  if (type.includes("slot")) return "🎰";
-  if (type.includes("card")) return "🃏";
-  if (type.includes("table")) return "🎲";
-  if (type.includes("sport")) return "⚽";
-  if (type.includes("fish")) return "🐟";
-  if (type.includes("crash") || type.includes("aviator")) return "🛩️";
-  return "🎮";
-}
-
-function getGameBackground(gameType: string): string {
-  const type = gameType.toLowerCase();
-  if (type.includes("live")) return "#1a0a2e";
-  if (type.includes("slot")) return "#0a1a2e";
-  if (type.includes("card")) return "#1a2e0a";
-  if (type.includes("sport")) return "#1a1a0d";
-  if (type.includes("fish")) return "#0a2e1a";
-  return "#0a0a0a";
-}
-
-// Map icon names to actual icon components for bottom nav
 const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   home: IoHomeOutline,
   deposit: IoArrowDownCircleOutline,
@@ -134,71 +73,99 @@ const NAV_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   menu: IoMenuOutline,
 };
 
-// Bottom navigation items with icons
-const BOTTOM_NAV_ITEMS_WITH_ICONS = BOTTOM_NAV_ITEMS.map((item) => ({
+const BOTTOM_NAV_WITH_ICONS = BOTTOM_NAV_ITEMS.map((item) => ({
   id: item.id,
   icon: NAV_ICONS[item.id],
   label: item.label,
 }));
 
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default function CasinoHomePage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
-  const [activeTab, setActiveTab] = useState("casino");
+
+  const [activeProvider, setActiveProvider] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [mobileNav, setMobileNav] = useState("home");
 
-  // Fetch games from database
-  const { games: featuredGames, isLoading: isLoadingFeatured } = useFeaturedGames(12);
-  const { games: hotGames, isLoading: isLoadingHot } = useHotGames(12);
+  // Real provider list for filter tabs
+  const { providers, isLoading: isLoadingProviders } = useProviders({ status: "active" });
+  const providerTabs = useMemo(
+    () => ["All", ...providers.map((p) => p.name)],
+    [providers]
+  );
 
-  // Handle bottom navigation
-  const handleNavigate = (itemId: string) => {
-    const navItem = BOTTOM_NAV_ITEMS.find((item) => item.id === itemId);
-    if (navItem) {
-      router.push(navItem.route);
-    }
-  };
+  // Provider code for filter (null = all)
+  const selectedProviderCode = useMemo(
+    () => (activeProvider === "All" ? undefined : providers.find((p) => p.name === activeProvider)?.code),
+    [activeProvider, providers]
+  );
 
-  // Handle game launch - navigate to full-page game play
-  const handleGameClick = (game: ReturnType<typeof gameToGridFormat>) => {
+  const isFiltering = Boolean(searchQuery || activeProvider !== "All");
+
+  // Popular games — hot games shown in a horizontal scroll when unfiltered
+  const { games: popularGames, isLoading: isLoadingPopular } = useGames({
+    status: "active",
+    isHot: true,
+    limit: 10,
+  });
+
+  // Main game grid — filters by provider/search, max 50 per request
+  const { games, total, isLoading: isLoadingGames } = useGames({
+    status: "active",
+    providerCode: selectedProviderCode,
+    search: searchQuery || undefined,
+    limit: 50,
+  });
+
+  const handleGameClick = (gameUid: string) => {
     if (!isAuthenticated) {
       router.push("/signin");
       return;
     }
-    // Navigate to full-page game play
-    router.push(`/play/${game.gameUid}`);
+    router.push(`/play/${gameUid}`);
   };
 
-  // Convert games to grid format
-  const featuredGridGames = featuredGames.map(gameToGridFormat);
-  const hotGridGames = hotGames.map(gameToGridFormat);
+  const handleNavigate = (itemId: string) => {
+    const navItem = BOTTOM_NAV_ITEMS.find((item) => item.id === itemId);
+    if (navItem) router.push(navItem.route);
+  };
+
+  const handleProviderChange = (name: string) => {
+    setActiveProvider(name);
+    setSearchQuery(""); // clear search when switching provider
+  };
+
+  const clearSearch = () => setSearchQuery("");
 
   return (
     <div
       className={cn(
         "min-h-screen relative overflow-hidden",
-        "bg-background",
-        "text-foreground",
+        "bg-background text-foreground",
         "max-w-md mx-auto",
         "pb-safe-nav"
       )}
     >
-     
-
-      {/* HEADER */}
+      {/* ── Header ── */}
       <AppHeader
         isAuthenticated={isAuthenticated}
-        user={user ? {
-          username: user.username,
-          avatar: user.image,
-          balance: user.balance ? parseFloat(user.balance) : 0,
-          vipLevel: user.vipLevel,
-        } : undefined}
+        user={
+          user
+            ? {
+                username: user.username,
+                avatar: user.image,
+                balance: user.balance ? parseFloat(user.balance) : 0,
+                vipLevel: user.vipLevel,
+              }
+            : undefined
+        }
         notificationCount={isAuthenticated ? 2 : 0}
       />
 
-      {/* PROMO BANNER CAROUSEL */}
-      <div className={cn("px-3 pt-3")}>
+      {/* ── Promo carousel ── */}
+      <div className="px-3 pt-3">
         <PromoCarousel
           banners={PROMO_BANNERS}
           autoRotateInterval={4000}
@@ -206,97 +173,198 @@ export default function CasinoHomePage() {
         />
       </div>
 
-      {/* RECENT BIG WINS TICKER */}
-      <div className={cn("py-1 pb-2")}>
-        <div className={cn("flex items-center gap-2 px-3 mb-2")}>
-          <div
-            className={cn(
-              "w-2 h-2 rounded-full",
-              "bg-primary",
-              "shadow-lg shadow-primary/50"
-            )}
-          />
-          <span className={cn("font-bold text-sm tracking-wider")}>
-            Recent Big Wins
-          </span>
+      {/* ── Recent big wins ticker ── */}
+      <div className="py-1 pb-2">
+        <div className="flex items-center gap-2 px-3 mb-2">
+          <div className="w-2 h-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
+          <span className="font-bold text-sm tracking-wider">Recent Big Wins</span>
         </div>
-
-        <WinsTicker
-          wins={BIG_WINS}
-          speed={-0.5}
-          pauseOnHover
-          className="px-3"
-        />
+        <WinsTicker wins={BIG_WINS} speed={-0.5} pauseOnHover className="px-3" />
       </div>
 
-      {/* CATEGORY TABS */}
-      <CategoryTabs
-        categories={GAME_CATEGORIES}
-        active={activeTab}
-        onChange={setActiveTab}
-        className="px-3 mb-3"
-      />
-
-      {/* CASINO / SPORTS CARDS */}
-      <div className={cn("px-3 mb-4")}>
-        <div className={cn("grid grid-cols-2 gap-2.5")}>
-          <GradientCard
-            label="CASINO"
-            icon={GiRollingDices}
-            gradient="linear-gradient(135deg, #0d2818 0%, #0a1f14 100%)"
-            glow="#00C851"
-            emoji="🎰"
+      {/* ── Search + provider tabs ── */}
+      <div className="px-3 mb-3 space-y-2.5">
+        {/* Search bar */}
+        <div className="relative">
+          <IoSearchOutline
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
           />
-          <GradientCard
-            label="SPORTS"
-            icon={GiTrophy}
-            gradient="linear-gradient(135deg, #1a1a0d 0%, #141400 100%)"
-            glow="#FFB800"
-            emoji="⚽"
+          <Input
+            type="search"
+            placeholder="Search games..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10 h-10 bg-card"
           />
-        </div>
-      </div>
-
-      {/* FEATURED GAMES */}
-      <div className={cn("px-3 mb-4")}>
-        <div className={cn("flex justify-between items-center mb-2.5")}>
-          <div className={cn("flex items-center gap-1.5")}>
-            <IoFlameOutline size={16} className="text-orange-500" />
-            <span className={cn("font-bold text-sm tracking-wider")}>
-              Popular Games
-            </span>
-          </div>
-          <span
-            className={cn("text-primary text-xs font-semibold cursor-pointer")}
-            onClick={() => router.push("/games")}
-          >
-            See All
-          </span>
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <IoCloseOutline size={18} />
+            </button>
+          )}
         </div>
 
-        {isLoadingFeatured ? (
-          <div className={cn("grid grid-cols-3 gap-2")}>
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="aspect-square rounded-lg" />
+        {/* Provider filter tabs */}
+        {isLoadingProviders ? (
+          <div className="flex gap-2 pb-1">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-9 w-20 shrink-0 rounded-full" />
             ))}
           </div>
-        ) : featuredGridGames.length > 0 ? (
-          <GameGrid
-            games={featuredGridGames}
-            columns={{ mobile: 3, tablet: 3, desktop: 3 }}
-            gap={2}
-            onGameClick={handleGameClick}
-          />
         ) : (
-          <div className={cn("text-center py-8 text-muted-foreground")}>
-            No games available
+          <CategoryTabs
+            categories={providerTabs}
+            activeCategory={activeProvider}
+            onCategoryChange={handleProviderChange}
+          />
+        )}
+      </div>
+
+      {/* ── Popular games (horizontal scroll, only when unfiltered) ── */}
+      {!isFiltering && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between px-3 mb-2.5">
+            <div className="flex items-center gap-1.5">
+              <IoFlameOutline size={16} className="text-orange-500" />
+              <span className="font-bold text-sm tracking-wider">Popular Games</span>
+            </div>
+            <button
+              className="flex items-center gap-1 text-primary text-xs font-semibold"
+              onClick={() => router.push("/games")}
+            >
+              See All
+              <IoArrowForward size={12} />
+            </button>
+          </div>
+
+          {isLoadingPopular ? (
+            <div className="flex gap-2.5 overflow-x-auto px-3 pb-2 scrollbar-hide">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="w-28 shrink-0">
+                  <Skeleton className="aspect-square w-full rounded-xl" />
+                  <Skeleton className="h-3 mt-1.5 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : popularGames.length > 0 ? (
+            <div className="flex gap-2.5 overflow-x-auto px-3 pb-2 scrollbar-hide">
+              {popularGames.map((game) => (
+                <div key={game.id} className="w-28 shrink-0">
+                  <GameCard
+                    game={{
+                      ...game,
+                      thumbnailUrl: game.thumbnailUrl ?? undefined,
+                      imageAlt: game.imageAlt ?? undefined,
+                    }}
+                    isAuthenticated={isAuthenticated}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {/* ── All games grid ── */}
+      <div className="px-3 mb-6">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm tracking-wider">
+              {isFiltering ? "Search Results" : "All Games"}
+            </span>
+            {!isLoadingGames && total > 0 && (
+              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                {total}
+              </span>
+            )}
+          </div>
+          {total > 50 && (
+            <button
+              className="flex items-center gap-1 text-primary text-xs font-semibold"
+              onClick={() =>
+                router.push(
+                  selectedProviderCode
+                    ? `/games?provider=${selectedProviderCode}`
+                    : searchQuery
+                    ? `/games?search=${encodeURIComponent(searchQuery)}`
+                    : "/games"
+                )
+              }
+            >
+              View all {total}
+              <IoArrowForward size={12} />
+            </button>
+          )}
+        </div>
+
+        {isLoadingGames ? (
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(8)].map((_, i) => (
+              <GameCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : games.length > 0 ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              {games.map((game) => (
+                <GameCard
+                  key={game.id}
+                  game={{
+                    ...game,
+                    thumbnailUrl: game.thumbnailUrl ?? undefined,
+                    imageAlt: game.imageAlt ?? undefined,
+                  }}
+                  isAuthenticated={isAuthenticated}
+                />
+              ))}
+            </div>
+            {total > 50 && (
+              <div className="mt-4 text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/games")}
+                  className="gap-2"
+                >
+                  Browse all {total} games
+                  <IoArrowForward size={14} />
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-14">
+            <div className="text-5xl mb-3">🎮</div>
+            <p className="text-sm font-medium mb-1">
+              {searchQuery ? "No games found" : "No games available"}
+            </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              {searchQuery
+                ? `No results for "${searchQuery}"`
+                : "Check back soon — games are being added"}
+            </p>
+            {isFiltering && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveProvider("All");
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
           </div>
         )}
       </div>
 
-      {/* BOTTOM NAV */}
+      {/* ── Bottom navigation ── */}
       <BottomNav
-        items={BOTTOM_NAV_ITEMS_WITH_ICONS}
+        items={BOTTOM_NAV_WITH_ICONS}
         active={mobileNav}
         onChange={handleNavigate}
       />
